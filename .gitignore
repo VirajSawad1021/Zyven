@@ -1,0 +1,21 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# zyven runtime data
+workspace/
+artifacts/
+*.sqlite
+*.db
+
+# private planning docs and local tool settings
+ZYVEN_PROJECT_BIBLE.md
+ZYVEN_WIN_PLAN.md
+.claude/

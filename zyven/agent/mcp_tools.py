@@ -1,0 +1,87 @@
+"""Connect to MCP servers and expose their tools in OpenAI function-calling format."""
+
+from __future__ import annotations
+
+import json
+import sys
+from contextlib import AsyncExitStack
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+from mcp import Client
+from mcp.client.stdio import StdioServerParameters
+
+
+@dataclass
+class MCPServerSpec:
+    """How to launch one skill's MCP server over stdio."""
+
+    name: str
+    command: str
+    args: list[str] = field(default_factory=list)
+    cwd: str | None = None
+    env: dict[str, str] | None = None
+
+    @classmethod
+    def python_script(cls, name: str, script: str | Path) -> "MCPServerSpec":
+        return cls(name=name, command=sys.executable, args=[str(script)])
+
+
+class ToolBox:
+    """Holds live MCP connections; tools can be added while an agent is running (hot-load)."""
+
+    def __init__(self) -> None:
+        self._stack = AsyncExitStack()
+        self._clients: dict[str, Client] = {}
+        self._route: dict[str, str] = {}  # tool name -> server name
+        self.openai_tools: list[dict[str, Any]] = []
+
+    async def __aenter__(self) -> "ToolBox":
+        await self._stack.__aenter__()
+        return self
+
+    async def __aexit__(self, *exc: Any) -> None:
+        await self._stack.__aexit__(*exc)
+
+    async def add_server(self, spec: MCPServerSpec) -> list[str]:
+        params = StdioServerParameters(command=spec.command, args=spec.args, cwd=spec.cwd, env=spec.env)
+        client = await self._stack.enter_async_context(Client(params, read_timeout_seconds=60))
+        self._clients[spec.name] = client
+        listing = await client.list_tools()
+        added = []
+        for tool in listing.tools:
+            if tool.name in self._route:
+                continue
+            self._route[tool.name] = spec.name
+            self.openai_tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description or "",
+                        "parameters": tool.input_schema or {"type": "object", "properties": {}},
+                    },
+                }
+            )
+            added.append(tool.name)
+        return added
+
+    @property
+    def tool_names(self) -> list[str]:
+        return list(self._route)
+
+    async def call(self, name: str, arguments: dict[str, Any]) -> tuple[bool, str]:
+        """Returns (ok, text). Errors are returned to the model as text, never raised into the loop."""
+        server = self._route.get(name)
+        if server is None:
+            return False, f"Unknown tool {name!r}. Available: {', '.join(self._route) or 'none'}"
+        try:
+            result = await self._clients[server].call_tool(name, arguments)
+        except Exception as e:  # noqa: BLE001 - surface any transport/tool failure to the model
+            return False, f"Tool {name} failed: {e}"
+        if result.structured_content is not None:
+            text = json.dumps(result.structured_content, ensure_ascii=False)
+        else:
+            text = "\n".join(getattr(c, "text", "") for c in result.content)
+        return not result.is_error, text

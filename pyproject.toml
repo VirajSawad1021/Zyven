@@ -1,0 +1,32 @@
+[project]
+name = "zyven"
+version = "0.1.0"
+description = "Turn open-source code into verified skills that local AI agents learn on demand and keep."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "httpx>=0.27",
+    "mcp>=2.3,<3",
+    "pydantic>=2.7",
+    "uvicorn>=0.30",
+]
+
+[dependency-groups]
+# Libraries wrapped by the hand-written baseline skills in toolkit/.
+toolkit = [
+    "nepali @ git+https://github.com/opensource-nepal/py-nepali@3ff19477150ea597d6ce2e9d3dce62e6cf0065e6",
+    "python-stdnum @ git+https://github.com/arthurdejong/python-stdnum@006192e59be8ed6e08fd680256868a6c31eb2ba9",
+]
+dev = ["pytest>=8"]
+
+[tool.uv]
+default-groups = ["toolkit", "dev"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["zyven"]
