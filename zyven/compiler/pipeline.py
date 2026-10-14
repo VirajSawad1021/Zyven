@@ -95,6 +95,7 @@ def compile_capability(
         diff_tests = None
         emit("tester.error", detail=f"no differential tests: {str(e)[:200]}")
 
+    skip_tests = [t.file for t in a.tests if t.third_party]  # cannot run offline; never collected
     report: VerificationReport | None = None
     last_checked: dict[str, str] = {}  # failing tools from the latest report whose policy gate passed
     history: list[str] = []
@@ -102,7 +103,8 @@ def compile_capability(
     for attempt in range(1, max_repairs + 2):
         (skill_dir / "server.py").write_text(assemble(spec, code, provenance), encoding="utf-8")
         emit("verify.start", detail=f"attempt {attempt}")
-        report = verify(skill_dir, spec, repo, package_roots, run_upstream=run_upstream, diff_tests=diff_tests)
+        report = verify(skill_dir, spec, repo, package_roots, run_upstream=run_upstream, diff_tests=diff_tests,
+                        source_root=a.source_root, skip_tests=skip_tests)
         for g in report.gates:
             emit(f"gate.{g.name}", detail=("PASS " if g.passed else "FAIL ") + g.detail[:300], passed=g.passed)
         if report.gates and report.gates[0].passed:
@@ -139,7 +141,8 @@ def compile_capability(
             sub_tests = DiffTests(cases=[c for c in diff_tests.cases if c.tool in names]) if diff_tests else None
             (skill_dir / "server.py").write_text(assemble(sub_spec, sub_code, provenance), encoding="utf-8")
             emit("verify.partial", detail=f"re-verifying {len(keep)}/{len(spec.tools)} tools without: {', '.join(bad)}")
-            sub = verify(skill_dir, sub_spec, repo, package_roots, run_upstream=run_upstream, diff_tests=sub_tests)
+            sub = verify(skill_dir, sub_spec, repo, package_roots, run_upstream=run_upstream, diff_tests=sub_tests,
+                         source_root=a.source_root, skip_tests=skip_tests)
             for g in sub.gates:
                 emit(f"gate.{g.name}", detail=("PASS " if g.passed else "FAIL ") + g.detail[:300], passed=g.passed)
             if sub.passed:
@@ -152,7 +155,8 @@ def compile_capability(
     (skill_dir / "adapter-code.json").write_text(code.model_dump_json(indent=1), encoding="utf-8")
     (skill_dir / "provenance.json").write_text(json.dumps({
         **provenance, "capability": spec.name, "mode": spec.mode, "included_symbols": spec.included_symbols,
-        "source_checkout": str(repo),  # wrap mode: the pinned source the server imports at runtime
+        "source_checkout": str((repo / a.source_root).resolve()),  # wrap mode: importable source at runtime
+        "source_root": a.source_root,
         "generated_files": ["server.py"], "compile_seconds": seconds, "attempts": attempt,
         "dropped_tools": dropped,  # tools that could not be verified and are NOT in the package
         "model_calls": provider.stats.calls,

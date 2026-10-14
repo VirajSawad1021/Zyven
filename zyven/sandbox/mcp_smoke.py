@@ -7,6 +7,7 @@ Prints one JSON report to stdout.
 
 import asyncio
 import json
+import os
 import runpy
 import sys
 import traceback
@@ -53,7 +54,7 @@ def _payload(result):
 async def main(server_path: str, plan_path: str) -> dict:
     plan = json.load(open(plan_path, encoding="utf-8"))
     report = {"server_started": False, "listed_tools": [], "missing_tools": [], "calls": [], "invalid_calls": []}
-    params = StdioServerParameters(command=sys.executable, args=[server_path], env={"PYTHONPATH": "/src"})
+    params = StdioServerParameters(command=sys.executable, args=[server_path], env={"PYTHONPATH": os.environ.get("PYTHONPATH", "/src")})
     async with Client(params, read_timeout_seconds=30) as client:
         report["server_started"] = True
         listing = await client.list_tools()

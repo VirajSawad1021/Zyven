@@ -130,7 +130,8 @@ def parse_pytest(result: SandboxResult) -> TestReport:
 
 
 def run_upstream_tests(repo: Path, test_paths: list[str] | None = None,
-                       policy: SandboxPolicy | None = None) -> TestReport:
+                       policy: SandboxPolicy | None = None, source_root: str = ".",
+                       ignore: list[str] | None = None) -> TestReport:
     """Run a repo's tests with pytest (also runs unittest TestCases and doctest files), repo mounted read-only.
 
     test_paths: repo-relative files (`tests/test_x.py`, `tests/test_x.doctest`, or a source module whose
@@ -140,6 +141,12 @@ def run_upstream_tests(repo: Path, test_paths: list[str] | None = None,
     cmd = ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "-o", "addopts=",
            "--doctest-glob=*.doctest", "--rootdir=/src"]
     paths = test_paths or ["tests"]
-    if any(p.endswith(".py") and not Path(p).name.startswith("test") for p in paths):
+    cmd += [f"--ignore={p}" for p in (ignore or [])]  # e.g. tests needing packages the sandbox lacks
+    if any(p.endswith(".py") and not ({"tests", "test"} & set(Path(p).parts)) and not Path(p).name.startswith("test")
+           for p in paths):
         cmd.append("--doctest-modules")  # a source module was listed: run its docstring examples
+    policy = policy or SandboxPolicy()
+    if source_root not in ("", "."):  # src-style layouts: make the packages importable
+        policy = SandboxPolicy(**{**policy.__dict__, "extra_env": {**policy.extra_env,
+                                                                    "PYTHONPATH": f"/src/{source_root}"}})
     return parse_pytest(run(cmd + paths, {repo: "/src"}, policy))
