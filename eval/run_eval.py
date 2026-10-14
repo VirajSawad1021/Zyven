@@ -143,10 +143,14 @@ async def main() -> None:
     ap.add_argument("--limit", type=int, default=10, help="tasks per category")
     ap.add_argument("--concurrency", type=int, default=3)
     ap.add_argument("--skip-baseline", action="store_true")
-    ap.add_argument("--suite", choices=["nepali"], default="nepali")
+    ap.add_argument("--suite", choices=["nepali", "stdnum"], default="nepali")
     args = ap.parse_args()
 
     provider = ModelProvider.from_env(ROOT / ".env")
+    if args.suite == "stdnum":
+        from eval import tasks_stdnum
+        SUITE.update(system=SYSTEM_BASE + " " + tasks_stdnum.SYSTEM_HINT, score=tasks_stdnum.score,
+                     generate=tasks_stdnum.generate)
     tasks = SUITE["generate"](per_category=args.limit)
     results_dir = ROOT / "eval/results"
     results_dir.mkdir(parents=True, exist_ok=True)
