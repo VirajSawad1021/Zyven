@@ -46,6 +46,17 @@ truth computed by the source library itself. Raw records are in `eval/results/`.
 | Model alone | 0/6 | 0/6 | 0/6 | **0/18** |
 | Model + Zyven-compiled skills | 6/6 | 6/6 | 6/6 | **18/18** |
 
+**Global calendars and phone numbers** ([hijridate](https://github.com/dralshehri/hijridate),
+[pyluach](https://github.com/simlist/pyluach), [phonenumbers](https://github.com/daviddrysdale/python-phonenumbers)):
+
+| Condition | Hijri → Greg | Greg → Hijri | Jewish holiday | Phone valid? | Phone → E.164 | Total |
+|---|---|---|---|---|---|---|
+| Model alone | 2/6 | 3/6 | 3/6 | 5/6 | 5/6 | **18/30** |
+| Model + Zyven-compiled skills | 6/6 | 6/6 | 3/6* | 6/6 | 6/6 | **27/30** |
+
+\*No holiday skill in this run: the hosted endpoint timed out on that compile, so the category ran without a skill
+in both conditions. Details: `eval/results/global-open-model.md`.
+
 **Calendar and phone data** ([py-nepali](https://github.com/opensource-nepal/py-nepali); Bikram Sambat calendar):
 
 | Condition | Date conversions + weekday + phone operator | Total |
@@ -79,6 +90,7 @@ uv run zyven compile path/to/repo --capability <name>
 uv run zyven compile path/to/repo --capability iban --entry stdnum.iban.validate   # reviewer-set boundary
 
 uv run python eval/run_eval.py --suite stdnum --limit 6 --label compiled --skill skills/<name>/server.py
+uv run python eval/run_eval.py --suite global --limit 6 --label compiled --skill skills/<name>/server.py
 ```
 
 ## Working on large repositories
@@ -87,6 +99,10 @@ uv run python eval/run_eval.py --suite stdnum --limit 6 --label compiled --skill
 - **Digest folding:** families of modules sharing one API are folded for the model
   (python-stdnum: 182k → 37k characters; 237 validator modules in one block).
 - **Human-set boundaries:** `--entry` overrides the Scout's choice of entry points.
+- **Any layout:** packages under `src/` or another subfolder are detected and used as the import root in the
+  analyzer, the sandbox and the skill runtime.
+- **Tests the sandbox cannot run** (they import packages that are not installed, e.g. `bs4`) are skipped with the
+  reason recorded, never silently counted.
 
 ## Repository layout
 
@@ -107,7 +123,12 @@ Only open-weight models, end to end; the endpoint is configurable (Google AI Stu
 | Repo | Commit | License | Used as |
 |---|---|---|---|
 | [arthurdejong/python-stdnum](https://github.com/arthurdejong/python-stdnum) | `006192e` | LGPL-2.1 | wrapped (imported, not copied) |
+| [dralshehri/hijridate](https://github.com/dralshehri/hijridate) | `f6f0f4f` | MIT | wrapped (imported, not copied) |
+| [simlist/pyluach](https://github.com/simlist/pyluach) | `c1ffe42` | MIT | wrapped (imported, not copied) |
+| [daviddrysdale/python-phonenumbers](https://github.com/daviddrysdale/python-phonenumbers) | `e921470` | Apache-2.0 | wrapped (imported, not copied) |
 | [opensource-nepal/py-nepali](https://github.com/opensource-nepal/py-nepali) | `3ff1947` | MIT | wrapped (imported, not copied) |
+
+The pinned list lives in `catalog/repos.json`.
 
 ## License
 
