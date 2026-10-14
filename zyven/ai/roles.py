@@ -224,6 +224,11 @@ def architect(provider: ModelProvider, a: Analysis, candidate: CandidateCapabili
         spec.relevant_tests = sorted({tf for sid in spec.included_symbols for tf in syms[sid].tested_by})
         if spec.relevant_tests:
             out.fixes.append("relevant_tests filled from static test coverage")
+    # Tests that need third-party packages cannot run in the offline sandbox: skip them, and say so.
+    needs = {t.file: t.third_party for t in a.tests if t.third_party}
+    for tf in [tf for tf in spec.relevant_tests if tf in needs]:
+        out.fixes.append(f"skipped test {tf}: needs {', '.join(needs[tf])} (not available in the sandbox)")
+    spec.relevant_tests = [tf for tf in spec.relevant_tests if tf not in needs]
     return out
 
 
