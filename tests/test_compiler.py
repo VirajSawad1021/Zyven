@@ -263,3 +263,24 @@ def test_tester_cases_are_filtered_by_harness(analysis, monkeypatch):
     out = run_tester(p, analysis, _spec(_tool("first")))
     assert len(out.cases) == 1
     assert out.cases[0].reference_imports == ["import calc._core"]
+
+
+# ---- src-style layouts and tests needing third-party packages ---------------------------------
+
+def test_source_root_detection_and_module_names(tmp_path):
+    (tmp_path / "src/cal").mkdir(parents=True)
+    (tmp_path / "src/cal/__init__.py").write_text("from .core import convert\n", encoding="utf-8")
+    (tmp_path / "src/cal/core.py").write_text("def convert(d):\n    return d\n", encoding="utf-8")
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests/__init__.py").write_text("", encoding="utf-8")
+    (tmp_path / "tests/test_core.py").write_text(
+        "from cal import convert\n\ndef test_convert():\n    assert convert(1) == 1\n", encoding="utf-8")
+    (tmp_path / "tests/test_web.py").write_text(
+        "from bs4 import BeautifulSoup\nfrom cal import convert\n\ndef test_web():\n    pass\n", encoding="utf-8")
+    (tmp_path / "license.txt").write_text("The MIT License (MIT)\n", encoding="utf-8")
+    a = analyze(tmp_path)
+    assert a.source_root == "src" and a.packages == ["cal"] and a.license == "MIT"
+    assert "cal.core.convert" in {s.id for s in a.symbols}  # named from the source root, not "src.cal..."
+    assert "tests/test_core.py" in sym(a, "cal.core.convert").tested_by
+    needs = {t.file: t.third_party for t in a.tests}
+    assert needs["tests/test_web.py"] == ["bs4"] and needs["tests/test_core.py"] == []

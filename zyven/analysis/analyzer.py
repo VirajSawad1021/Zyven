@@ -85,6 +85,7 @@ class TestFile:
     test_count: int  # test functions, or doctest examples (">>>" lines) for doctest files/modules
     references: list[str]  # internal symbol ids the tests import or call
     kind: str = "python"  # python | doctest-file | module-doctest
+    third_party: list[str] = field(default_factory=list)  # non-stdlib, non-repo imports the tests need
 
 
 @dataclass
@@ -98,6 +99,7 @@ class Analysis:
     tests: list[TestFile]
     external_dependencies: list[str]
     warnings: list[str]
+    source_root: str = "."  # where importable packages live, relative to the repo (".", "src", "python", ...)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -112,8 +114,8 @@ def _git_commit(repo: Path) -> str | None:
 
 
 def _detect_license(repo: Path) -> str | None:
-    for name in ("LICENSE", "LICENSE.txt", "LICENSE.md", "COPYING"):
-        p = repo / name
+    candidates = sorted(p for p in repo.iterdir() if p.is_file() and p.name.lower().startswith(("licen", "copying")))
+    for p in candidates:  # LICENSE, LICENSE.txt, license.txt, COPYING, ...
         if p.exists():
             head = p.read_text(encoding="utf-8", errors="replace")[:600].lower()
             for key, label in (("gnu lesser general public license", "LGPL"), ("mit license", "MIT"), ("permission is hereby granted, free of charge", "MIT"), ("apache license", "Apache-2.0"), ("bsd", "BSD"),
@@ -122,6 +124,23 @@ def _detect_license(repo: Path) -> str | None:
                     return label
             return "unknown (license file present)"
     return None
+
+
+_STDLIB = set(sys.stdlib_module_names) | {"__future__"}
+_TEST_TOOLS = {"pytest", "_pytest"}  # available in the sandbox image
+_NOT_LIBRARY = {"tests", "test", "docs", "doc", "examples", "scripts", "tools", "update", "benchmarks", "build"}
+
+
+def detect_source_root(repo: Path) -> str:
+    """Where the importable packages live: the first of ., src, python, lib holding a real package."""
+    for cand in (".", "src", "python", "lib"):
+        d = repo / cand
+        if not d.is_dir():
+            continue
+        if any(p.is_dir() and (p / "__init__.py").exists() and p.name not in _NOT_LIBRARY
+               and not p.name.startswith((".", "_")) for p in d.iterdir()):
+            return cand
+    return "."
 
 
 def _module_name(repo: Path, file: Path) -> str:
@@ -228,12 +247,16 @@ class _Collector(ast.NodeVisitor):
     visit_AsyncFunctionDef = _visit_fn
 
 
-def analyze(repo_path: str | Path) -> Analysis:
+def analyze(repo_path: str | Path, source_root: str | None = None) -> Analysis:
     repo = Path(repo_path).resolve()
+    root = source_root or detect_source_root(repo)
+    lib_dir = (repo / root).resolve()
     warnings: list[str] = []
     files = [
         p for p in sorted(repo.rglob("*.py"))
         if not any(part in SKIP_DIRS for part in p.relative_to(repo).parts) and p.name != "setup.py"
+        # with a src-style layout, library code comes from the source root; tests may live anywhere
+        and (root == "." or p.resolve().is_relative_to(lib_dir) or _is_test_path(p.relative_to(repo).as_posix()))
     ]
 
     trees: dict[str, tuple[ast.Module, str, bool]] = {}  # module -> (tree, rel file, is_package)
@@ -244,7 +267,8 @@ def analyze(repo_path: str | Path) -> Analysis:
         except SyntaxError as e:
             warnings.append(f"syntax error in {rel}: {e.msg} (line {e.lineno})")
             continue
-        trees[_module_name(repo, f)] = (tree, rel, f.name == "__init__.py")
+        base = lib_dir if f.resolve().is_relative_to(lib_dir) else repo
+        trees[_module_name(base, f.resolve() if base is lib_dir else f)] = (tree, rel, f.name == "__init__.py")
 
     internal_roots = {m.split(".")[0] for m in trees}
     packages = sorted({m.split(".")[0] for m, (_, rel, _) in trees.items() if not _is_test_path(rel)})
@@ -381,7 +405,9 @@ def analyze(repo_path: str | Path) -> Analysis:
         refs = {r for r in refs if not modules[symbols[r].module].is_test}
         # A reference to a class covers its methods that the tests call through instances.
         test_count = sum(1 for s in collectors[mod].symbols if s.qualname.split(".")[-1].startswith("test"))
-        tests.append(TestFile(file=info.file, module=mod, test_count=test_count, references=sorted(refs)))
+        needs = sorted({e for e in info.external_imports if e not in _STDLIB and e not in _TEST_TOOLS})
+        tests.append(TestFile(file=info.file, module=mod, test_count=test_count, references=sorted(refs),
+                              third_party=needs))
         for r in refs:
             symbols[r].tested_by.append(info.file)
 
@@ -445,5 +471,5 @@ def analyze(repo_path: str | Path) -> Analysis:
     return Analysis(
         repo=str(repo), commit=_git_commit(repo), license=_detect_license(repo), packages=packages,
         modules=list(modules.values()), symbols=list(symbols.values()), tests=tests,
-        external_dependencies=ext, warnings=warnings,
+        external_dependencies=ext, warnings=warnings, source_root=root,
     )
