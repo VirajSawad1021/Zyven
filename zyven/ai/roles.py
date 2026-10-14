@@ -303,9 +303,22 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
                    and any("{" + k + "}" in c.reference_expr or repr(v) in c.reference_expr
                            or (isinstance(v, str) and (f'"{v}"' in c.reference_expr or f"'{v}'" in c.reference_expr))
                            for k, v in c.args.items())]
-    for c in tests.cases:  # models often list bare module paths; make them import statements
-        c.reference_imports = [ln.strip() if ln.strip().startswith(("import ", "from ")) else f"import {ln.strip()}"
-                               for ln in c.reference_imports if ln.strip()]
+    modules = {m.name for m in a.modules}
+
+    def fix_import(line: str) -> str:
+        """`import pkg.mod.Class` is a common slip (a class is not a module): import the module instead."""
+        line = line.strip()
+        if not line.startswith(("import ", "from ")):
+            line = f"import {line}"  # models often list bare module paths
+        if line.startswith("import ") and " as " not in line and "," not in line:
+            target = line[len("import "):].strip()
+            while "." in target and target not in modules and target.split(".")[0] in {p for p in a.packages}:
+                target = target.rsplit(".", 1)[0]
+            line = f"import {target}"
+        return line
+
+    for c in tests.cases:
+        c.reference_imports = [fix_import(ln) for ln in c.reference_imports if ln.strip()]
         root = c.reference_expr.strip().split(".")[0].split("(")[0]
         if root in {p.split(".")[0] for p in a.packages} and not any(
                 ln.startswith(f"import {root}") for ln in c.reference_imports):

@@ -284,3 +284,15 @@ def test_source_root_detection_and_module_names(tmp_path):
     assert "tests/test_core.py" in sym(a, "cal.core.convert").tested_by
     needs = {t.file: t.third_party for t in a.tests}
     assert needs["tests/test_web.py"] == ["bs4"] and needs["tests/test_core.py"] == []
+
+
+def test_tester_imports_naming_a_class_are_repaired(analysis, monkeypatch):
+    monkeypatch.setattr(prov.time, "sleep", lambda s: None)
+    cases = {"cases": [{"tool": "first", "args": {"number": "12"}, "field": "value",
+                        "reference_imports": ["import calc._core.Converter"],  # a class, not a module
+                        "reference_expr": "calc._core.checksum({number})"}]}
+    p = ModelProvider("https://example.invalid/v1", "m", "k")
+    body = {"choices": [{"message": {"role": "assistant", "content": json.dumps(cases)}, "finish_reason": "stop"}]}
+    p._client = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(200, json=body)))
+    out = run_tester(p, analysis, _spec(_tool("first")))
+    assert out.cases[0].reference_imports == ["import calc._core"]
