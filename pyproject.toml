@@ -13,6 +13,9 @@ dependencies = [
     "uvicorn>=0.30",
 ]
 
+[project.scripts]
+zyven = "zyven.cli:main"
+
 [dependency-groups]
 # Libraries wrapped by the hand-written baseline skills in toolkit/.
 toolkit = [
