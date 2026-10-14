@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Unit tests (offline)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Install (locked)
+        run: uv sync --locked
+      - name: Compile all modules
+        run: uv run python -m compileall -q zyven eval toolkit
+      - name: Unit tests (no network model calls, no API keys)
+        run: uv run pytest -q tests
+
+  sandbox:
+    name: Sandbox integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Install (locked)
+        run: uv sync --locked
+      - name: Build sandbox image
+        run: docker build -t zyven-sandbox:py312 zyven/sandbox
+      - name: Sandbox tests (pinned upstream repo, no network inside the container)
+        env:
+          ZYVEN_DOCKER_TESTS: "1"
+        run: uv run pytest -q tests/test_sandbox.py
