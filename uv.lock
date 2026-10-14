@@ -268,6 +268,11 @@ wheels = [
 ]
 
 [[package]]
+name = "hijridate"
+version = "2.6.0"
+source = { git = "https://github.com/dralshehri/hijridate?rev=f6f0f4f69da8e58dc65179213822ef7b83a77dcd#f6f0f4f69da8e58dc65179213822ef7b83a77dcd" }
+
+[[package]]
 name = "httpcore"
 version = "1.0.9"
 source = { registry = "https://pypi.org/simple" }
@@ -442,6 +447,11 @@ sdist = { url = "https://files.pythonhosted.org/packages/7d/fa/3944b40b07da9ce89
 wheels = [
     { url = "https://files.pythonhosted.org/packages/63/34/ba1c580383c9eada3711951fef0795c80b829a078d72188184bcab9dd527/packaging-26.3-py3-none-any.whl", hash = "sha256:d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c", size = 129956, upload-time = "2026-08-04T18:15:27.159Z" },
 ]
+
+[[package]]
+name = "phonenumbers"
+version = "9.0.41"
+source = { git = "https://github.com/daviddrysdale/python-phonenumbers?subdirectory=python&rev=e92147091eca7db103f35cb4daed85376ab79328#e92147091eca7db103f35cb4daed85376ab79328" }
 
 [[package]]
 name = "pluggy"
@@ -631,6 +641,11 @@ wheels = [
 crypto = [
     { name = "cryptography" },
 ]
+
+[[package]]
+name = "pyluach"
+version = "2.3.0"
+source = { git = "https://github.com/simlist/pyluach?rev=c1ffe4265f25ab7f5d850f4720111470f27e7ce5#c1ffe4265f25ab7f5d850f4720111470f27e7ce5" }
 
 [[package]]
 name = "pytest"
@@ -919,7 +934,10 @@ dev = [
     { name = "pytest" },
 ]
 toolkit = [
+    { name = "hijridate" },
     { name = "nepali" },
+    { name = "phonenumbers" },
+    { name = "pyluach" },
     { name = "python-stdnum" },
 ]
 
@@ -935,6 +953,9 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8" }]
 toolkit = [
+    { name = "hijridate", git = "https://github.com/dralshehri/hijridate?rev=f6f0f4f69da8e58dc65179213822ef7b83a77dcd" },
     { name = "nepali", git = "https://github.com/opensource-nepal/py-nepali?rev=3ff19477150ea597d6ce2e9d3dce62e6cf0065e6" },
+    { name = "phonenumbers", git = "https://github.com/daviddrysdale/python-phonenumbers?subdirectory=python&rev=e92147091eca7db103f35cb4daed85376ab79328" },
+    { name = "pyluach", git = "https://github.com/simlist/pyluach?rev=c1ffe4265f25ab7f5d850f4720111470f27e7ce5" },
     { name = "python-stdnum", git = "https://github.com/arthurdejong/python-stdnum?rev=006192e59be8ed6e08fd680256868a6c31eb2ba9" },
 ]
