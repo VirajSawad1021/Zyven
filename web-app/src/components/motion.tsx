@@ -88,18 +88,20 @@ export function Star({ className = "", style }: { className?: string; style?: Re
 }
 
 /** A quiet field of twinkling stars layered over painted art. Positions are deterministic per seed. */
-export function Stars({ seed = "z", count = 9, className = "" }: { seed?: string; count?: number; className?: string }) {
+export function Stars({ seed = "z", count = 9, className = "", from = 4, to = 96 }: {
+  seed?: string; count?: number; className?: string; from?: number; to?: number;
+}) {
   let h = [...seed].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 2166136261);
   const rnd = () => ((h = (h * 1664525 + 1013904223) >>> 0) / 4294967296);
   const stars = Array.from({ length: count }, () => ({
-    left: 4 + rnd() * 92, top: 6 + rnd() * 84, size: 7 + rnd() * 9, delay: rnd() * 3.2, dur: 2.6 + rnd() * 2.2,
+    left: from + rnd() * (to - from), top: 8 + rnd() * 80, size: 9 + rnd() * 11, delay: rnd() * 3.2, dur: 2.6 + rnd() * 2.2,
   }));
   return (
     <div aria-hidden className={`pointer-events-none absolute inset-0 ${className}`}>
       {stars.map((s, i) => (
         <Star
           key={i}
-          className="absolute text-white/90 drop-shadow-[0_0_6px_rgba(255,255,255,0.7)] animate-twinkle"
+          className="absolute text-[#fffaf0] drop-shadow-[0_0_5px_rgba(133,91,46,0.55)] animate-twinkle"
           style={{ left: `${s.left}%`, top: `${s.top}%`, width: s.size, height: s.size, animationDelay: `${s.delay}s`, animationDuration: `${s.dur}s` }}
         />
       ))}

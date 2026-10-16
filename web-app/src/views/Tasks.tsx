@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bot, Check, LayoutGrid, Loader2, Plus, Send, Shield, Sparkles, Terminal, X, Zap } from "lucide-react";
-import { Badge, Button, Card, Empty, Eyebrow, LiveDot, PageHeader, Skeleton, Stat, ToolChip, ArtFrame } from "../components/ui";
+import { Badge, Button, Card, Empty, Eyebrow, Hero, LiveDot, Skeleton, Stat, ToolChip, ArtFrame } from "../components/ui";
+import { DriftingOrb, Reveal, Stars } from "../components/motion";
 import { EXAMPLES, LIVE_STATES, STATUS, eventDetail, eventLabel, eventTone, relTime } from "../lib/labels";
 import { post } from "../lib/api";
 import type { Card as TaskCard, Skill } from "../lib/types";
@@ -47,10 +48,15 @@ function AgentBanner({ cards, skills }: { cards: TaskCard[]; skills: Skill[] }) 
       </>
     );
   }
+  const working = Boolean(active || pending);
   return (
-    <ArtFrame seed={active ? active.id : `idle${skills.length}`} className="mb-5 flex min-h-[132px] flex-col gap-2.5 rounded-3xl p-5">
-      <span className="frost inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-ink">{pill}</span>
-      {rows}
+    <ArtFrame seed={active ? active.id : `idle${skills.length}`} className="grain mb-5 min-h-[148px] rounded-[28px] p-5 sm:p-6">
+      {working && <DriftingOrb className="opacity-60 mix-blend-soft-light" />}
+      <Stars seed={active ? active.id : "idle"} count={working ? 12 : 8} from={62} to={96} />
+      <div className="relative z-10 flex max-w-[600px] flex-col gap-2.5">
+        <span className="frost inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-ink">{pill}</span>
+        {rows}
+      </div>
     </ArtFrame>
   );
 }
@@ -235,12 +241,12 @@ export function Tasks({ cards, skills, loaded }: { cards: TaskCard[]; skills: Sk
 
   return (
     <>
-      <PageHeader
+      <Hero
         eyebrow="Task board"
         title={<>Give the agent work.<br />It grows the tools it needs.</>}
         sub="When the agent lacks a capability, Zyven finds it in pinned open-source code. You approve, a verified MCP tool is compiled in a sandbox, and it's hot-loaded mid-task. Learned skills are reused forever."
       />
-      <AgentBanner cards={cards} skills={skills} />
+      <Reveal delay={200}><AgentBanner cards={cards} skills={skills} /></Reveal>
       <Composer prefill={prefill} onPrefillUsed={clearPrefill} />
 
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">

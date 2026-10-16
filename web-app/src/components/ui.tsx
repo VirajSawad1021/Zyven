@@ -1,6 +1,7 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import type { Tone } from "../lib/labels";
+import { Reveal, Star } from "./motion";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "light";
 type Size = "sm" | "md" | "lg";
@@ -69,6 +70,26 @@ export function PageHeader({ eyebrow, title, sub, right }: { eyebrow?: ReactNode
         {sub && <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-body">{sub}</p>}
       </div>
       {right && <div className="flex flex-wrap items-center gap-2">{right}</div>}
+    </div>
+  );
+}
+
+/** The signature display header: large, tight headline on the left, story on the right, both fading up. */
+export function Hero({ eyebrow, title, sub, right }: { eyebrow?: ReactNode; title: ReactNode; sub?: ReactNode; right?: ReactNode }) {
+  return (
+    <div className="relative mb-8 grid items-end gap-6 lg:grid-cols-[1.15fr_1fr] lg:gap-10">
+      <Reveal>
+        {eyebrow && (
+          <p className="mb-3 inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
+            <Star className="h-3 w-3 text-clay" /> {eyebrow}
+          </p>
+        )}
+        <h1 className="text-[38px] font-medium leading-[1.02] tracking-[-0.035em] text-ink sm:text-[52px]">{title}</h1>
+      </Reveal>
+      <Reveal delay={120}>
+        {sub && <p className="max-w-[520px] text-[15px] leading-relaxed text-body lg:pb-1.5">{sub}</p>}
+        {right && <div className="mt-4 flex flex-wrap items-center gap-2">{right}</div>}
+      </Reveal>
     </div>
   );
 }
