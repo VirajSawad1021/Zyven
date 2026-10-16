@@ -71,7 +71,8 @@ def smoke_plan(spec: CapabilitySpec) -> dict:
 
 
 def verify(skill_dir: Path, spec: CapabilitySpec, repo: Path, package_roots: set[str],
-           run_upstream: bool = True, diff_tests: DiffTests | None = None) -> VerificationReport:
+           run_upstream: bool = True, diff_tests: DiffTests | None = None,
+           source_root: str = ".", skip_tests: list[str] | None = None) -> VerificationReport:
     policy = SandboxPolicy(image=SANDBOX_IMAGE, timeout_s=180)
     source = (skill_dir / "server.py").read_text(encoding="utf-8")
     gates: list[Gate] = []
@@ -83,7 +84,8 @@ def verify(skill_dir: Path, spec: CapabilitySpec, repo: Path, package_roots: set
         return VerificationReport(gates, {t.name: "policy: " + "; ".join(pol.violations) for t in spec.tools})
 
     mounts = {repo: "/src", skill_dir: "/skill"}
-    env_policy = SandboxPolicy(image=SANDBOX_IMAGE, timeout_s=60, extra_env={"PYTHONPATH": "/src"})
+    pythonpath = "/src" if source_root in ("", ".") else f"/src/{source_root}"
+    env_policy = SandboxPolicy(image=SANDBOX_IMAGE, timeout_s=60, extra_env={"PYTHONPATH": pythonpath})
     imp = run(["python", "-c", "import runpy; runpy.run_path('/skill/server.py', run_name='zyven_import_check')"],
               mounts, env_policy, workdir="/skill")
     gates.append(Gate("import", imp.ok, "server module imports cleanly" if imp.ok else imp.stderr.strip()[-1500:]))
@@ -92,7 +94,7 @@ def verify(skill_dir: Path, spec: CapabilitySpec, repo: Path, package_roots: set
 
     if run_upstream:
         paths = list(spec.relevant_tests)
-        rep = run_upstream_tests(repo, paths or None, policy)
+        rep = run_upstream_tests(repo, paths or None, policy, source_root=source_root, ignore=skip_tests)
         examples = sum(_doctest_examples(repo / p) for p in paths if p.endswith(".doctest")
                        or not Path(p).name.startswith("test"))
         ex_note = f"; includes {examples} doctest examples" if examples else ""

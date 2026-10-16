@@ -1,0 +1,56 @@
+{
+  "repos": [
+    {
+      "name": "py-nepali",
+      "url": "https://github.com/opensource-nepal/py-nepali",
+      "commit": "3ff19477150ea597d6ce2e9d3dce62e6cf0065e6",
+      "license": "MIT",
+      "note": "Nepali dates (Bikram Sambat), numbers, phone numbers, locations, timezone"
+    },
+    {
+      "name": "python-stdnum",
+      "url": "https://github.com/arthurdejong/python-stdnum",
+      "commit": "006192e59be8ed6e08fd680256868a6c31eb2ba9",
+      "license": "LGPL-2.1",
+      "note": "Validate and format standard numbers: IBAN, ISBN, EAN, credit cards (Luhn), VAT and tax IDs for many countries",
+      "curated": [
+        {
+          "name": "iban_validation",
+          "title": "IBAN Validation",
+          "description": "Validate, normalise and format International Bank Account Numbers (IBAN) for any country, and calculate IBAN check digits",
+          "entry_points": [
+            "stdnum.iban.validate",
+            "stdnum.iban.is_valid",
+            "stdnum.iban.compact",
+            "stdnum.iban.format",
+            "stdnum.iban.calc_check_digits"
+          ]
+        }
+      ],
+      "hide": [
+        "international_bank_account_validation"
+      ]
+    },
+    {
+      "name": "hijridate",
+      "url": "https://github.com/dralshehri/hijridate",
+      "commit": "f6f0f4f69da8e58dc65179213822ef7b83a77dcd",
+      "license": "MIT",
+      "note": "Islamic (Hijri) calendar: Umm al-Qura Hijri <-> Gregorian conversion, month names, weekdays"
+    },
+    {
+      "name": "pyluach",
+      "url": "https://github.com/simlist/pyluach",
+      "commit": "c1ffe4265f25ab7f5d850f4720111470f27e7ce5",
+      "license": "MIT",
+      "note": "Hebrew calendar: Hebrew <-> Gregorian dates, Jewish holidays, weekly Torah portions"
+    },
+    {
+      "name": "phonenumbers",
+      "url": "https://github.com/daviddrysdale/python-phonenumbers",
+      "commit": "e92147091eca7db103f35cb4daed85376ab79328",
+      "license": "Apache-2.0",
+      "note": "Global phone numbers (port of Google's libphonenumber): parse, validate, format, region, number type, carrier"
+    }
+  ]
+}
