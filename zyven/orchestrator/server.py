@@ -32,8 +32,9 @@ from zyven.orchestrator.control import DEFAULT_IMAGE, PLANNED, RUNTIMES, Control
 from zyven.memory.skills import SkillLibrary
 
 ROOT = Path(__file__).resolve().parents[2]
-WEB = ROOT / "web"
-DIST = ROOT / "web-app" / "dist"
+SITE = ROOT / "web" / "out"  # the Next.js static export (`cd web && npm run build`)
+LEGACY = Path(__file__).with_name("legacy.html")
+ART = ROOT / "web" / "public" / "art"
 
 AGENT_SYSTEM = (
     "You are a helpful assistant that completes the user's task using your tools when they apply. "
@@ -236,25 +237,17 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
 
     app = FastAPI(title="Zyven board", lifespan=lifespan)
 
-    # The React board (web-app/, built with `npm run build`) is preferred; the single-file page in
-    # web/ stays as a no-build fallback and is always reachable at /legacy.
-    if (DIST / "assets").is_dir():
-        app.mount("/assets", StaticFiles(directory=DIST / "assets"), name="assets")
-
-    @app.get("/")
-    def index():
-        built = DIST / "index.html"
-        return FileResponse(built if built.exists() else WEB / "index.html")
-
+    # The Next.js site (web/out) is mounted last, after every API route. The single-file page is a
+    # no-build fallback: it is served at / when the site is not built, and always at /legacy.
     @app.get("/legacy")
     def legacy():
-        return FileResponse(WEB / "index.html")
+        return FileResponse(LEGACY)
 
     @app.get("/art/{name}")
     def art(name: str):
         if "/" in name or "\\" in name or ".." in name:
             raise HTTPException(400, "bad path")
-        f = WEB / "art" / name
+        f = ART / name
         if not f.exists():
             raise HTTPException(404, "not found")
         return FileResponse(f, media_type="image/webp")
@@ -407,6 +400,13 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
                 b.listeners.discard(q)
 
         return StreamingResponse(gen(), media_type="text/event-stream")
+
+    if (SITE / "index.html").exists():
+        app.mount("/", StaticFiles(directory=SITE, html=True), name="site")
+    else:
+        @app.get("/")
+        def index():
+            return FileResponse(LEGACY)
 
     return app
 
