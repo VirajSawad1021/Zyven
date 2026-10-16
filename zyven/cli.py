@@ -3,6 +3,8 @@
   zyven analyze <repo>                         deterministic analysis + rules-only baseline
   zyven scout   <repo>                         AI: list user-level capabilities
   zyven compile <repo> --capability <name>     AI: spec -> adapter -> sandbox verify -> repair -> package
+  zyven sync [--scout]                         clone the pinned catalog repos (and optionally scout them)
+  zyven board [--port N]                       task board, site and APIs on one port
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ from zyven.ai.roles import scout
 from zyven.ai.schemas import ScoutResult
 from zyven.analysis.analyzer import analyze
 from zyven.analysis.miner import baseline_candidates
+from zyven.catalog.catalog import Catalog
 from zyven.compiler.pipeline import compile_capability
 
 
@@ -53,6 +56,15 @@ def cmd_scout(args) -> None:
     if res.dropped:
         print(f"rejected references: {res.dropped}")
     print(f"\nwrote {out}")
+
+
+def cmd_sync(args) -> None:
+    root = Path(__file__).resolve().parents[1]
+    catalog = Catalog(root / "catalog" / "repos.json", root / "workspace")
+    provider = ModelProvider.from_env(args.env) if args.scout else None
+    for line in catalog.sync(provider, rescout=args.rescout):
+        print(line)
+    print(f"{len(catalog.repos)} catalog repos at their pinned commits in {root / 'workspace' / 'repos'}")
 
 
 def cmd_compile(args) -> None:
@@ -108,6 +120,9 @@ def main() -> None:
     s.add_argument("--entry", action="append", help="override entry points (human-edited boundary); repeatable")
     s.add_argument("--description", help="capability description when defining it with --entry")
     s.set_defaults(fn=cmd_compile)
+    s = sub.add_parser("sync"); s.add_argument("--scout", action="store_true", help="also scout capabilities (model calls)")
+    s.add_argument("--rescout", action="store_true", help="re-scout repos that already have cached results")
+    s.set_defaults(fn=cmd_sync)
     s = sub.add_parser("board"); s.add_argument("--port", type=int, default=8765)
     s.set_defaults(fn=lambda a: __import__("zyven.orchestrator.server", fromlist=["serve"]).serve(port=a.port))
     args = ap.parse_args()
