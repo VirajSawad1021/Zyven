@@ -227,7 +227,7 @@ export function Explorer() {
           {current.job.state === "error" && <p className="mb-3 text-[12.5px] text-bad">{current.job.error}</p>}
           {current.cloned
             ? <Button onClick={() => analyze(current.repo)}><Zap className="h-3.5 w-3.5" /> Analyse repository</Button>
-            : <p className="text-[12.5px] text-muted">Clone it first with catalog sync.</p>}
+            : <p className="text-[12.5px] text-muted">Clone it first: <span className="font-mono">uv run zyven sync</span></p>}
         </Card>
       )}
     </>
