@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Bot, Calendar, Check, Container, Plus, Square, X } from "lucide-react";
-import { Badge, Button, Card, Empty, Eyebrow, LiveDot, PageHeader, Stat } from "../components/ui";
+import { Badge, Button, Card, Empty, Eyebrow, Hero, LiveDot, Stat } from "../components/ui";
 import { api, post } from "../lib/api";
 import { relTime, type Tone } from "../lib/labels";
 
@@ -62,7 +62,7 @@ function NewTask({ rt, onCreated }: { rt: Runtimes; onCreated: (id: string) => v
         ))}
       </div>
       <p className="mb-3 text-[12px] text-body">{info.note} <span className="text-muted">
-        Exposes: {Object.entries(info.exposes).map(([k, v]) => `${EXPOSES[k]} ${v ? "✓" : "✗"}`).join(" · ")}. Anything marked ✗ is shown as "not exposed", never estimated.</span></p>
+        Exposes: {Object.entries(info.exposes).map(([k, v]) => `${EXPOSES[k]} ${v ? "✓" : "✗"}`).join(" · ")}. Anything marked ✗ is shown as &ldquo;not exposed&rdquo;, never estimated.</span></p>
 
       <input className={`${input} mb-2`} placeholder="Title (optional)" value={title} onChange={(e) => setTitle(e.target.value)} />
       <textarea className={`${input} min-h-[70px] font-mono`} value={prompt} onChange={(e) => setPrompt(e.target.value)}
@@ -162,12 +162,12 @@ export function Control() {
     const t = setInterval(load, 2000);
     return () => clearInterval(t);
   }, [load]);
-  if (!rt) return <PageHeader eyebrow="Control center" title="Loading…" />;
+  if (!rt) return <Hero eyebrow="Control center" title="Loading…" />;
   const count = (s: string[]) => runs.filter((r) => s.includes(r.status)).length;
 
   return (
     <>
-      <PageHeader eyebrow="Control center" title="Assign work. Watch it run."
+      <Hero eyebrow="Control center" title={<>Assign work. <span className="text-muted">Watch it run.</span></>}
         sub="Create a task, pick a runtime and an isolated environment, then follow the run live. Each runtime reports only what it truly exposes. Open-weight by default." />
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat value={count(["RUNNING", "QUEUED"])} label="Running" icon={<LiveDot />} />
