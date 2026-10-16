@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/* Design tokens cloned from InstaJob (LSPP-InstaJob/src/app/globals.css). */
+@theme {
+  --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-ink: #141413;
+  --color-ink-soft: #2a2a28;
+  --color-body: #5b5a55;
+  --color-muted: #8d8b84;
+
+  --color-canvas: #ffffff;
+  --color-cream: #f4f3ef;
+  --color-cream-2: #ebe9e3;
+  --color-panel: #f9f8f5;
+  --color-panel-2: #f1efea;
+  --color-line: #e9e7e1;
+  --color-line-strong: #d8d5cc;
+
+  --color-clay: #e8895a;
+  --color-olive: #4a5a3f;
+  --color-bronze: #855b2e;
+
+  --color-good: #2f6b3a;
+  --color-good-bg: #eaf3ea;
+  --color-warn: #8a5a12;
+  --color-warn-bg: #fbf2e1;
+  --color-bad: #9b2c2c;
+  --color-bad-bg: #fbecec;
+  --color-info: #33518a;
+  --color-info-bg: #ecf0f9;
+
+  --animate-fade-in: fade-in 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-rise: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-shimmer: shimmer 1.6s linear infinite;
+  --animate-pulse-dot: pulse-dot 1.8s ease-in-out infinite;
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+}
+
+html, body { background: var(--color-canvas); color: var(--color-ink); font-family: var(--font-sans); }
+body { margin: 0; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+::selection { background: #141413; color: #fff; }
+
+/* The signature soft oil paintings, used as backgrounds under frosted content. */
+.art { background-color: var(--color-cream-2); background-position: center; background-size: cover; }
+.art-warm { background-image: url("/art/warm.webp"); }
+.art-sage { background-image: url("/art/sage.webp"); }
+.art-orb { background-image: url("/art/orb.webp"); }
+
+.frost { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+
+.skeleton {
+  background: linear-gradient(90deg, #f3f1ec 25%, #ebe8e1 37%, #f3f1ec 63%);
+  background-size: 400% 100%;
+  animation: var(--animate-shimmer);
+}
+
+/* Timeline dots on the event log. */
+.timeline li { position: relative; padding: 0 0 7px 18px; font-size: 12.5px; line-height: 1.5; }
+.timeline li::before { content: ""; position: absolute; left: 0; top: 7px; width: 8px; height: 8px; border-radius: 999px; background: var(--color-line-strong); }
+.timeline li.ok::before { background: var(--color-good); }
+.timeline li.bad::before { background: var(--color-bad); }
+.timeline li.warn::before { background: var(--color-warn); }
+.timeline li.info::before { background: var(--color-info); }
+.timeline li.ink::before { background: var(--color-ink); }
+.timeline li.sub { padding-left: 26px; font-size: 12px; }
+.timeline li.sub::before { width: 6px; height: 6px; left: 1px; top: 8px; }
