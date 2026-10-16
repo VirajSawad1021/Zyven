@@ -65,6 +65,13 @@ def cmd_compile(args) -> None:
         res = scout(p, a)
         scout_file.write_text(res.value.model_dump_json(indent=1), encoding="utf-8")
         candidates = res.value.capabilities
+    from zyven.catalog.catalog import Catalog  # reviewer-curated entries apply to catalog repos
+    cat_file = Path("catalog/repos.json")
+    if cat_file.exists():
+        cat = Catalog(cat_file, Path("workspace"))
+        for r in cat.repos:
+            if cat.checkout_dir(r).resolve() == Path(args.repo).resolve():
+                candidates = cat.capabilities(r)
     cand = next((c for c in candidates if c.name == args.capability), None) or \
         next((c for c in candidates if args.capability in c.name), None)
     if args.entry:
