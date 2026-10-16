@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { BookOpen, ChartColumn, LayoutGrid, Menu, Network, Rocket, Sparkles, X } from "lucide-react";
 import { Logo } from "./Logo";
 import { Badge, LiveDot } from "./ui";
+import { Star, Stars } from "./motion";
 import type { Conn } from "../lib/useBoard";
 
 export type ViewId = "tasks" | "control" | "skills" | "insights" | "explore" | "catalog";
@@ -44,11 +45,14 @@ function SideNav({ view, counts, conn, onNavigate }: { view: ViewId; counts: Par
       </nav>
 
       <div className="mt-auto space-y-3 p-3">
-        <div className="rounded-2xl border border-line bg-white p-3">
-          <p className="text-[12px] font-semibold text-ink">How the agent grows</p>
-          <p className="mt-1 text-[11px] leading-relaxed text-body">
-            It never compiles anything without your approval, and a skill is only kept after passing every sandbox gate.
-          </p>
+        <div className="art art-sage grain relative overflow-hidden rounded-2xl p-2.5">
+          <Stars seed="sidebar" count={5} from={55} to={95} />
+          <div className="frost relative z-10 rounded-xl p-2.5">
+            <p className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-ink"><Star className="h-2.5 w-2.5 text-clay" /> How the agent grows</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-body">
+              It never compiles anything without your approval, and a skill is only kept after passing every sandbox gate.
+            </p>
+          </div>
         </div>
         <div className="px-2">
           <Badge tone={conn === "live" ? "good" : "warn"}>

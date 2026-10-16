@@ -27,7 +27,7 @@ export default function App() {
 
   return (
     <Shell view={view} conn={board.conn} wide={view === "explore"} counts={{ tasks: approvals, skills: board.skills.length }}>
-      {view === "tasks" && <Tasks cards={board.cards} skills={board.skills} loaded={board.loaded} />}
+      {view === "tasks" && <Tasks cards={board.cards} skills={board.skills} catalog={board.catalog} loaded={board.loaded} />}
       {view === "control" && <Control />}
       {view === "skills" && <Skills skills={board.skills} onGoTasks={() => { location.hash = "#/tasks"; }} />}
       {view === "insights" && <Insights stats={board.stats} />}

@@ -4,7 +4,7 @@ import { Badge, Button, Card, Empty, Eyebrow, Hero, LiveDot, Skeleton, Stat, Too
 import { DriftingOrb, Reveal, Star, Stars } from "../components/motion";
 import { EXAMPLES, LIVE_STATES, STATUS, eventDetail, eventLabel, eventTone, relTime } from "../lib/labels";
 import { post } from "../lib/api";
-import type { Card as TaskCard, Skill } from "../lib/types";
+import type { CatalogRepo, Card as TaskCard, Skill } from "../lib/types";
 
 /* ── live agent banner: painted art with frosted rows ─────────────────────── */
 function AgentBanner({ cards, skills }: { cards: TaskCard[]; skills: Skill[] }) {
@@ -113,6 +113,27 @@ function Composer({ prefill, onPrefillUsed }: { prefill: string; onPrefillUsed: 
       <p className="mt-2 font-mono text-[11px] text-muted">⌘/Ctrl + ↵ to run</p>
       {error && <p className="mt-2 text-[12.5px] text-bad">{error}</p>}
     </Card>
+  );
+}
+
+/* ── "learns from" strip: the pinned catalog as a slow marquee ────────────── */
+function LearnsFrom({ repos }: { repos: CatalogRepo[] }) {
+  if (repos.length === 0) return null;
+  const items = [...repos, ...repos];  // doubled for a seamless loop
+  return (
+    <div className="mb-6">
+      <p className="text-center text-[12px] text-muted">Learns from pinned open source</p>
+      <div className="mask-fade-x group relative mt-2.5 overflow-hidden">
+        <div className="flex w-max animate-marquee gap-12 group-hover:[animation-play-state:paused]">
+          {items.map((r, i) => (
+            <span key={i} className="inline-flex items-baseline gap-2 whitespace-nowrap" aria-hidden={i >= repos.length}>
+              <span className="text-[18px] font-medium tracking-[-0.02em] text-ink/40">{r.repo}</span>
+              <span className="font-mono text-[11px] text-muted/80">{r.license}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -276,7 +297,7 @@ function TaskItem({ card }: { card: TaskCard }) {
 }
 
 /* ── view ─────────────────────────────────────────────────────────────────── */
-export function Tasks({ cards, skills, loaded }: { cards: TaskCard[]; skills: Skill[]; loaded: boolean }) {
+export function Tasks({ cards, skills, catalog = [], loaded }: { cards: TaskCard[]; skills: Skill[]; catalog?: CatalogRepo[]; loaded: boolean }) {
   const [prefill, setPrefill] = useState("");
   const clearPrefill = useCallback(() => setPrefill(""), []);
   const reuses = cards.reduce((n, c) => n + (c.reused?.length ?? 0), 0);
@@ -291,6 +312,7 @@ export function Tasks({ cards, skills, loaded }: { cards: TaskCard[]; skills: Sk
       />
       <Reveal delay={200}><AgentBanner cards={cards} skills={skills} /></Reveal>
       <Reveal delay={280}><Composer prefill={prefill} onPrefillUsed={clearPrefill} /></Reveal>
+      <Reveal delay={320}><LearnsFrom repos={catalog} /></Reveal>
 
       <Reveal delay={340}>
         <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
