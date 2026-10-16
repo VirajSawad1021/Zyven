@@ -19,3 +19,10 @@ artifacts/
 ZYVEN_PROJECT_BIBLE.md
 ZYVEN_WIN_PLAN.md
 .claude/
+
+# web-app (React board)
+web-app/node_modules/
+web-app/dist/
+
+# local progress notes
+PROGRESS.md
