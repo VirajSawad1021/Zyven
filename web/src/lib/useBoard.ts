@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
 import type { Card, CatalogRepo, Skill, Stats } from "./types";
 
@@ -18,10 +18,6 @@ export function useBoard() {
 
   const refreshSkills = useCallback(() => api<Skill[]>("/api/skills").then(setSkills).catch(() => {}), []);
   const refreshStats = useCallback(() => api<Stats>("/api/stats").then(setStats).catch(() => {}), []);
-  const refreshStatsRef = useRef(refreshStats);
-  const refreshSkillsRef = useRef(refreshSkills);
-  refreshStatsRef.current = refreshStats;
-  refreshSkillsRef.current = refreshSkills;
 
   useEffect(() => {
     api<Card[]>("/api/cards")
@@ -39,8 +35,8 @@ export function useBoard() {
       const msg = JSON.parse(m.data);
       if (msg.type === "card") {
         setCards((prev) => new Map(prev).set(msg.card.id, msg.card));
-        refreshSkillsRef.current();
-        refreshStatsRef.current();
+        refreshSkills();
+        refreshStats();
       } else if (msg.type === "event") {
         setCards((prev) => {
           const c = prev.get(msg.card);
@@ -54,8 +50,8 @@ export function useBoard() {
           });
           return next;
         });
-        if (msg.kind === "SKILL_LEARNED") refreshSkillsRef.current();
-        if (msg.status === "DONE" || msg.status === "FAILED") refreshStatsRef.current();
+        if (msg.kind === "SKILL_LEARNED") refreshSkills();
+        if (msg.status === "DONE" || msg.status === "FAILED") refreshStats();
       }
     };
     const t = setInterval(() => tick((n) => n + 1), 30_000); // keep "2m ago" labels fresh

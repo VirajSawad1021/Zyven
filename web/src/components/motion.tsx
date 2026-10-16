@@ -11,10 +11,7 @@ export function Reveal({ children, delay = 0, className = "" }: { children: Reac
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (reducedMotion()) {
-      setShown(true);
-      return;
-    }
+    // Reduced motion needs no branch here: the global CSS rule makes the transition instant.
     const io = new IntersectionObserver(
       ([e]) => {
         if (e.isIntersecting) {
@@ -47,12 +44,10 @@ export function CountUp({ to, duration = 1100, format = (v: number) => v.toLocal
   const ref = useRef<HTMLSpanElement>(null);
   const from = useRef(0);
   const seen = useRef(false);
-  const [v, setV] = useState(to);
+  const [anim, setAnim] = useState<number | null>(null);  // null: show the true value
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    if (reducedMotion()) {
-      setV(to);
+    if (!el || reducedMotion()) {
       from.current = to;
       return;
     }
@@ -64,19 +59,21 @@ export function CountUp({ to, duration = 1100, format = (v: number) => v.toLocal
       // rAF pauses in background tabs: guarantee the true number regardless of whether frames run.
       settle = window.setTimeout(() => {
         cancelAnimationFrame(raf);
-        setV(to);
+        setAnim(null);
         from.current = to;
       }, duration + 60);
       const tick = (t: number) => {
         const p = Math.min(1, (t - start) / duration);
-        const next = Math.round(a + (to - a) * (1 - Math.pow(1 - p, 3)));
-        setV(next);
-        if (p < 1) raf = requestAnimationFrame(tick);
-        else from.current = to;
+        if (p < 1) {
+          setAnim(Math.round(a + (to - a) * (1 - Math.pow(1 - p, 3))));
+          raf = requestAnimationFrame(tick);
+        } else {
+          setAnim(null);
+          from.current = to;
+        }
       };
       raf = requestAnimationFrame(tick);
     };
-    setV(to);  // correct value first; an animation may replace it below
     let io: IntersectionObserver | null = null;
     if (seen.current) {
       run();  // already on screen: animate from the previous value
@@ -96,7 +93,7 @@ export function CountUp({ to, duration = 1100, format = (v: number) => v.toLocal
       if (seen.current) from.current = to;
     };
   }, [to, duration]);
-  return <span ref={ref} className="tabular-nums">{format(v)}</span>;
+  return <span ref={ref} className="tabular-nums">{format(anim ?? to)}</span>;
 }
 
 /** Four-point star (the ✦ mark used for AI moments). */
@@ -108,12 +105,17 @@ export function Star({ className = "", style }: { className?: string; style?: Re
   );
 }
 
+/** A seeded linear congruential generator: the same seed always gives the same sequence. */
+function rng(seed: string) {
+  let h = [...seed].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 2166136261);
+  return () => ((h = (h * 1664525 + 1013904223) >>> 0) / 4294967296);
+}
+
 /** A quiet field of twinkling stars layered over painted art. Positions are deterministic per seed. */
 export function Stars({ seed = "z", count = 9, className = "", from = 4, to = 96 }: {
   seed?: string; count?: number; className?: string; from?: number; to?: number;
 }) {
-  let h = [...seed].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 2166136261);
-  const rnd = () => ((h = (h * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const rnd = rng(seed);
   const stars = Array.from({ length: count }, () => ({
     left: from + rnd() * (to - from), top: 8 + rnd() * 80, size: 9 + rnd() * 11, delay: rnd() * 3.2, dur: 2.6 + rnd() * 2.2,
   }));
