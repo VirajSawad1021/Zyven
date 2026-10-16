@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bot, Check, LayoutGrid, Loader2, Plus, Send, Shield, Sparkles, Terminal, X, Zap } from "lucide-react";
 import { Badge, Button, Card, Empty, Eyebrow, Hero, LiveDot, Skeleton, Stat, ToolChip, ArtFrame } from "../components/ui";
-import { DriftingOrb, Reveal, Stars } from "../components/motion";
+import { DriftingOrb, Reveal, Star, Stars } from "../components/motion";
 import { EXAMPLES, LIVE_STATES, STATUS, eventDetail, eventLabel, eventTone, relTime } from "../lib/labels";
 import { post } from "../lib/api";
 import type { Card as TaskCard, Skill } from "../lib/types";
@@ -116,6 +116,46 @@ function Composer({ prefill, onPrefillUsed }: { prefill: string; onPrefillUsed: 
   );
 }
 
+/* ── AI marks and gate progress ───────────────────────────────────────────── */
+const AI_STEPS = /^(GAP_CHECK|SEARCHING|DONE|compile\.(architect|compiler|tester|repair)\.)/;
+const GATES_TOTAL = 6;
+
+/** Gates of the most recent verify attempt: how many ran, how many passed, whether any failed. */
+function gateProgress(events: TaskCard["events"]) {
+  const evs = events ?? [];
+  let start = -1;
+  evs.forEach((e, i) => { if (e.kind === "compile.verify.start" || e.kind === "compile.verify.partial") start = i; });
+  if (start < 0) return null;
+  const after = evs.slice(start + 1);
+  const gates = after.filter((e) => e.kind.startsWith("compile.gate."));
+  // Once the attempt has finished, its own gate count is the total (older compiles ran fewer gates).
+  const finished = after.some((e) => e.kind === "compile.done" || e.kind === "compile.repair.start" || e.kind === "compile.verify.partial");
+  return {
+    ran: gates.length,
+    total: finished && gates.length ? gates.length : GATES_TOTAL,
+    passed: gates.filter((g) => g.data.passed === true).length,
+    failed: gates.some((g) => g.data.passed === false),
+  };
+}
+
+function GateBar({ events, live }: { events: TaskCard["events"]; live: boolean }) {
+  const g = gateProgress(events);
+  if (!g) return null;
+  const pct = Math.round((g.passed / g.total) * 100);
+  const color = g.failed ? "bg-bad/70" : g.passed === g.total ? "bg-good" : "bg-ink/70";
+  return (
+    <div className="mt-3.5" aria-label={`Sandbox gates passed: ${g.passed} of ${g.total}`}>
+      <div className="mb-1.5 flex items-center justify-between text-[11.5px] text-muted">
+        <span className="inline-flex items-center gap-1.5 font-medium text-body"><Shield className="h-3 w-3" /> Sandbox gates</span>
+        <span className="tabular-nums">{g.passed}/{g.total}{g.failed ? " · a gate failed" : live && g.ran < g.total ? " · running" : ""}</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-panel-2">
+        <div className={`h-full origin-left animate-[grow_0.9s_cubic-bezier(0.16,1,0.3,1)_both] rounded-full transition-[width] duration-700 ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
 /* ── one task card ────────────────────────────────────────────────────────── */
 function ApprovalPanel({ card }: { card: TaskCard }) {
   const [busy, setBusy] = useState(false);
@@ -200,6 +240,7 @@ function TaskItem({ card }: { card: TaskCard }) {
             const detail = eventDetail(e);
             return (
               <li key={i} className={`${eventTone(e)}${sub ? " sub" : ""}`}>
+                {AI_STEPS.test(e.kind) && <Star className="mr-1 inline h-2.5 w-2.5 -translate-y-px text-clay" />}
                 <span className="font-semibold">{eventLabel(e.kind)}</span>
                 {detail && <span className="text-muted [overflow-wrap:anywhere]"> — {detail}</span>}
               </li>
@@ -207,6 +248,8 @@ function TaskItem({ card }: { card: TaskCard }) {
           })}
         </ul>
       )}
+
+      <GateBar events={events} live={live} />
 
       {pending && <ApprovalPanel card={card} />}
 
