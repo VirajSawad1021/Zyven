@@ -1,13 +1,15 @@
 import { Box, GitBranch, Shield, Terminal } from "lucide-react";
 import { Badge, ArtFrame, Empty, PageHeader, ToolChip } from "../components/ui";
+import { Reveal, Stars } from "../components/motion";
 import type { CatalogRepo, Skill } from "../lib/types";
 
 /** A painted tile with a frosted content box anchored at the bottom. */
 function Tile({ seed, tag, mono, children }: { seed: string; tag: string; mono?: boolean; children: React.ReactNode }) {
   return (
-    <ArtFrame seed={seed} className="flex min-h-[240px] flex-col justify-end gap-2 rounded-3xl p-4 transition-transform duration-200 hover:-translate-y-0.5">
-      <span className={`frost absolute left-3.5 top-3.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.04em] text-ink ${mono ? "font-mono" : "font-mono"}`}>{tag}</span>
-      <div className="frost rounded-[18px] px-4 py-3.5 shadow-[0_1px_2px_rgba(20,20,19,0.08)]">{children}</div>
+    <ArtFrame seed={seed} className="grain flex h-full min-h-[240px] flex-col justify-end gap-2 rounded-[28px] p-4 transition-transform duration-300 hover:-translate-y-1">
+      <Stars seed={seed} count={6} from={55} to={95} />
+      <span className={`frost absolute left-3.5 top-3.5 z-10 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.04em] text-ink ${mono ? "font-mono" : "font-mono"}`}>{tag}</span>
+      <div className="frost relative z-10 rounded-[18px] px-4 py-3.5 shadow-[0_1px_2px_rgba(20,20,19,0.08)]">{children}</div>
     </ArtFrame>
   );
 }
@@ -26,11 +28,11 @@ export function Skills({ skills, onGoTasks }: { skills: Skill[]; onGoTasks: () =
           action={<button onClick={onGoTasks} className="inline-flex h-8 items-center rounded-full bg-ink px-3.5 text-[12px] font-semibold text-white hover:bg-ink-soft">Go to tasks</button>} />
       ) : (
         <div className="grid gap-3.5 md:grid-cols-2">
-          {skills.map((s) => {
+          {skills.map((s, i) => {
             const h = s.health ?? { ok: 0, calls: 0 };
             const pct = h.calls ? Math.round((100 * h.ok) / h.calls) : 100;
             return (
-              <Tile key={s.name} seed={s.name} tag={s.name}>
+              <Reveal key={s.name} delay={Math.min(i, 5) * 80}><Tile seed={s.name} tag={s.name}>
                 <p className="text-[15px] font-semibold tracking-tight text-ink">{s.title || s.name}</p>
                 {s.summary && <p className="mt-0.5 text-[13px] leading-relaxed text-body">{s.summary}</p>}
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
@@ -47,7 +49,7 @@ export function Skills({ skills, onGoTasks }: { skills: Skill[]; onGoTasks: () =
                   <div className="mt-1 flex justify-between text-[11px] text-muted"><span>{h.ok}/{h.calls} calls healthy</span><span>{pct}%</span></div>
                 </div>
                 <p className="mt-2.5 flex items-center gap-1.5 font-mono text-[11px] text-muted"><GitBranch className="h-3 w-3" />{s.source}</p>
-              </Tile>
+              </Tile></Reveal>
             );
           })}
         </div>
@@ -68,8 +70,8 @@ export function Catalog({ repos }: { repos: CatalogRepo[] }) {
         <Empty seed="catalog" title="Catalog is empty" body={<>Add pinned repositories to <span className="font-mono">catalog/repos.json</span>.</>} />
       ) : (
         <div className="grid gap-3.5 md:grid-cols-2">
-          {repos.map((r) => (
-            <Tile key={r.repo} seed={r.repo} tag={r.repo} mono>
+          {repos.map((r, i) => (
+            <Reveal key={r.repo} delay={Math.min(i, 5) * 80}><Tile seed={r.repo} tag={r.repo} mono>
               <p className="text-[15px] font-semibold tracking-tight text-ink">{r.repo}</p>
               {r.note && <p className="mt-0.5 text-[13px] leading-relaxed text-body">{r.note}</p>}
               <div className="mt-2.5 flex flex-wrap items-center gap-2 text-[12px] text-muted">
@@ -77,7 +79,7 @@ export function Catalog({ repos }: { repos: CatalogRepo[] }) {
                 <span className="font-mono text-[11px]">@ {r.commit.slice(0, 7)}</span>
                 <a href={r.url} target="_blank" rel="noopener noreferrer" className="ml-auto text-[12px] text-info hover:underline">source ↗</a>
               </div>
-            </Tile>
+            </Tile></Reveal>
           ))}
         </div>
       )}

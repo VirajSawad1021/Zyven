@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import type { Tone } from "../lib/labels";
-import { CountUp, Reveal, Star } from "./motion";
+import { CountUp, Reveal, Star, Stars } from "./motion";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "light";
 type Size = "sm" | "md" | "lg";
@@ -64,12 +64,16 @@ export function Eyebrow({ children }: { children: ReactNode }) {
 export function PageHeader({ eyebrow, title, sub, right }: { eyebrow?: ReactNode; title: ReactNode; sub?: ReactNode; right?: ReactNode }) {
   return (
     <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-      <div className="min-w-0">
-        {eyebrow && <p className="mb-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">{eyebrow}</p>}
-        <h1 className="text-[28px] font-semibold leading-tight tracking-tight text-ink sm:text-[32px]">{title}</h1>
-        {sub && <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-body">{sub}</p>}
-      </div>
-      {right && <div className="flex flex-wrap items-center gap-2">{right}</div>}
+      <Reveal className="min-w-0">
+        {eyebrow && (
+          <p className="mb-2 inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
+            <Star className="h-3 w-3 text-clay" /> {eyebrow}
+          </p>
+        )}
+        <h1 className="text-[32px] font-medium leading-[1.05] tracking-[-0.03em] text-ink sm:text-[40px]">{title}</h1>
+        {sub && <p className="mt-2.5 max-w-2xl text-[14.5px] leading-relaxed text-body">{sub}</p>}
+      </Reveal>
+      {right && <Reveal delay={120} className="flex flex-wrap items-center gap-2">{right}</Reveal>}
     </div>
   );
 }
@@ -131,8 +135,9 @@ export function ArtFrame({ seed, className = "", children }: { seed: string; cla
 
 export function Empty({ title, body, action, seed = "empty" }: { title: string; body?: ReactNode; action?: ReactNode; seed?: string }) {
   return (
-    <ArtFrame seed={seed} className="rounded-3xl px-6 py-14 text-center animate-fade-in">
-      <div className="frost mx-auto max-w-[460px] rounded-[20px] px-5 py-6 shadow-[0_1px_2px_rgba(20,20,19,0.08)]">
+    <ArtFrame seed={seed} className="grain rounded-[28px] px-6 py-14 text-center animate-fade-in">
+      <Stars seed={seed} count={10} />
+      <div className="frost relative z-10 mx-auto max-w-[460px] rounded-[20px] px-5 py-6 shadow-[0_1px_2px_rgba(20,20,19,0.08)]">
         <p className="text-[16px] font-semibold text-ink">{title}</p>
         {body && <p className="mx-auto mt-1.5 text-[13px] leading-relaxed text-body">{body}</p>}
         {action && <div className="mt-4">{action}</div>}
