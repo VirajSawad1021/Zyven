@@ -279,7 +279,7 @@ def analyze(repo_path: str | Path, source_root: str | None = None) -> Analysis:
     # Pass 1: imports, symbols, raw calls per module.
     modules: dict[str, ModuleInfo] = {}
     collectors: dict[str, _Collector] = {}
-    for mod, (tree, rel, is_pkg) in trees.items():
+    for mod, (tree, rel, is_pkg) in list(trees.items()):
         imports: dict[str, str] = {}
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -291,7 +291,13 @@ def analyze(repo_path: str | Path, source_root: str | None = None) -> Analysis:
                     if a.name != "*":
                         imports[a.asname or a.name] = f"{base}.{a.name}" if base else a.name
         col = _Collector(mod, rel)
-        col.visit(tree)
+        try:  # generated code (huge literals/expressions) can nest deeper than the interpreter allows
+            col.visit(tree)
+            loc = len(ast.unparse(tree).splitlines())
+        except RecursionError:
+            warnings.append(f"skipped {rel}: AST nested too deeply to analyze")
+            del trees[mod]
+            continue
         collectors[mod] = col
         has_main = any(
             isinstance(n, ast.If) and "__name__" in ast.unparse(n.test) and "__main__" in ast.unparse(n.test)
@@ -302,7 +308,7 @@ def analyze(repo_path: str | Path, source_root: str | None = None) -> Analysis:
         modules[mod] = ModuleInfo(
             name=mod, file=rel, docstring=ast.get_docstring(tree), imports=imports,
             internal_imports=internal, external_imports=external, instances={},
-            has_main_block=has_main, is_test=_is_test_path(rel), loc=len(ast.unparse(tree).splitlines()),
+            has_main_block=has_main, is_test=_is_test_path(rel), loc=loc,
         )
 
     symbols: dict[str, Symbol] = {s.id: s for c in collectors.values() for s in c.symbols}
