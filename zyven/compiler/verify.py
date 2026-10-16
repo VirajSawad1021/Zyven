@@ -73,7 +73,8 @@ def smoke_plan(spec: CapabilitySpec) -> dict:
 def verify(skill_dir: Path, spec: CapabilitySpec, repo: Path, package_roots: set[str],
            run_upstream: bool = True, diff_tests: DiffTests | None = None,
            source_root: str = ".", skip_tests: list[str] | None = None) -> VerificationReport:
-    policy = SandboxPolicy(image=SANDBOX_IMAGE, timeout_s=180)
+    # only the upstream-test gate uses this; big repos (e.g. sympy) need minutes, not seconds
+    policy = SandboxPolicy(image=SANDBOX_IMAGE, timeout_s=900)
     source = (skill_dir / "server.py").read_text(encoding="utf-8")
     gates: list[Gate] = []
     failing: dict[str, str] = {}
