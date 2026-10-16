@@ -3,7 +3,7 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import type { Tone } from "../lib/labels";
-import { CountUp, Reveal, Star, Stars } from "./motion";
+import { CountUp, Reveal, Stars } from "./motion";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "light";
 type Size = "sm" | "md" | "lg";
@@ -69,7 +69,7 @@ export function PageHeader({ eyebrow, title, sub, right }: { eyebrow?: ReactNode
       <Reveal className="min-w-0">
         {eyebrow && (
           <p className="mb-2 inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
-            <Star className="h-3 w-3 text-clay" /> {eyebrow}
+            {eyebrow}
           </p>
         )}
         <h1 className="text-[32px] font-medium leading-[1.05] tracking-[-0.03em] text-ink sm:text-[40px]">{title}</h1>
@@ -87,7 +87,7 @@ export function Hero({ eyebrow, title, sub, right }: { eyebrow?: ReactNode; titl
       <Reveal>
         {eyebrow && (
           <p className="mb-3 inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
-            <Star className="h-3 w-3 text-clay" /> {eyebrow}
+            {eyebrow}
           </p>
         )}
         <h1 className="text-[38px] font-medium leading-[1.02] tracking-[-0.035em] text-ink sm:text-[52px]">{title}</h1>

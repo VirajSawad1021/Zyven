@@ -136,8 +136,8 @@ export default function Landing() {
       <section className="relative mx-auto max-w-[1240px] px-5 pb-12 pt-16 sm:px-8 sm:pt-24">
         <div className="grid items-end gap-10 lg:grid-cols-2">
           <Reveal>
-            <p className="mb-5 inline-flex items-center gap-2 rounded-full border border-line-strong bg-white/60 px-3 py-1 text-[12px] font-medium text-body">
-              <Star className="h-3 w-3 text-clay" /> Open source · open-weight models only
+            <p className="mb-5 inline-flex items-center rounded-full border border-line-strong bg-white/60 px-3 py-1 text-[12px] font-medium text-body">
+              Open source · open-weight models only
             </p>
             <h1 className="text-[46px] font-medium leading-[1.02] tracking-[-0.035em] text-ink sm:text-[72px]">
               Agents that compile

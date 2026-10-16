@@ -275,7 +275,7 @@ export function Showcase() {
       <div className="mx-auto max-w-[980px] overflow-hidden rounded-[22px] bg-white shadow-[0_24px_60px_-24px_rgba(60,30,10,0.35)]">
         <div className="flex items-center justify-between border-b border-line px-5 py-3">
           <p className="text-[12px] text-muted">{TABS[i].sub}</p>
-          <p className="flex items-center gap-1.5 text-[12px] text-muted"><Star className="h-2.5 w-2.5 text-clay" /> based on a real run</p>
+          <p className="text-[12px] text-muted">based on a real run</p>
         </div>
         <div className="min-h-[430px]">
           {TABS.map((t, idx) => (idx === i ? <t.C key={t.key} active /> : null))}

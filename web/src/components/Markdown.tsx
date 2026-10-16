@@ -40,7 +40,11 @@ type Block =
   | { k: "hr" }
   | { k: "code"; text: string }
   | { k: "math"; text: string }
-  | { k: "list"; ordered: boolean; items: string[] };
+  | { k: "list"; ordered: boolean; items: string[] }
+  | { k: "table"; head: string[]; align: ("left" | "center" | "right")[]; rows: string[][] };
+
+const cells = (line: string) => line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim());
+const isRule = (line: string) => /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(line);
 
 const LIST = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
 
@@ -71,6 +75,16 @@ function parse(src: string): Block[] {
         body += "\n" + t;
       }
       out.push({ k: "math", text: body });
+      continue;
+    }
+    if (trimmed.startsWith("|") && i + 1 < lines.length && isRule(lines[i + 1])) {
+      flush();
+      const head = cells(trimmed);
+      const align = cells(lines[i + 1]).map((c) => (c.startsWith(":") && c.endsWith(":") ? "center" : c.endsWith(":") ? "right" : "left") as "left" | "center" | "right");
+      const rows: string[][] = [];
+      i++;
+      while (i + 1 < lines.length && lines[i + 1].trim().startsWith("|")) rows.push(cells(lines[++i]));
+      out.push({ k: "table", head, align, rows });
       continue;
     }
     const h = /^(#{1,4})\s+(.*)$/.exec(trimmed);
@@ -112,6 +126,21 @@ function Blocks({ blocks }: { blocks: Block[] }) {
             return <pre key={i} className="my-2 overflow-x-auto rounded-xl bg-ink px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-white/90">{b.text}</pre>;
           case "math":
             return <TeX key={i} src={b.text} display />;
+          case "table":
+            return (
+              <div key={i} className="my-2 overflow-x-auto rounded-xl border border-line bg-white/70">
+                <table className="w-full text-left text-[12.5px]">
+                  <thead className="bg-panel text-[11.5px] text-muted">
+                    <tr>{b.head.map((h, j) => <th key={j} className="px-3 py-2 font-semibold" style={{ textAlign: b.align[j] }}>{inline(h)}</th>)}</tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {b.rows.map((r, j) => (
+                      <tr key={j}>{r.map((c, k) => <td key={k} className="px-3 py-2 align-top" style={{ textAlign: b.align[k] }}>{inline(c)}</td>)}</tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
           case "list": {
             const L = b.ordered ? "ol" : "ul";
             return (

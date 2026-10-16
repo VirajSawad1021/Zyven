@@ -213,7 +213,8 @@ export function ForceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
   const s = sel !== null ? P[sel] : null;
   const out = sel !== null ? E.filter((e) => e.s === sel).map((e) => e.t) : [];
   const inc = sel !== null ? E.filter((e) => e.t === sel).map((e) => e.s) : [];
-  const showAll = view.k > 1.7;
+  const showAll = view.k > 2.4;
+  const bigOnes = new Set(P.map((p, i) => [p.r, i] as const).sort((a, b) => b[0] - a[0]).slice(0, 12).map(([, i]) => i));
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-line bg-panel">
@@ -250,7 +251,8 @@ export function ForceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
           {P.map((p, i) => {
             const dim = (near && !near.has(i)) || (q && !matches.includes(i));
             const isSel = sel === i, isHover = hover === i, hit = q && matches.includes(i);
-            const label = showAll || p.capability || p.r > 14 || near?.has(i) || hit;
+            // Unfocused: label only the biggest modules; focused: only the focused module's neighbourhood.
+            const label = near ? near.has(i) || hit : showAll || bigOnes.has(i) || hit;
             return (
               <g key={p.id} data-node={i} opacity={dim ? 0.2 : 1} className="cursor-pointer transition-opacity duration-200"
                 onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover((h) => (h === i ? null : h))}>
