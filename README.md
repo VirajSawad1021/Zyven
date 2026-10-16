@@ -91,34 +91,37 @@ Without tools, the model tries to compute checksums and calendars by hand and us
 
 ## The app
 
-`zyven board` serves the landing page, the board and the APIs on one port. Everything below is the real app
-showing data from real runs, failures included.
+`zyven board` serves the landing page, the board and the APIs on one port. The screenshots below are the real app
+on a clean board (`zyven board --board-dir …`) where every model call was made by the open-weight
+`gemma-4-26b-a4b-it`.
 
 **Task board.** Give the agent a task. When it lacks a capability it proposes a pinned repository, waits for your
-approval, compiles in the sandbox and finishes the task with the new tool. The rail shows what the agent is doing
-and what it already knows.
+approval, compiles in the sandbox and finishes the task with the new tool. Below, the first IBAN task compiled a skill
+from python-stdnum (366 modules) in 2 minutes. The second reused it and finished in 19 seconds. A UK phone number the
+model could answer on its own needed no tool at all.
 
 ![Task board](docs/screenshots/board.jpg)
 
-**Answers** render as Markdown with real maths. This one came from a symbolic-maths task.
+**A finished task.** The answer, the tool calls that produced it, the skill learned from the repository, and the six
+sandbox gates it passed. Answers render as Markdown, with maths when there is any.
 
-<p align="center"><img src="docs/screenshots/answer.jpg" alt="An answer with rendered maths" width="640"></p>
+<p align="center"><img src="docs/screenshots/answer.jpg" alt="A finished task with its answer, tool calls and gates" width="640"></p>
 
 **Insights.** The learning curve, measured: how much faster a reuse is than a compile, every task on a log-scale
-timeline, skill-library growth, and a grid of which gate stopped each compile attempt.
+timeline, skill-library growth, and a grid of which gate stopped each compile attempt. In this run, a phone-number skill
+compiled from python-phonenumbers passed the library's own 158 tests, but the differential gate caught one tool
+disagreeing with the library on a UK mobile number. Two repairs didn't fix it, so the skill was not loaded.
 
 ![Insights dashboard](docs/screenshots/insights.jpg)
 
-**Repository explorer.** What could a repository become? It shows the funnel from every symbol to MCP-able tool
-candidates, and an interactive module graph: zoom, pan, drag, search, and click a module to see what it imports and
-what imports it.
+**Repository explorer.** What could a repository become? Here it is sympy, 425,281 lines in 882 modules, analysed
+statically in about 100 seconds. It shows the funnel from every symbol to MCP-able tool candidates, and an
+interactive module graph: zoom, pan, drag, search, and click a module to see what it imports and what imports it.
 
 ![Module graph with a module selected](docs/screenshots/graph.jpg)
 
-**Skill library.** Each verified skill with its tools, call health, provenance, and exactly which of the six gates
-it passed. The two older calendar skills were compiled before the robustness and differential gates existed.
-
-![Skill library](docs/screenshots/skills.jpg)
+**Skill library.** Every verified skill is kept with its tools, call health, provenance (repository and pinned
+commit) and exactly which of the six gates it passed, so the next task can reuse it.
 
 ## How it works
 
