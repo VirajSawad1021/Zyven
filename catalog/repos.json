@@ -51,6 +51,29 @@
       "commit": "e92147091eca7db103f35cb4daed85376ab79328",
       "license": "Apache-2.0",
       "note": "Global phone numbers (port of Google's libphonenumber): parse, validate, format, region, number type, carrier"
+    },
+    {
+      "name": "sympy",
+      "url": "https://github.com/sympy/sympy",
+      "commit": "16fa855354eb7bcabd3fe10993841e03b1382692",
+      "license": "BSD-3-Clause",
+      "note": "Symbolic mathematics: simplify, solve equations, differentiate, integrate, limits, series, matrices",
+      "curated": [
+        {
+          "name": "symbolic_math",
+          "title": "Symbolic Math",
+          "description": "Exact symbolic mathematics: differentiate, integrate (indefinite and definite), take limits, solve equations, simplify and factor expressions",
+          "entry_points": [
+            "sympy.core.sympify.sympify",
+            "sympy.core.function.diff",
+            "sympy.integrals.integrals.integrate",
+            "sympy.series.limits.limit",
+            "sympy.solvers.solvers.solve",
+            "sympy.simplify.simplify.simplify",
+            "sympy.polys.polytools.factor"
+          ]
+        }
+      ]
     }
   ]
 }

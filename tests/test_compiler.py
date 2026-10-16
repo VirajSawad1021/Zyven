@@ -296,3 +296,15 @@ def test_tester_imports_naming_a_class_are_repaired(analysis, monkeypatch):
     p._client = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(200, json=body)))
     out = run_tester(p, analysis, _spec(_tool("first")))
     assert out.cases[0].reference_imports == ["import calc._core"]
+
+
+def test_too_deep_generated_module_is_skipped_not_fatal(tmp_path):
+    # Generated code (e.g. huge lookup expressions) can parse but nest too deeply to walk; analysis must go on.
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg/__init__.py").write_text("", encoding="utf-8")
+    (tmp_path / "pkg/ok.py").write_text("def add(a, b):\n    return a + b\n", encoding="utf-8")
+    (tmp_path / "pkg/generated.py").write_text("x = " + " + ".join(["a"] * 1500) + "\n", encoding="utf-8")
+    a = analyze(tmp_path)
+    assert "pkg.ok.add" in {s.id for s in a.symbols}
+    assert "pkg.generated" not in {m.name for m in a.modules}
+    assert any("generated.py" in w and "too deeply" in w for w in a.warnings)
