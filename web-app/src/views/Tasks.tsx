@@ -247,14 +247,16 @@ export function Tasks({ cards, skills, loaded }: { cards: TaskCard[]; skills: Sk
         sub="When the agent lacks a capability, Zyven finds it in pinned open-source code. You approve, a verified MCP tool is compiled in a sandbox, and it's hot-loaded mid-task. Learned skills are reused forever."
       />
       <Reveal delay={200}><AgentBanner cards={cards} skills={skills} /></Reveal>
-      <Composer prefill={prefill} onPrefillUsed={clearPrefill} />
+      <Reveal delay={280}><Composer prefill={prefill} onPrefillUsed={clearPrefill} /></Reveal>
 
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat value={cards.length} label="Tasks run" icon={<LayoutGrid className="h-3.5 w-3.5" />} />
-        <Stat value={skills.length} label="Skills in library" icon={<Sparkles className="h-3.5 w-3.5" />} />
-        <Stat value={reuses} label="Skill reuses" icon={<Zap className="h-3.5 w-3.5" />} />
-        <Stat value={approvals} label="Approvals given" icon={<Shield className="h-3.5 w-3.5" />} />
-      </div>
+      <Reveal delay={340}>
+        <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Stat value={cards.length} label="Tasks run" icon={<LayoutGrid className="h-3.5 w-3.5" />} />
+          <Stat value={skills.length} label="Skills in library" icon={<Sparkles className="h-3.5 w-3.5" />} />
+          <Stat value={reuses} label="Skill reuses" icon={<Zap className="h-3.5 w-3.5" />} />
+          <Stat value={approvals} label="Approvals given" icon={<Shield className="h-3.5 w-3.5" />} />
+        </div>
+      </Reveal>
 
       {!loaded ? (
         <div className="space-y-3.5"><Skeleton className="h-[120px]" /><Skeleton className="h-[120px]" /></div>
@@ -263,7 +265,9 @@ export function Tasks({ cards, skills, loaded }: { cards: TaskCard[]; skills: Sk
           body="Give the agent something that needs a capability it doesn't have, like a Bikram Sambat date or an IBAN check. Watch it notice the gap, ask you to approve a compile, and finish with tools it just built."
           action={<Button size="sm" onClick={() => setPrefill(EXAMPLES[0].text)}>Use the first example</Button>} />
       ) : (
-        <div className="flex flex-col gap-3.5">{cards.map((c) => <TaskItem key={c.id} card={c} />)}</div>
+        <div className="flex flex-col gap-3.5">
+          {cards.map((c, i) => <Reveal key={c.id} delay={Math.min(i, 5) * 70}><TaskItem card={c} /></Reveal>)}
+        </div>
       )}
     </>
   );

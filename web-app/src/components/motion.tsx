@@ -36,13 +36,16 @@ export function Reveal({ children, delay = 0, className = "" }: { children: Reac
   );
 }
 
-/** Counts up to a number (eased) when first visible, and animates again when the number changes. */
+/** Shows the true number at all times; when it scrolls into view it counts up to it (eased), and later
+ * changes count from the previous value. If the browser never reports visibility or never paints frames
+ * (background tab), the correct number is simply shown: the animation is decoration, never the data. */
 export function CountUp({ to, duration = 1100, format = (v: number) => v.toLocaleString("en-US") }: {
   to: number; duration?: number; format?: (v: number) => string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const from = useRef(0);
-  const [v, setV] = useState(0);
+  const seen = useRef(false);
+  const [v, setV] = useState(to);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -52,9 +55,16 @@ export function CountUp({ to, duration = 1100, format = (v: number) => v.toLocal
       return;
     }
     let raf = 0;
+    let settle = 0;
     const run = () => {
       const start = performance.now();
       const a = from.current;
+      // rAF pauses in background tabs: guarantee the true number regardless of whether frames run.
+      settle = window.setTimeout(() => {
+        cancelAnimationFrame(raf);
+        setV(to);
+        from.current = to;
+      }, duration + 60);
       const tick = (t: number) => {
         const p = Math.min(1, (t - start) / duration);
         const next = Math.round(a + (to - a) * (1 - Math.pow(1 - p, 3)));
@@ -64,15 +74,24 @@ export function CountUp({ to, duration = 1100, format = (v: number) => v.toLocal
       };
       raf = requestAnimationFrame(tick);
     };
-    const io = new IntersectionObserver(([e]) => {
-      if (!e.isIntersecting) return;
-      io.disconnect();
-      run();
-    });
-    io.observe(el);
+    setV(to);  // correct value first; an animation may replace it below
+    let io: IntersectionObserver | null = null;
+    if (seen.current) {
+      run();  // already on screen: animate from the previous value
+    } else {
+      io = new IntersectionObserver(([e]) => {
+        if (!e.isIntersecting) return;
+        io?.disconnect();
+        seen.current = true;
+        run();  // from.current is 0 the first time: the reveal count-up
+      });
+      io.observe(el);
+    }
     return () => {
-      io.disconnect();
+      io?.disconnect();
       cancelAnimationFrame(raf);
+      clearTimeout(settle);
+      if (seen.current) from.current = to;
     };
   }, [to, duration]);
   return <span ref={ref} className="tabular-nums">{format(v)}</span>;

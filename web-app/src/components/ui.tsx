@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import type { Tone } from "../lib/labels";
-import { Reveal, Star } from "./motion";
+import { CountUp, Reveal, Star } from "./motion";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger" | "light";
 type Size = "sm" | "md" | "lg";
@@ -97,7 +97,9 @@ export function Hero({ eyebrow, title, sub, right }: { eyebrow?: ReactNode; titl
 export function Stat({ value, label, icon }: { value: ReactNode; label: string; icon?: ReactNode }) {
   return (
     <div className="rounded-2xl border border-line bg-white px-4 py-3.5">
-      <p className="text-[22px] font-medium leading-tight tracking-tight tabular-nums">{value}</p>
+      <p className="text-[22px] font-medium leading-tight tracking-tight tabular-nums">
+        {typeof value === "number" ? <CountUp to={value} /> : value}
+      </p>
       <p className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-muted">{icon}{label}</p>
     </div>
   );
