@@ -26,3 +26,10 @@ web-app/dist/
 
 # local progress notes
 PROGRESS.md
+
+# Next.js site
+web/node_modules/
+web/.next/
+web/out/
+web/next-env.d.ts
+web/tsconfig.tsbuildinfo
