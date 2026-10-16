@@ -93,6 +93,20 @@ uv run python eval/run_eval.py --suite stdnum --limit 6 --label compiled --skill
 uv run python eval/run_eval.py --suite global --limit 6 --label compiled --skill skills/<name>/server.py
 ```
 
+## The board and the site
+
+`uv run zyven board` serves everything on one port (default `http://127.0.0.1:8765`): the landing page at `/`, and
+the board at `/app/` with live task cards and approvals, the skill library, the control center, an Insights
+dashboard (learning curve, gate results per compile attempt) and a repository explorer with an interactive module
+graph. The frontend is a Next.js static export in `web/`:
+
+```bash
+cd web && npm ci && npm run build        # writes web/out, which the board server mounts
+npm run dev                              # http://localhost:3000, proxies /api to the board (ZYVEN_API to change it)
+```
+
+Without a build, the board falls back to a single-file page, which is also always available at `/legacy`.
+
 ## Working on large repositories
 - **Tests:** pytest runs unittest suites, `*.doctest` files and docstring examples; gates report how many doctest
   examples were actually checked.
@@ -114,6 +128,8 @@ uv run python eval/run_eval.py --suite global --limit 6 --label compiled --skill
 | `zyven/sandbox/` | Docker runner, image, in-container MCP smoke and differential test runners |
 | `zyven/agent/` | MCP toolbox and tool-using agent loop |
 | `toolkit/` | hand-written reference skill (baseline) |
+| `zyven/orchestrator/` | board server: tasks, approvals, SSE, control center, explorer API |
+| `web/` | Next.js site and board UI (static export served by the board) |
 | `eval/` | task suites, before/after runner, results |
 
 ## Models and sources
