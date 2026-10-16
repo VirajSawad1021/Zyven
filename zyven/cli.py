@@ -108,6 +108,8 @@ def main() -> None:
     s.add_argument("--entry", action="append", help="override entry points (human-edited boundary); repeatable")
     s.add_argument("--description", help="capability description when defining it with --entry")
     s.set_defaults(fn=cmd_compile)
+    s = sub.add_parser("board"); s.add_argument("--port", type=int, default=8765)
+    s.set_defaults(fn=lambda a: __import__("zyven.orchestrator.server", fromlist=["serve"]).serve(port=a.port))
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING,
                         format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
