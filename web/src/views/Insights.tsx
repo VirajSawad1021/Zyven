@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Clock, LayoutGrid, Sparkles, X, Zap } from "lucide-react";
+import { Check, Clock, LayoutGrid, Sparkles, X } from "lucide-react";
 import { Donut, Growth, KIND, Timeline, fmtDur, kindOf, type Kind } from "../components/Charts";
 import { CountUp, Reveal, Stars } from "../components/motion";
 import { Card, Hero, Legend, Skeleton } from "../components/ui";
