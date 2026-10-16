@@ -41,3 +41,23 @@ jobs:
         env:
           ZYVEN_DOCKER_TESTS: "1"
         run: uv run pytest -q tests/test_sandbox.py
+
+  site:
+    name: Site (lint and static export)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install (locked)
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Type-check and build the static export
+        run: npm run build
