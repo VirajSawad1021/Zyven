@@ -57,6 +57,8 @@ def make(responses, **kw) -> ModelProvider:
 def test_strip_thoughts_removes_inline_reasoning():
     assert strip_thoughts("<thought>long\nreasoning</thought>ANSWER: 42") == "ANSWER: 42"
     assert strip_thoughts(None) == ""
+    # An unpaired tag is dropped without losing the answer around it.
+    assert strip_thoughts("Yes, the IBAN is valid.</thought>") == "Yes, the IBAN is valid."
 
 
 def test_proprietary_detection():

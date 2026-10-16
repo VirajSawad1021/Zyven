@@ -26,6 +26,7 @@ T = TypeVar("T", bound=BaseModel)
 
 # Some models (e.g. Gemma 4 via AI Studio) emit their reasoning inline.
 _THOUGHT_RE = re.compile(r"<thought>.*?</thought>", re.DOTALL)
+_STRAY_THOUGHT_TAG_RE = re.compile(r"</?thought>")
 _FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$")
 _RETRYABLE_STATUS = {408, 429, 500, 502, 503, 504}
 
@@ -44,7 +45,8 @@ def is_proprietary(model: str) -> bool:
 
 
 def strip_thoughts(text: str | None) -> str:
-    return _THOUGHT_RE.sub("", text or "").strip()
+    """Remove complete <thought>...</thought> blocks, then any unpaired tag (the text around it is kept)."""
+    return _STRAY_THOUGHT_TAG_RE.sub("", _THOUGHT_RE.sub("", text or "")).strip()
 
 
 def load_env(path: str | Path = ".env") -> dict[str, str]:
