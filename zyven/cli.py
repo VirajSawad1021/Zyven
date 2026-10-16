@@ -4,7 +4,7 @@
   zyven scout   <repo>                         AI: list user-level capabilities
   zyven compile <repo> --capability <name>     AI: spec -> adapter -> sandbox verify -> repair -> package
   zyven sync [--scout]                         clone the pinned catalog repos (and optionally scout them)
-  zyven board [--port N]                       task board, site and APIs on one port
+  zyven board [--port N] [--board-dir DIR]     task board, site and APIs on one port
 """
 
 from __future__ import annotations
@@ -124,7 +124,8 @@ def main() -> None:
     s.add_argument("--rescout", action="store_true", help="re-scout repos that already have cached results")
     s.set_defaults(fn=cmd_sync)
     s = sub.add_parser("board"); s.add_argument("--port", type=int, default=8765)
-    s.set_defaults(fn=lambda a: __import__("zyven.orchestrator.server", fromlist=["serve"]).serve(port=a.port))
+    s.add_argument("--board-dir", type=Path, help="keep tasks and skills here instead of workspace/ (a clean board)")
+    s.set_defaults(fn=lambda a: __import__("zyven.orchestrator.server", fromlist=["serve"]).serve(port=a.port, board_dir=a.board_dir))
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING,
                         format="%(asctime)s %(message)s", datefmt="%H:%M:%S")

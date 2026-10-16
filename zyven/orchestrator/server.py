@@ -221,16 +221,21 @@ class Board:
         }
 
 
-def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspace") -> FastAPI:
+def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspace",
+               board_dir: Path | None = None) -> FastAPI:
+    """data_dir holds catalog checkouts and analysis caches; board_dir (default: data_dir) holds the board's own
+    state, its tasks and skill library, so a separate board can start clean without re-cloning the catalog."""
     state: dict = {}
+    board_dir = board_dir or data_dir
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         data_dir.mkdir(parents=True, exist_ok=True)
-        board = Board(data_dir / "board.sqlite", SkillLibrary(data_dir / "library"),
+        board_dir.mkdir(parents=True, exist_ok=True)
+        board = Board(board_dir / "board.sqlite", SkillLibrary(board_dir / "library"),
                       Catalog(ROOT / "catalog" / "repos.json", data_dir), ModelProvider.from_env(env_path))
         state["board"] = board
-        state["control"] = Control(data_dir / "board.sqlite", data_dir, board)
+        state["control"] = Control(board_dir / "board.sqlite", board_dir, board)
         worker = asyncio.create_task(board.worker())
         yield
         worker.cancel()
@@ -411,7 +416,7 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
     return app
 
 
-def serve(host: str = "127.0.0.1", port: int = 8765) -> None:
+def serve(host: str = "127.0.0.1", port: int = 8765, board_dir: Path | None = None) -> None:
     import uvicorn
 
-    uvicorn.run(create_app(), host=host, port=port, log_level="warning")
+    uvicorn.run(create_app(board_dir=board_dir), host=host, port=port, log_level="warning")
