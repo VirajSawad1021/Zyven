@@ -240,6 +240,12 @@ local Ollama, with automatic failover to a backup host.
 
 The pinned list lives in `catalog/repos.json`.
 
+## Documentation
+
+- **[Architecture](ARCHITECTURE.md)**: System design, subsystems, end-to-end execution flow, and trust boundaries.
+- **[AI Usage Disclosure](AI_USAGE.md)**: Complete inventory of every file and function where open-weight model outputs are programmatically consumed and validated.
+- **[Scope & Limitations](LIMITATIONS.md)**: What multi-gate verification proves, what it does not prove, and system boundaries.
+
 ## Status and roadmap
 
 The capability compiler, the self-extending agent and the board work end to end. Open work is tracked in
@@ -249,6 +255,7 @@ The capability compiler, the self-extending agent and the board work end to end.
 - [#7](https://github.com/VirajSawad1021/Zyven/issues/7) Re-run every result with the final open-weight model
 - [#8](https://github.com/VirajSawad1021/Zyven/issues/8) Learning-curve evaluation (skills learned once, reused later)
 - [#9](https://github.com/VirajSawad1021/Zyven/issues/9) Interface lint: tools that return related facts
+
 
 ## License
 
