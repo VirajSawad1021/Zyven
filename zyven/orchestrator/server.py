@@ -77,8 +77,9 @@ class Board:
         self._lock = threading.Lock()  # compile events arrive from worker threads
         # Cards interrupted by a restart are marked failed rather than silently lost.
         self.db.execute("UPDATE cards SET status='FAILED', answer='interrupted by restart' "
-                        "WHERE status NOT IN ('DONE','FAILED')")
+                        "WHERE status NOT IN ('DONE','FAILED','UNVERIFIED')")
         self.db.commit()
+
 
     # --- persistence + fan-out ---------------------------------------------------------------
     def _publish(self, payload: dict) -> None:
@@ -206,6 +207,7 @@ class Board:
             "totals": {
                 "tasks": len(per_card),
                 "done": sum(1 for p in per_card if p["status"] == "DONE"),
+                "unverified": sum(1 for p in per_card if p["status"] == "UNVERIFIED"),
                 "failed": sum(1 for p in per_card if p["status"] == "FAILED"),
                 "skills": len(growth),
                 "reuses": sum(len(p["reused"]) for p in per_card),
