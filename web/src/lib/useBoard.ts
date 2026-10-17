@@ -51,7 +51,7 @@ export function useBoard() {
           return next;
         });
         if (msg.kind === "SKILL_LEARNED") refreshSkills();
-        if (msg.status === "DONE" || msg.status === "FAILED") refreshStats();
+        if (msg.status === "DONE" || msg.status === "FAILED" || msg.status === "UNVERIFIED") refreshStats();
       }
     };
     const t = setInterval(() => tick((n) => n + 1), 30_000); // keep "2m ago" labels fresh

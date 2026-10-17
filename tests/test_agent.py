@@ -114,3 +114,65 @@ def test_match_rejects_invented_ids():
     m = match_capability(fake_model({"choice": "made:up", "confidence": "high", "reason": "?"}), need, options)
     assert m.choice is None and m.confidence == "low"
     assert match_capability(fake_model(), need, []).choice is None  # no options: no model call at all
+
+
+@pytest.mark.anyio
+async def test_compile_failure_marks_unverified_and_warns_agent(tmp_path, monkeypatch):
+    from zyven.agent.self_extend import run_self_extending
+    from zyven.compiler.pipeline import CompileResult
+    from zyven.analysis.analyzer import Analysis
+
+    (tmp_path / "repos.json").write_text(json.dumps({"repos": [{
+        "name": "lib", "url": "https://example.invalid/lib", "commit": "c0ffee", "license": "MIT",
+        "curated": [{"name": "phone", "title": "Phone Number Validation", "description": "validate phones", "entry_points": ["lib.val"]}],
+    }]}), encoding="utf-8")
+    (tmp_path / "ws/repos/lib").mkdir(parents=True)
+    cat = Catalog(tmp_path / "repos.json", tmp_path / "ws")
+    lib = SkillLibrary(tmp_path / "library")
+
+    monkeypatch.setattr(cat, "resolve", lambda choice: (
+        cat.repos[0],
+        cat.capabilities(cat.repos[0])[0],
+        Analysis(repo=str(tmp_path / "ws/repos/lib"), commit="c0ffee", license="MIT", source_root="", packages=[], modules=[], symbols=[], tests=[], external_dependencies=[], warnings=[])
+    ))
+
+    monkeypatch.setattr("zyven.agent.self_extend.compile_capability", lambda *args, **kwargs: CompileResult(
+        skill_dir=tmp_path, spec=cat.capabilities(cat.repos[0])[0], verified=False, attempts=1, report=None
+    ))
+
+    received_system_prompt = []
+    responses = [
+        # 1. gap_check
+        {"plan": ["validate phone"], "can_complete_with_current_tools": False,
+         "missing_capabilities": [{"description": "validate phone", "inputs": "phone", "outputs": "valid", "why_needed": "phone"}]},
+        # 2. match_capability
+        {"choice": "lib:phone", "confidence": "high", "reason": "matches"},
+        # 3. run_agent
+        {"content": "The capability could not be verified by the sandbox. This is an unverified attempt."}
+    ]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        data = json.loads(request.content.decode("utf-8"))
+        for m in data.get("messages", []):
+            if m.get("role") == "system" and "CRITICAL NOTICE" in m.get("content", ""):
+                received_system_prompt.append(m.get("content"))
+        resp = responses.pop(0)
+        if "content" in resp:
+            body = {"choices": [{"message": {"role": "assistant", "content": resp["content"]}, "finish_reason": "stop"}]}
+        else:
+            body = {"choices": [{"message": {"role": "assistant", "content": json.dumps(resp)}, "finish_reason": "stop"}]}
+        return httpx.Response(200, json=body)
+
+    p = ModelProvider("https://example.invalid/v1", "m", "k")
+    p._client = httpx.Client(transport=httpx.MockTransport(handler))
+
+    events = []
+    async def approve(req): return True
+    res = await run_self_extending(p, "Validate phone number", lib, cat, approve,
+                                  on_event=lambda k, d: events.append((k, d)))
+
+    assert res.status == "UNVERIFIED"
+    assert "Phone Number Validation" in res.failed_compiles
+    assert any(k == "COMPILE_FAILED" for k, d in events)
+    assert any("CRITICAL NOTICE" in s for s in received_system_prompt)
+

@@ -24,6 +24,7 @@ export const STATUS: Record<string, { label: string; tone: Tone }> = {
   SKILL_LEARNED: { label: "Skill learned", tone: "good" },
   RESUMED: { label: "Resumed", tone: "info" },
   DONE: { label: "Done", tone: "good" },
+  UNVERIFIED: { label: "Unverified", tone: "warn" },
   FAILED: { label: "Failed", tone: "bad" },
 };
 
@@ -33,7 +34,7 @@ const EV_LABEL: Record<string, string> = {
   RUNNING: "Agent started", GAP_CHECK: "Gap check", SKILL_REUSED: "Skill reused",
   SEARCHING: "Searching catalog", NO_MATCH: "No catalog match", NEEDS_APPROVAL: "Approval requested",
   REJECTED: "Rejected", COMPILING: "Compiling", COMPILE_FAILED: "Compile failed",
-  SKILL_LEARNED: "Skill learned", RESUMED: "Resumed with tools", DONE: "Done", FAILED: "Failed",
+  SKILL_LEARNED: "Skill learned", RESUMED: "Resumed with tools", DONE: "Done", UNVERIFIED: "Unverified answer", FAILED: "Failed",
   "approval.decision": "Decision",
 };
 
@@ -57,7 +58,7 @@ export function eventTone(e: CardEvent): "ok" | "bad" | "warn" | "info" | "ink" 
   const { kind, data } = e;
   if (["DONE", "SKILL_LEARNED", "SKILL_REUSED"].includes(kind)) return "ok";
   if (["FAILED", "COMPILE_FAILED", "REJECTED", "NO_MATCH"].includes(kind)) return "bad";
-  if (kind === "NEEDS_APPROVAL") return "warn";
+  if (kind === "NEEDS_APPROVAL" || kind === "UNVERIFIED") return "warn";
   if (kind.startsWith("compile.")) {
     if (data.passed === false) return "bad";
     if (data.passed === true) return "ok";
