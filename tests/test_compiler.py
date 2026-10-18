@@ -265,6 +265,27 @@ def test_tester_cases_are_filtered_by_harness(analysis, monkeypatch):
     assert out.cases[0].reference_imports == ["import calc._core"]
 
 
+def test_tester_requeries_missing_tools(analysis, monkeypatch):
+    monkeypatch.setattr(prov.time, "sleep", lambda s: None)
+    spec = _spec(_tool("first"), _tool("second"))
+    cases_1 = {"cases": [
+        {"tool": "first", "args": {"number": "12"}, "field": "value",
+         "reference_imports": ["calc._core"], "reference_expr": "calc._core.checksum({number})"}
+    ]}
+    cases_2 = {"cases": [
+        {"tool": "second", "args": {"number": "34"}, "field": "value",
+         "reference_imports": ["calc._core"], "reference_expr": "calc._core.checksum({number})"}
+    ]}
+    responses = [cases_1, cases_2]
+    p = ModelProvider("https://example.invalid/v1", "m", "k")
+    p._client = httpx.Client(transport=httpx.MockTransport(
+        lambda r: httpx.Response(200, json={"choices": [{"message": {"role": "assistant", "content": json.dumps(responses.pop(0))}, "finish_reason": "stop"}]})
+    ))
+    out = run_tester(p, analysis, spec)
+    assert len(out.cases) == 2
+    assert {c.tool for c in out.cases} == {"first", "second"}
+
+
 # ---- src-style layouts and tests needing third-party packages ---------------------------------
 
 def test_source_root_detection_and_module_names(tmp_path):

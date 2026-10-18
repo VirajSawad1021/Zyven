@@ -317,6 +317,27 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
             line = f"import {target}"
         return line
 
+    # Cover every tool: if the model omitted cases for some tools, re-query specifically for them.
+    covered_tools = {c.tool for c in tests.cases}
+    missing_tools = [t for t in spec.tools if t.name not in covered_tools]
+    if missing_tools:
+        sub_spec = spec.model_copy(update={"tools": missing_tools})
+        sub_user = (f"CAPABILITY SPEC (WRITE TEST CASES FOR THESE MISSED TOOLS ONLY)\n"
+                    f"{sub_spec.model_dump_json(indent=1)}\n\nLIBRARY EVIDENCE\n{_impl_evidence(a, sub_spec)}")
+        try:
+            extra = provider.generate_structured(
+                [{"role": "system", "content": system}, {"role": "user", "content": sub_user}],
+                DiffTests,
+            )
+            extra_cases = [c for c in extra.cases if c.tool in names and c.field in names[c.tool]
+                           and set(c.args) <= params[c.tool][0] and params[c.tool][1] <= set(c.args)
+                           and any("{" + k + "}" in c.reference_expr or repr(v) in c.reference_expr
+                                   or (isinstance(v, str) and (f'"{v}"' in c.reference_expr or f"'{v}'" in c.reference_expr))
+                                   for k, v in c.args.items())]
+            tests.cases.extend(extra_cases)
+        except Exception:
+            pass
+
     for c in tests.cases:
         c.reference_imports = [fix_import(ln) for ln in c.reference_imports if ln.strip()]
         root = c.reference_expr.strip().split(".")[0].split("(")[0]
@@ -324,3 +345,4 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
                 ln.startswith(f"import {root}") for ln in c.reference_imports):
             c.reference_imports.append(f"import {root}")
     return tests
+

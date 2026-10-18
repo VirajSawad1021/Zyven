@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Bot, Check, ChevronDown, Clock, LayoutGrid, Loader2, Plus, Send, Shield, Sparkles, Terminal, X, Zap } from "lucide-react";
+import { AlertTriangle, Bot, Check, ChevronDown, Clock, LayoutGrid, Loader2, Plus, Send, Shield, Sparkles, Terminal, X, Zap } from "lucide-react";
 import { Badge, Button, Card, Empty, Hero, LiveDot, Skeleton, ToolChip, ArtFrame } from "../components/ui";
 import { CountUp, DriftingOrb, Reveal, Star, Stars } from "../components/motion";
 import { Markdown } from "../components/Markdown";
@@ -194,13 +194,13 @@ function TaskItem({ card }: { card: TaskCard }) {
   const st = STATUS[card.status] ?? { label: card.status, tone: "neutral" as const };
   const live = LIVE_STATES.has(card.status);
   const pending = card.status === "NEEDS_APPROVAL";
-  const finished = card.status === "DONE" || card.status === "FAILED";
+  const finished = card.status === "DONE" || card.status === "FAILED" || card.status === "UNVERIFIED";
   const [open, setOpen] = useState<boolean | null>(null);
   const showSteps = open ?? !finished;
   const last = events[events.length - 1];
   const gap = events.find((e) => e.kind === "GAP_CHECK");
   const plan: string[] = Array.isArray(gap?.data.plan) ? gap!.data.plan : [];
-  const done = events.find((e) => e.kind === "DONE");
+  const done = events.find((e) => e.kind === "DONE" || e.kind === "UNVERIFIED");
   const toolCalls: [string, unknown][] = Array.isArray(done?.data.tool_calls) ? done!.data.tool_calls : [];
   const dur = card.updated && card.created ? Math.max(0, Math.round(card.updated - card.created)) : null;
   const answerIsError = !!card.answer && /^error:/i.test(card.answer);
@@ -231,9 +231,21 @@ function TaskItem({ card }: { card: TaskCard }) {
 
       {pending && <ApprovalPanel card={card} />}
 
-      {card.answer && (card.status === "DONE" || answerIsError) && (
+      {card.answer && (card.status === "DONE" || card.status === "UNVERIFIED" || answerIsError) && (
         answerIsError ? (
           <p className="mt-4 rounded-2xl border border-bad/20 bg-bad-bg px-4 py-3 font-mono text-[12px] text-bad [overflow-wrap:anywhere]">{card.answer}</p>
+        ) : card.status === "UNVERIFIED" ? (
+          <div className="mt-4 rounded-2xl border border-warn/30 bg-warn-bg/70 px-4 py-3.5">
+            <p className="mb-1.5 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-warn">
+              <AlertTriangle className="h-3.5 w-3.5" /> Unverified Answer (Compile Not Verified)
+            </p>
+            <Markdown text={card.answer} className="text-ink" />
+            {toolCalls.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5 border-t border-warn/15 pt-3">
+                {toolCalls.map((t, i) => <ToolChip key={i}><Terminal className="h-3 w-3" />{String(t[0])}</ToolChip>)}
+              </div>
+            )}
+          </div>
         ) : (
           <div className="mt-4 rounded-2xl border border-good/25 bg-good-bg/70 px-4 py-3.5">
             <p className="mb-1.5 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-good"><Check className="h-3.5 w-3.5" /> Answer</p>

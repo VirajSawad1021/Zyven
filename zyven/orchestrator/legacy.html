@@ -515,6 +515,7 @@ const STATUS = {
   SKILL_LEARNED:     { label: "Skill learned", tone: "good" },
   RESUMED:           { label: "Resumed", tone: "info" },
   DONE:              { label: "Done", tone: "good" },
+  UNVERIFIED:        { label: "Unverified", tone: "warn" },
   FAILED:            { label: "Failed", tone: "bad" },
 };
 const LIVE_STATES = new Set(["QUEUED", "RUNNING", "GAP_CHECK", "SEARCHING", "COMPILING", "RESUMED", "SKILL_REUSED"]);
@@ -523,7 +524,7 @@ const EV_LABEL = {
   RUNNING: "Agent started", GAP_CHECK: "Gap check", SKILL_REUSED: "Skill reused",
   SEARCHING: "Searching catalog", NO_MATCH: "No catalog match", NEEDS_APPROVAL: "Approval requested",
   REJECTED: "Rejected", COMPILING: "Compiling", COMPILE_FAILED: "Compile failed",
-  SKILL_LEARNED: "Skill learned", RESUMED: "Resumed with tools", DONE: "Done", FAILED: "Failed",
+  SKILL_LEARNED: "Skill learned", RESUMED: "Resumed with tools", DONE: "Done", UNVERIFIED: "Unverified answer", FAILED: "Failed",
   "approval.decision": "Decision",
 };
 const COMPILE_LABEL = {
@@ -693,12 +694,12 @@ function renderCard(c) {
     </div>`;
   }
 
-  const doneEv = events.find((e) => e.kind === "DONE");
+  const doneEv = events.find((e) => e.kind === "DONE" || e.kind === "UNVERIFIED");
   const toolChips = doneEv && Array.isArray(doneEv.data.tool_calls) && doneEv.data.tool_calls.length
     ? `<div class="tool-chips">${doneEv.data.tool_calls.map((t) => `<span class="tool-chip">${icon("terminal", 11)} ${esc(t[0])}</span>`).join("")}</div>`
     : "";
-  const answer = c.status === "DONE" && c.answer
-    ? `<div class="answer"><p class="answer-title">${icon("check", 15)} Answer</p><div class="answer-body">${esc(c.answer)}</div>${toolChips}</div>`
+  const answer = (c.status === "DONE" || c.status === "UNVERIFIED") && c.answer
+    ? `<div class="answer${c.status === "UNVERIFIED" ? " unverified" : ""}"><p class="answer-title">${c.status === "UNVERIFIED" ? icon("alert", 15) + " Unverified Answer (Compile Not Verified)" : icon("check", 15) + " Answer"}</p><div class="answer-body">${esc(c.answer)}</div>${toolChips}</div>`
     : "";
 
   const chips = [
@@ -710,7 +711,7 @@ function renderCard(c) {
   const meta = `<div class="task-meta">
     <span class="mono">#${esc(c.id)}</span><span class="sep">·</span>
     <span>${esc(relTime(c.created))}</span>
-    ${dur != null && ["DONE", "FAILED"].includes(c.status) ? `<span class="sep">·</span><span>${dur}s</span>` : ""}
+    ${dur != null && ["DONE", "FAILED", "UNVERIFIED"].includes(c.status) ? `<span class="sep">·</span><span>${dur}s</span>` : ""}
   </div>`;
 
   return `<article class="task-card${pending ? " attn" : ""}" id="card-${esc(c.id)}">
