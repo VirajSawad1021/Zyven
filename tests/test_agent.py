@@ -117,7 +117,8 @@ def test_match_rejects_invented_ids():
 
 
 @pytest.mark.anyio
-async def test_compile_failure_marks_unverified_and_warns_agent(tmp_path, monkeypatch):
+@pytest.mark.parametrize("approved", [True, False], ids=["compile-not-verified", "approval-rejected"])
+async def test_unverified_capability_marks_card_and_warns_agent(tmp_path, monkeypatch, approved):
     from zyven.agent.self_extend import run_self_extending
     from zyven.compiler.pipeline import CompileResult
     from zyven.analysis.analyzer import Analysis
@@ -136,9 +137,14 @@ async def test_compile_failure_marks_unverified_and_warns_agent(tmp_path, monkey
         Analysis(repo=str(tmp_path / "ws/repos/lib"), commit="c0ffee", license="MIT", source_root="", packages=[], modules=[], symbols=[], tests=[], external_dependencies=[], warnings=[])
     ))
 
-    monkeypatch.setattr("zyven.agent.self_extend.compile_capability", lambda *args, **kwargs: CompileResult(
-        skill_dir=tmp_path, spec=cat.capabilities(cat.repos[0])[0], verified=False, attempts=1, report=None
-    ))
+    compiles = []
+
+    def fake_compile(*args, **kwargs):
+        compiles.append(args)
+        return CompileResult(skill_dir=tmp_path, spec=cat.capabilities(cat.repos[0])[0], verified=False,
+                             attempts=1, report=None)
+
+    monkeypatch.setattr("zyven.agent.self_extend.compile_capability", fake_compile)
 
     received_system_prompt = []
     responses = [
@@ -154,7 +160,7 @@ async def test_compile_failure_marks_unverified_and_warns_agent(tmp_path, monkey
     def handler(request: httpx.Request) -> httpx.Response:
         data = json.loads(request.content.decode("utf-8"))
         for m in data.get("messages", []):
-            if m.get("role") == "system" and "CRITICAL NOTICE" in m.get("content", ""):
+            if m.get("role") == "system" and "NO verified tool" in m.get("content", ""):
                 received_system_prompt.append(m.get("content"))
         resp = responses.pop(0)
         if "content" in resp:
@@ -167,12 +173,18 @@ async def test_compile_failure_marks_unverified_and_warns_agent(tmp_path, monkey
     p._client = httpx.Client(transport=httpx.MockTransport(handler))
 
     events = []
-    async def approve(req): return True
+    async def approve(req): return approved
     res = await run_self_extending(p, "Validate phone number", lib, cat, approve,
                                   on_event=lambda k, d: events.append((k, d)))
 
     assert res.status == "UNVERIFIED"
-    assert "Phone Number Validation" in res.failed_compiles
-    assert any(k == "COMPILE_FAILED" for k, d in events)
-    assert any("CRITICAL NOTICE" in s for s in received_system_prompt)
-
+    assert any(k == "UNVERIFIED" for k, d in events)
+    assert received_system_prompt and "Phone Number Validation" in received_system_prompt[0]
+    if approved:
+        assert res.failed_compiles == ["Phone Number Validation"] and res.rejected == []
+        assert any(k == "COMPILE_FAILED" for k, d in events)
+        assert "failed sandbox verification" in received_system_prompt[0]
+    else:
+        assert res.rejected == ["Phone Number Validation"] and res.failed_compiles == []
+        assert not compiles  # nothing is compiled without approval
+        assert "not approved" in received_system_prompt[0]
