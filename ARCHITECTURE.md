@@ -131,10 +131,10 @@ Zyven divides capability creation into 5 focused AI roles, each with strict boun
 ### 4.4 Docker Sandbox Runner (`zyven/sandbox/`)
 - Runs in an isolated Linux container (`zyven-sandbox:py312`).
 - **Flags:** `--network none`, `--rm`, `--read-only` with a 256 MB `/tmp`, user `1000:1000`, `--cap-drop ALL`, `no-new-privileges`, and limits of 1 GB memory, 2 CPUs and 256 processes (defaults in `zyven/sandbox/runner.py`).
-- Untrusted repository code and generated adapter code run **exclusively** inside this sandbox.
+- Untrusted repository code and generated adapter code run **exclusively** inside this sandbox: during the verification gates, and again at runtime, when the agent uses a verified skill (see 4.5). One function, `docker_args()`, defines the flags for both.
 
 ### 4.5 Agent Loop & Memory (`zyven/agent/`, `zyven/memory/`)
-- **ToolBox:** Spawns local MCP server subprocesses over stdio, discovering tools via standard JSON-RPC protocol.
+- **ToolBox:** Launches each skill's MCP server over stdio **inside the sandbox container** (`docker run -i`, same flags as verification, skill and pinned source mounted read-only) and discovers its tools over MCP. Starting the container costs about 1–2 s, once per skill per task. Running a skill on the host is a development-only opt-in (`ZYVEN_SKILL_RUNTIME=host`), logged on every launch.
 - **SkillLibrary:** Persists verified skills with immutable provenance (repository URL, commit hash) and tracks call health (success/failure rates across tasks).
 
 ---
@@ -146,5 +146,6 @@ Zyven divides capability creation into 5 focused AI roles, each with strict boun
 | **External Repository Source** | Inbound from GitHub | Cloned only at fixed immutable commits (`catalog/repos.json`). AST analyzed offline; never executed on the host. |
 | **Model Generation** | Inbound from LLM | Parsed with strict Pydantic schemas. Symbols verified by `RefResolver`. Code checked by AST policy before sandbox execution. |
 | **Sandbox Execution** | Adapter & Tests → Container | Docker container with `--network none`, read-only roots, non-root user, CPU/memory limits, dropped capabilities. |
+| **Skill Runtime** | Agent → Skill Server | Verified skills run in the same container when the agent calls them; a sandbox test checks that a skill has no network and can write only to `/tmp` at runtime. |
 | **Human Approval** | Agent → Human Reviewer | The agent cannot compile or load outside code without explicit user approval via UI/API (`/api/cards/{id}/decision`). |
 | **Model Verification Overclaim** | Failed Compile → Agent | If verification fails, the agent is explicitly instructed that the capability is unverified, tools are withheld, and cards enter `UNVERIFIED` state. |
