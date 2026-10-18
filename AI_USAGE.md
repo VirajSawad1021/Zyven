@@ -35,7 +35,7 @@ This document details every file and function in the repository where artificial
 #### `architect(provider: ModelProvider, a: Analysis, candidate: CandidateCapability) -> RoleOutcome[CapabilitySpec]`
 - **Model Consumption:** Takes candidate information and static evidence to produce a formal capability specification (`CapabilitySpec`).
 - **Post-Processing & Validation:**
-  - Evaluated by `lint_interface(spec)`: deterministic rules ensuring tools accept natural single-string inputs rather than fragmented components and provide formatted string answers.
+  - Evaluated by `lint_interface(spec, analysis)`: deterministic rules ensuring tools accept natural single-string inputs rather than fragmented components, provide formatted string answers, and return at least one related fact the library computes directly from the same input (found from the static analysis: accessors on the value's class, or sibling functions on the same subject). Any warning triggers one revision request; the revision is kept only if it has fewer warnings.
   - Parameter names are forced to valid Python snake_case identifiers using keyword filtering.
   - Exported symbols and test suites are cross-checked against actual test evidence in `a.tests`.
 
