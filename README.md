@@ -256,7 +256,6 @@ The capability compiler, the self-extending agent and the board work end to end.
 - [#8](https://github.com/VirajSawad1021/Zyven/issues/8) Learning-curve evaluation (skills learned once, reused later)
 - [#9](https://github.com/VirajSawad1021/Zyven/issues/9) Interface lint: tools that return related facts
 
-
 ## License
 
 MIT

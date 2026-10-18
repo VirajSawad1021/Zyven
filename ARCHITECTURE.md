@@ -90,7 +90,7 @@ When a user submits a task to the self-extending agent:
       ├─► Gate 1: Static Policy Check (no os/sys/subprocess/network/file write)
       ├─► Gate 2: Clean Import Test
       ├─► Gate 3: Upstream Repository Test Suite
-      ├─► Gate 4: Input Robustness (whitespace, edge cases, type variants)
+      ├─► Gate 4: Input Robustness (equivalent inputs must give the same result)
       ├─► Gate 5: MCP Smoke Test (protocol handshake, list_tools, call_tool)
       ├─► Gate 6: Differential Equivalence (Adapter vs Direct Library Call)
       │
@@ -126,11 +126,11 @@ Zyven divides capability creation into 5 focused AI roles, each with strict boun
 
 ### 4.3 Compiler & Static Policy (`zyven/compiler/`)
 - **Import Scoping:** Generates local imports within each tool function body to prevent namespace pollution or accidental module shadowing across tools.
-- **AST Security Policy:** Disallows non-pure standard library packages (`os`, `sys`, `subprocess`, `socket`, `shutil`, `urllib`, `requests`) and dangerous built-ins (`__import__`, `eval`, `exec`, `open`).
+- **AST Security Policy (an allowlist):** generated code may import only the source package, `mcp`, and a short list of pure stdlib modules (`datetime`, `re`, `math`, `decimal`, `json`, `functools`, `calendar`, …). Everything else, `os`, `sys`, `subprocess` and `socket` included, is rejected. Calls to `open`, `exec`, `eval`, `compile`, `__import__`, `globals`, `locals`, `vars`, `input`, `setattr` and `delattr`, introspection attributes such as `__globals__` and `__subclasses__`, and `global`/`nonlocal` are rejected too. The check runs before any execution.
 
 ### 4.4 Docker Sandbox Runner (`zyven/sandbox/`)
 - Runs in an isolated Linux container (`zyven-sandbox:py312`).
-- **Flags:** `--network none`, `--rm`, `--read-only`, non-root user execution, memory limits (`1GB`), and CPU limits (`1 CPU`).
+- **Flags:** `--network none`, `--rm`, `--read-only` with a 256 MB `/tmp`, user `1000:1000`, `--cap-drop ALL`, `no-new-privileges`, and limits of 1 GB memory, 2 CPUs and 256 processes (defaults in `zyven/sandbox/runner.py`).
 - Untrusted repository code and generated adapter code run **exclusively** inside this sandbox.
 
 ### 4.5 Agent Loop & Memory (`zyven/agent/`, `zyven/memory/`)
