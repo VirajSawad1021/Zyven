@@ -25,7 +25,23 @@ class MCPServerSpec:
 
     @classmethod
     def python_script(cls, name: str, script: str | Path) -> "MCPServerSpec":
+        """Runs on the host with the caller's permissions: for trusted, hand-written servers only."""
         return cls(name=name, command=sys.executable, args=[str(script)])
+
+    @classmethod
+    def sandboxed(cls, name: str, skill_dir: str | Path, source_checkout: str | Path | None = None) -> "MCPServerSpec":
+        """Runs a compiled skill inside the same locked-down container its verification gates used: no network,
+        non-root, read-only, capabilities dropped, resource limits. The skill and its pinned source checkout are
+        mounted read-only at /skill and /src, exactly as during verification."""
+        from zyven.sandbox.runner import SandboxPolicy, stdio_command
+
+        mounts = {Path(skill_dir): "/skill"}
+        env = {}
+        if source_checkout:
+            mounts[Path(source_checkout)] = "/src"
+            env["PYTHONPATH"] = "/src"
+        argv = stdio_command(["python", "/skill/server.py"], mounts, SandboxPolicy(extra_env=env), workdir="/skill")
+        return cls(name=name, command=argv[0], args=argv[1:])
 
 
 class ToolBox:

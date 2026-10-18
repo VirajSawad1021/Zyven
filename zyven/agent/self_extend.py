@@ -14,11 +14,11 @@ from pathlib import Path
 
 from zyven.agent.gap import CapabilityMatch, MissingCapability, gap_check, match_capability
 from zyven.agent.loop import AgentResult, run_agent
-from zyven.agent.mcp_tools import MCPServerSpec, ToolBox
+from zyven.agent.mcp_tools import ToolBox
 from zyven.ai.provider import ModelProvider
 from zyven.catalog.catalog import Catalog
 from zyven.compiler.pipeline import compile_capability
-from zyven.memory.skills import SkillLibrary
+from zyven.memory.skills import SkillLibrary, skill_server_spec
 
 EventFn = Callable[[str, dict], None]
 
@@ -115,7 +115,8 @@ async def run_self_extending(
                 continue
             learned = library.get(compiled.spec.name)
             names = await tb.add_server(learned.server_spec() if learned else
-                                        MCPServerSpec.python_script(compiled.spec.name, compiled.skill_dir / "server.py"))
+                                        skill_server_spec(compiled.spec.name, compiled.skill_dir,
+                                                          Path(analysis.repo) / analysis.source_root))
             result.learned.append(compiled.spec.name)
             emit("SKILL_LEARNED", detail=f"{compiled.spec.name} ({', '.join(names)})")
 
