@@ -7,6 +7,8 @@ per call so failing skills can be flagged for re-compilation.
 from __future__ import annotations
 
 import json
+import logging
+import os
 import sqlite3
 import time
 from dataclasses import dataclass
@@ -14,6 +16,8 @@ from pathlib import Path
 
 from zyven.agent.gap import Option
 from zyven.ai.schemas import CapabilitySpec
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -31,16 +35,29 @@ class Skill:
 
     def server_spec(self):
         """Launch spec for the agent: wrap-mode skills import their pinned source checkout."""
-        from zyven.agent.mcp_tools import MCPServerSpec
-
-        spec = MCPServerSpec.python_script(self.name, self.server)
-        if self.source_checkout:
-            spec.env = {"PYTHONPATH": self.source_checkout}
-        return spec
+        return skill_server_spec(self.name, self.dir, self.source_checkout)
 
     def option(self) -> Option:
         tools = ", ".join(t.name for t in self.spec.tools)
         return Option(id=self.name, title=self.spec.title, description=f"{self.spec.summary} Tools: {tools}")
+
+
+HOST_RUNTIME_ENV = "ZYVEN_SKILL_RUNTIME"
+
+
+def skill_server_spec(name: str, skill_dir: Path, source_checkout: str | Path | None):
+    """How a compiled skill runs when the agent uses it: in the sandbox, like its verification gates. Running on
+    the host is a development-only opt-in (ZYVEN_SKILL_RUNTIME=host) and is logged every time."""
+    from zyven.agent.mcp_tools import MCPServerSpec
+
+    if os.environ.get(HOST_RUNTIME_ENV, "").lower() == "host":
+        log.warning("%s=host: running skill %r on the host WITHOUT sandbox isolation (development only)",
+                    HOST_RUNTIME_ENV, name)
+        spec = MCPServerSpec.python_script(name, Path(skill_dir) / "server.py")
+        if source_checkout:
+            spec.env = {"PYTHONPATH": str(source_checkout)}
+        return spec
+    return MCPServerSpec.sandboxed(name, skill_dir, source_checkout)
 
 
 class SkillLibrary:

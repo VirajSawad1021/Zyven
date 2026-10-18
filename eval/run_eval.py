@@ -25,6 +25,7 @@ from eval.tasks import Task, generate  # noqa: E402
 from zyven.agent.loop import run_agent  # noqa: E402
 from zyven.agent.mcp_tools import MCPServerSpec, ToolBox  # noqa: E402
 from zyven.ai.provider import ModelProvider  # noqa: E402
+from zyven.memory.skills import skill_server_spec  # noqa: E402
 
 SYSTEM = (
     "You are a helpful assistant. Answer the user's question. "
@@ -136,6 +137,15 @@ def summarize(records):
     return by
 
 
+def _skill_spec(name: str, script: Path):
+    """Compiled skills (a provenance.json next to server.py) run sandboxed, as they do for the agent; the
+    hand-written reference skill in toolkit/ is our own code and runs on the host."""
+    prov = script.parent / "provenance.json"
+    if prov.exists():
+        return skill_server_spec(name, script.parent, json.loads(prov.read_text(encoding="utf-8")).get("source_checkout"))
+    return MCPServerSpec.python_script(name, script)
+
+
 async def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--skill", action="append", help="MCP server script; repeat for several skills")
@@ -170,7 +180,7 @@ async def main() -> None:
         async with ToolBox() as tb:
             names = []
             for i, script in enumerate(args.skill or [str(ROOT / "toolkit/py_nepali_manual/server.py")]):
-                names += await tb.add_server(MCPServerSpec.python_script(f"{args.label}-{i}", script))
+                names += await tb.add_server(_skill_spec(f"{args.label}-{i}", Path(script)))
             print(f"  tools: {names}")
             records += await run_condition(provider, tasks, f"with_{args.label}", tb, args.concurrency, out)
 

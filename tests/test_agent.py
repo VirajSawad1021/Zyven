@@ -62,8 +62,28 @@ def test_library_lists_only_verified_skills(tmp_path):
     assert [s.name for s in lib.list()] == ["good_skill"]
     skill = lib.get("good_skill")
     assert skill.source == "https://x/y @ abc1234"
-    assert skill.server_spec().env == {"PYTHONPATH": "/tmp/src"}  # wrap mode imports the pinned source
     assert lib.get("bad_skill") is None
+
+
+def test_skills_run_sandboxed_by_default(tmp_path, monkeypatch):
+    monkeypatch.delenv("ZYVEN_SKILL_RUNTIME", raising=False)
+    _write_skill(tmp_path, "good_skill", passed=True)
+    spec = SkillLibrary(tmp_path).get("good_skill").server_spec()
+    argv = " ".join([spec.command, *spec.args])
+    assert spec.command == "docker" and " -i " in argv
+    # the same isolation as the verification gates
+    for flag in ("--network none", "--read-only", "--cap-drop ALL", "no-new-privileges", "--user 1000:1000"):
+        assert flag in argv
+    assert "/skill:ro" in argv and "/src:src:ro" not in argv and ":/src:ro" in argv  # read-only mounts
+    assert "PYTHONPATH=/src" in argv  # wrap mode imports the pinned source inside the container
+    assert argv.endswith("python /skill/server.py")
+
+
+def test_host_runtime_is_an_explicit_opt_in(tmp_path, monkeypatch):
+    monkeypatch.setenv("ZYVEN_SKILL_RUNTIME", "host")
+    _write_skill(tmp_path, "good_skill", passed=True)
+    spec = SkillLibrary(tmp_path).get("good_skill").server_spec()
+    assert spec.command != "docker" and spec.env == {"PYTHONPATH": "/tmp/src"}
 
 
 def test_library_records_call_health(tmp_path):

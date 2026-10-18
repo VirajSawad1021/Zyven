@@ -143,6 +143,7 @@ repo ──► Analyzer (AST, never executes repo code) ──► Scout (AI) ─
 **The model proposes; the harness decides.**
 - Every symbol the model names is resolved against the static analysis.
 - Generated code is policy-checked before it runs.
+- Verified skills also run in the sandbox when the agent uses them, not only during verification.
 - Only observed sandbox results mark a skill as verified, and only for the named checks.
 
 The self-extending agent wraps this pipeline:

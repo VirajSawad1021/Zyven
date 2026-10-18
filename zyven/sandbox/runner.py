@@ -46,17 +46,12 @@ def _docker_path(p: Path) -> str:
     return str(p.resolve()).replace("\\", "/")
 
 
-def run(
-    command: list[str],
-    mounts: dict[Path, str],
-    policy: SandboxPolicy | None = None,
-    workdir: str = "/src",
-) -> SandboxResult:
-    """mounts: host path -> container path. Paths ending in ':rw' in the container side are writable."""
-    policy = policy or SandboxPolicy()
-    name = f"zyven-{uuid.uuid4().hex[:12]}"
+def docker_args(command: list[str], mounts: dict[Path, str], policy: SandboxPolicy, workdir: str, name: str,
+                interactive: bool = False) -> list[str]:
+    """The one definition of the sandbox: verification gates and skills used at runtime share these flags.
+    mounts: host path -> container path. Paths ending in ':rw' in the container side are writable."""
     args = [
-        "docker", "run", "--rm", "--name", name,
+        "docker", "run", "--rm", "--name", name, *(["-i"] if interactive else []),
         "--user", "1000:1000",
         "--read-only", "--tmpfs", "/tmp:rw,size=256m",
         "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
@@ -71,7 +66,26 @@ def run(
     for host, target in mounts.items():
         mode = "rw" if target.endswith(":rw") else "ro"
         args += ["-v", f"{_docker_path(host)}:{target.removesuffix(':rw')}:{mode}"]
-    args += [policy.image, *command]
+    return args + [policy.image, *command]
+
+
+def stdio_command(command: list[str], mounts: dict[Path, str], policy: SandboxPolicy | None = None,
+                  workdir: str = "/src") -> list[str]:
+    """argv for a long-lived sandboxed process that talks over stdin/stdout (an MCP stdio server)."""
+    return docker_args(command, mounts, policy or SandboxPolicy(), workdir,
+                       f"zyven-skill-{uuid.uuid4().hex[:12]}", interactive=True)
+
+
+def run(
+    command: list[str],
+    mounts: dict[Path, str],
+    policy: SandboxPolicy | None = None,
+    workdir: str = "/src",
+) -> SandboxResult:
+    """mounts: host path -> container path. Paths ending in ':rw' in the container side are writable."""
+    policy = policy or SandboxPolicy()
+    name = f"zyven-{uuid.uuid4().hex[:12]}"
+    args = docker_args(command, mounts, policy, workdir, name)
 
     started = time.monotonic()
     try:
