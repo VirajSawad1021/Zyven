@@ -103,10 +103,91 @@ _COMPONENT_NAMES = {"year", "month", "day", "hour", "minute", "second", "lat", "
                     "x", "y", "z", "r", "g", "b"}
 
 
-def lint_interface(spec: CapabilitySpec) -> list[str]:
-    """Deterministic agent-usability checks on a spec (no model involved)."""
+# Accessor-style names that change state or do I/O are never "related facts".
+_NOT_A_FACT = {"set", "add", "remove", "delete", "del", "update", "clear", "reset", "save", "write", "load", "read",
+               "open", "close", "register", "append", "insert", "pop", "parse", "print", "dump", "run", "main",
+               "test", "copy", "replace", "from", "truncate"}
+_FACT_PREFIXES = ("get_", "to_", "as_", "calc_", "calculate_", "compute_")
+_PROPERTY_DECORATORS = {"property", "cached_property", "functools.cached_property"}
+_RELATED_SHOWN = 5
+
+
+def _required(sym) -> list[str]:
+    """Parameters a caller must pass (self/cls, defaults and *args/**kwargs excluded)."""
+    return [p.name for p in sym.params if p.default is None and p.name not in ("self", "cls")
+            and p.kind not in ("var_positional", "var_keyword")]
+
+
+def _fact_like(sym) -> bool:
+    name = sym.qualname.rsplit(".", 1)[-1]
+    return (sym.is_public and not name.startswith("_") and not sym.side_effects
+            and sym.kind in ("function", "method") and name.split("_")[0].lower() not in _NOT_A_FACT)
+
+
+def related_facts(a: Analysis, tool) -> list[str]:
+    """Facts the library computes directly about what a tool works on, ranked by upstream test use.
+
+    Two library-evidence sources, no task knowledge: (1) argument-free accessors (methods and properties) on a
+    class the tool's implementation goes through, e.g. a date object's weekday(); (2) sibling module functions
+    that take the same single subject as a function the tool already calls, e.g. number_type(numobj) next to
+    is_valid_number(numobj)."""
+    by_id = {s.id: s for s in a.symbols}
+    resolver = RefResolver(a)
+    impl = [by_id[r] for r in (resolver.resolve(s) for s in tool.implementation_symbols) if r in by_id]
+    classes: set[str] = set()
+    for s in impl:
+        # Only classes that represent the value itself count: one the tool constructs, one built by a classmethod
+        # constructor (nepalidate.from_date), or one a function is annotated to return. Accessors on a service
+        # object (a converter's min/max years) describe the service, not the input, so they are not facts.
+        if s.kind == "class":
+            classes.add(s.id)
+        elif s.kind == "method" and any(d in ("classmethod", "staticmethod") for d in s.decorators):
+            classes.add(s.id.rsplit(".", 1)[0])
+        if s.returns:  # a returned repo class, e.g. -> NepaliDate
+            ret = re.findall(r"[A-Za-z_]\w*", s.returns)
+            hits = [c.id for c in a.symbols if c.kind == "class" and c.qualname in ret]
+            if len(hits) == 1:
+                classes.add(hits[0])
+    found: dict[str, object] = {}
+    for c in classes:
+        for s in a.symbols:
+            if (s.kind == "method" and s.id.rsplit(".", 1)[0] == c and _fact_like(s)
+                    and (not _required(s) or any(d in _PROPERTY_DECORATORS for d in s.decorators))):
+                found[s.id] = s
+    subjects = {(s.module, _required(s)[0]) for s in impl if s.kind == "function" and _required(s)}
+    for s in a.symbols:
+        req = _required(s) if s.kind == "function" else []
+        if len(req) == 1 and (s.module, req[0]) in subjects and _fact_like(s):
+            found[s.id] = s
+    for s in impl:
+        found.pop(s.id, None)
+    ranked = sorted(found.values(), key=lambda s: (-len(s.tested_by), len(s.qualname), s.qualname))
+    return [s.qualname.rsplit(".", 1)[-1] for s in ranked]
+
+
+def _covers(tool, fact: str) -> bool:
+    """Whether one of the tool's return fields already carries this fact (by name or description)."""
+    norm = lambda x: re.sub(r"[^a-z0-9]", "", x.lower())  # noqa: E731
+    key = fact
+    for p in _FACT_PREFIXES:
+        key = key.removeprefix(p)
+    k = norm(key)
+    return any(k and (k in norm(r.name) or (len(norm(r.name)) >= 3 and norm(r.name) in k) or k in norm(r.description))
+               for r in tool.returns)
+
+
+def lint_interface(spec: CapabilitySpec, a: Analysis | None = None) -> list[str]:
+    """Deterministic agent-usability checks on a spec (no model involved). With the analysis, also checks that
+    each tool returns at least one related fact the library computes directly."""
     w: list[str] = []
     for t in spec.tools:
+        if a is not None:
+            facts = related_facts(a, t)
+            if facts and not any(_covers(t, f) for f in facts):
+                shown = ", ".join(facts[:_RELATED_SHOWN])
+                w.append(f"{t.name}: returns none of the related facts the library computes directly from the same "
+                         f"input ({shown}); add the ones an agent would need for follow-up questions as named "
+                         "return fields, computed by calling the library, so the agent never derives them itself")
         comps = [p.name for p in t.params if p.name.lower().split("_")[-1] in _COMPONENT_NAMES]
         if len(comps) >= 3:
             w.append(f"{t.name}: inputs {comps} are components of one value; take ONE natural-format string "
@@ -155,7 +236,7 @@ def architect(provider: ModelProvider, a: Analysis, candidate: CandidateCapabili
 
     # Interface lint (deterministic). If the design is agent-unfriendly, ask for ONE revision in a fresh
     # single-turn request that shows the draft as data (echoing it as an assistant turn can stall models).
-    warnings = lint_interface(spec)
+    warnings = lint_interface(spec, a)
     lint_log = list(warnings)
     if warnings:
         revise = messages[:1] + [{"role": "user", "content": user + "\n\nDRAFT SPEC (revise it)\n"
@@ -163,9 +244,9 @@ def architect(provider: ModelProvider, a: Analysis, candidate: CandidateCapabili
                                   + "\n- ".join(warnings)}]
         try:
             revised = provider.generate_structured(revise, CapabilitySpec)
-            if len(lint_interface(revised)) < len(warnings):
+            if len(lint_interface(revised, a)) < len(warnings):
                 spec = revised
-                lint_log.append(f"revised: {len(warnings)} -> {len(lint_interface(revised))} interface warnings")
+                lint_log.append(f"revised: {len(warnings)} -> {len(lint_interface(revised, a))} interface warnings")
             else:
                 lint_log.append("revision did not improve the interface; kept the draft")
         except Exception as e:  # noqa: BLE001 - a failed revision must not lose a valid draft

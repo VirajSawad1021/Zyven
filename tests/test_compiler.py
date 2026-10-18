@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT))
 
 from zyven.ai import provider as prov  # noqa: E402
 from zyven.ai.provider import ModelProvider  # noqa: E402
-from zyven.ai.roles import _snake, lint_interface
+from zyven.ai.roles import _snake, lint_interface, related_facts
 from zyven.ai.roles import tester as run_tester  # name must not start with "test" (pytest collection)
 from zyven.ai.schemas import AdapterCode, CapabilitySpec, ReturnField, ToolImpl, ToolParam, ToolSpec  # noqa: E402
 from zyven.analysis.analyzer import analyze  # noqa: E402
@@ -238,6 +238,60 @@ def test_interface_lint():
     good = _tool("convert")
     good.returns = [ReturnField(name="date", type="string", description="YYYY-MM-DD")]
     assert lint_interface(_spec(good)) == []
+
+
+@pytest.fixture
+def facts_repo(tmp_path):
+    """A tiny library with the three shapes the related-facts lint distinguishes."""
+    pkg = tmp_path / "facts" / "facts"
+    pkg.mkdir(parents=True)
+    (pkg / "__init__.py").write_text("")
+    (pkg / "ids.py").write_text(
+        "def validate(number):\n    return number.strip()\n\n"
+        "def is_valid(number):\n    return bool(number)\n\n"
+        "def format(number, separator=' '):\n    return number\n\n"
+        "def lookup(number):\n    return open(number).read()\n\n"  # file I/O: never a fact
+        "def combine(number, other):\n    return number + other\n")  # needs a second input: not a fact
+    (pkg / "days.py").write_text(
+        "class Day:\n"
+        "    @classmethod\n    def from_text(cls, text):\n        return cls()\n"
+        "    def weekday(self):\n        return 0\n"
+        "    @property\n    def month_name(self):\n        return 'Baisakh'\n"
+        "    def set_offset(self):\n        return None\n"  # mutator name: never a fact
+        "    def shift(self, days):\n        return self\n\n"  # needs an argument: not an accessor
+        "class Converter:\n"
+        "    def convert(self, text):\n        return text\n"
+        "    def max_year(self):\n        return 2100\n")  # describes the converter, not the input
+    return analyze(tmp_path / "facts")
+
+
+def _impl_tool(name, symbols, *returns):
+    t = _tool(name)
+    t.implementation_symbols = list(symbols)
+    t.returns = [ReturnField(name=r, type="string", description=f"the {r}") for r in returns]
+    return t
+
+
+def test_related_facts_from_sibling_functions(facts_repo):
+    t = _impl_tool("check", ["facts.ids.validate"], "result")
+    assert set(related_facts(facts_repo, t)) == {"is_valid", "format"}  # not lookup (I/O) or combine (2 inputs)
+    assert any("related facts" in w and "is_valid" in w for w in lint_interface(_spec(t), facts_repo))
+    t.returns.append(ReturnField(name="valid", type="boolean", description="is it valid"))
+    assert not any("related facts" in w for w in lint_interface(_spec(t), facts_repo))  # one fact is enough
+
+
+def test_related_facts_from_value_class_accessors(facts_repo):
+    t = _impl_tool("parse_day", ["facts.days.Day.from_text"], "date")
+    assert set(related_facts(facts_repo, t)) == {"weekday", "month_name"}  # not set_offset or shift
+    t.returns.append(ReturnField(name="weekday", type="string", description="day of the week"))
+    assert not any("related facts" in w for w in lint_interface(_spec(t), facts_repo))
+
+
+def test_service_object_accessors_are_not_facts(facts_repo):
+    # A converter's own settings say nothing about the input, so they must not be suggested.
+    t = _impl_tool("convert", ["facts.days.Converter.convert"], "converted")
+    assert related_facts(facts_repo, t) == []
+    assert lint_interface(_spec(t), facts_repo) == []
 
 
 def test_snake_case_names():
