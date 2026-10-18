@@ -80,7 +80,6 @@ class Board:
                         "WHERE status NOT IN ('DONE','FAILED','UNVERIFIED')")
         self.db.commit()
 
-
     # --- persistence + fan-out ---------------------------------------------------------------
     def _publish(self, payload: dict) -> None:
         def push() -> None:

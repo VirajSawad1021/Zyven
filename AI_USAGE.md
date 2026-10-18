@@ -1,6 +1,6 @@
 # AI Usage Disclosure & Programmatic Consumption
 
-Zyven is designed for transparent, controlled, and verifiable AI usage. In compliance with open challenge guidelines, **only open-weight models** are utilized across all roles. Proprietary, closed-source models (such as GPT-4, Claude, or Gemini) are prohibited in evaluation runs and flagged in audit logs.
+Zyven is designed for transparent, controlled, and verifiable AI usage. In compliance with open challenge guidelines, **only open-weight models** are utilized across all roles. Proprietary, closed-source models (such as GPT-4, Claude, or Gemini) are not used for any published result. Some local development experiments did use a proprietary model; those runs are flagged in their provenance (see section 3) and excluded from the results in the README.
 
 This document details every file and function in the repository where artificial intelligence model output is programmatically generated and consumed.
 
@@ -83,7 +83,7 @@ This document details every file and function in the repository where artificial
 - **Post-Processing & Validation:**
   - Tool calls requested by the model are parsed from OpenAI tool format and dispatched to active MCP servers via `ToolBox.call()`.
   - Tool outputs are appended as tool messages.
-  - If a capability failed verification during self-extension, an explicit guardrail notice is injected into the system prompt forbidding the model from claiming or implying library backing.
+  - If any capability the task needs has no verified tool (its compile failed verification, or its approval was rejected), a notice naming each one is added to the system prompt, forbidding the model from claiming or implying library backing for those parts, and the card ends `UNVERIFIED` instead of `DONE`.
 
 ---
 
@@ -91,4 +91,4 @@ This document details every file and function in the repository where artificial
 
 All AI operations in Zyven are built around open-weight models. The default model configuration uses **Gemma 4** (`gemma-4-26b-a4b-it`) hosted via Google AI Studio or open inference endpoints (e.g., Groq, OpenRouter, or local Ollama).
 
-The `ModelProvider` in `zyven/ai/provider.py` enforces this by checking model IDs against a proprietary blocklist (`gemini`, `gpt-`, `o1`, `o3`, `claude`) and logging warnings if non-open models are attempted.
+The policy is a project rule, not a hard block: `is_proprietary()` in `zyven/ai/provider.py` recognises proprietary model IDs (`gemini`, `gpt-`, `gpt4`, `o1`, `o3`, `o4`, `claude`, `command-r`; Gemma is excepted). When one is configured, the provider logs a warning, and its label, the skill provenance and evaluation reports carry `[PROPRIETARY - experiment only]`, so such runs cannot be mistaken for submission results.

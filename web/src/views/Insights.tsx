@@ -168,7 +168,8 @@ export function Insights({ stats }: { stats: Stats | null }) {
   const kinds = cards.reduce<Record<Kind, number>>((acc, c) => ({ ...acc, [kindOf(c)]: acc[kindOf(c)] + 1 }), { learned: 0, reused: 0, compile_failed: 0, direct: 0 });
   const compileTime = cards.filter((c) => c.compiled).reduce((a, c) => a + (c.duration ?? 0), 0);
   const otherTime = cards.filter((c) => !c.compiled).reduce((a, c) => a + (c.duration ?? 0), 0);
-  const running = Math.max(0, t.tasks - t.done - failed);
+  const unverified = t.unverified ?? cards.filter((c) => c.status === "UNVERIFIED").length;
+  const running = Math.max(0, t.tasks - t.done - unverified - failed);
 
   return (
     <>
@@ -178,7 +179,7 @@ export function Insights({ stats }: { stats: Stats | null }) {
         <Reveal className="h-full"><SpeedUp compile={av.compile_s} reuse={av.reuse_s} /></Reveal>
         <Reveal delay={80} className="grid grid-cols-2 gap-4">
           <Tile label="Tasks" icon={<LayoutGrid className="h-3.5 w-3.5" />} value={<CountUp to={t.tasks} />}
-            sub={<><span className="text-good">{t.done} done</span> · <span className="text-bad">{failed} failed</span>{running ? ` · ${running} open` : ""}</>} />
+            sub={<><span className="text-good">{t.done} done</span>{unverified ? <> · <span className="text-warn">{unverified} unverified</span></> : null} · <span className="text-bad">{failed} failed</span>{running ? ` · ${running} open` : ""}</>} />
           <Tile label="Success rate" icon={<Check className="h-3.5 w-3.5" />} value={<>{t.tasks ? <CountUp to={Math.round((100 * t.done) / t.tasks)} /> : "—"}<span className="text-[18px] text-muted">%</span></>}
             sub="of tasks answered end to end" />
           <Tile label="Verified skills" icon={<Sparkles className="h-3.5 w-3.5" />} value={<CountUp to={t.skills} />}

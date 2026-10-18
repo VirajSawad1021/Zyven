@@ -17,16 +17,16 @@ When a compiled skill receives a passing validation report and is marked as veri
    - The assembled MCP server script (`server.py`) can be imported cleanly inside an isolated container with only its declared pinned dependencies present on `PYTHONPATH`.
 
 3. **Upstream Regression Safety (Gate 3):**
-   - Wrapping the library code into an adapter does not break the upstream repository's own test suite. All relevant upstream test files pass inside the container.
+   - The upstream repository's own tests that exercise the wrapped code pass inside the container. Test files that import packages not installed in the sandbox (e.g. `bs4`) are skipped, and the skip and its reason are recorded rather than counted as passes. One failing upstream test fails the gate, even if it is unrelated to the wrapped functions (this kept sympy from verifying).
 
 4. **Input Robustness (Gate 4):**
-   - Each tool handles input variations gracefully without unhandled exceptions or crashes. Inputs with leading/trailing whitespace, embedded spaces in formatted numbers, and boundary strings either return valid parsed data or raise clean `ValueError` exceptions.
+   - Equivalent spellings of an example input (extra or missing whitespace, separators, letter case) give the same result as the example call, without crashing. Gate 5 separately checks that clearly invalid input is rejected with an error rather than a wrong answer.
 
 5. **MCP Protocol Conformance (Gate 5):**
    - The assembled script functions as a compliant Model Context Protocol (MCP) server over standard input/output (`stdio`). It responds correctly to `tools/list` and executes sample calls over `tools/call`.
 
 6. **Differential Equivalence on Reference Cases (Gate 6):**
-   - For every differential test case generated independently by the Tester role, calling the MCP tool yields the identical JSON-formatted value as calling the underlying source library directly.
+   - For every differential test case generated independently by the Tester role, calling the MCP tool yields the identical JSON-formatted value as calling the underlying source library directly. A tool with no usable test case cannot pass this gate.
 
 ---
 
@@ -46,7 +46,13 @@ Users and evaluators should be aware of what Zyven's verification process does n
 4. **Out-of-Distribution Inputs:**
    - While Gate 4 tests fuzzing variations, inputs vastly outside the expected parameter domains may still produce unexpected behavior or unhandled exceptions from deep within the underlying library.
 
-5. **Sandbox Dependency on Docker:**
+5. **The Reference Is Model-Written Too:**
+   - The Tester's reference expressions are written by a model. It never sees the adapter, but if the Tester and the Compiler make the same mistake (for example both call the wrong library function), a wrong tool can pass. A wrong reference can also make a correct tool fail; the gate then reports the mismatch and the tool is repaired or dropped, never shipped.
+
+6. **The Answer Text Is Still the Model's:**
+   - Verification covers tool outputs. The agent's final answer is written by the model from those outputs, and it can still misreport them. Deciding whether a task needs a tool at all (the gap check) and which skill or repository fits (matching) are model judgements too, so a task can be answered without any tool when the model believes it knows the answer.
+
+7. **Sandbox Dependency on Docker:**
    - The multi-gate verification process requires Docker. On systems where Docker is unavailable or inactive, untrusted code cannot be executed in the locked-down container sandbox, and compilation cannot produce verified skills.
 
 ---

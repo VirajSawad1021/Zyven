@@ -50,7 +50,7 @@ export interface StatsCard {
 }
 
 export interface Stats {
-  totals: { tasks: number; done: number; failed?: number; skills: number; reuses: number };
+  totals: { tasks: number; done: number; unverified?: number; failed?: number; skills: number; reuses: number };
   averages: { compile_s: number | null; reuse_s: number | null };
   cards: StatsCard[];
   gates: Record<string, { pass: number; fail: number }>;
