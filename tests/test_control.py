@@ -50,3 +50,30 @@ def test_scheduled_agent_task_waits_until_it_is_due(tmp_path):
     assert board.tasks == ["later"] and started["status"] == "RUNNING" and started["card_id"] == "card1"
     c._start_due_agent_runs()
     assert board.tasks == ["later"]  # started exactly once
+
+
+def test_repeating_task_queues_its_successor_when_it_starts(tmp_path):
+    board = FakeBoard()
+    c = _control(tmp_path, board)
+    first = c.create(title="", runtime="zyven", prompt="daily", run_at=time.time() + 3600, repeat_secs=86400)
+    assert [r["status"] for r in c.list()] == ["SCHEDULED"]  # nothing queued behind it yet
+
+    c._set(first["id"], run_at=time.time() - 1)
+    c._start_due_agent_runs()
+    runs = {r["id"]: r for r in c.list()}
+    nxt = next(r for i, r in runs.items() if i != first["id"])
+    assert runs[first["id"]]["status"] == "RUNNING" and nxt["status"] == "SCHEDULED"
+    assert 86300 < nxt["run_at"] - time.time() <= 86400  # one interval from now
+
+    c.cancel(nxt["id"])  # cancelling the waiting run ends the series
+    c._start_due_agent_runs()
+    assert len(c.list()) == 2 and board.tasks == ["daily"]
+
+
+def test_repeat_interval_is_bounded(tmp_path):
+    import pytest
+
+    c = _control(tmp_path, FakeBoard())
+    for bad in (5, 10 * 86400 * 4):
+        with pytest.raises(ValueError):
+            c.create(title="", runtime="zyven", prompt="x", repeat_secs=bad)
