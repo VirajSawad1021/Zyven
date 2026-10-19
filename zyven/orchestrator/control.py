@@ -132,7 +132,7 @@ class Control:
         now = time.time()
         status = "SCHEDULED" if run_at and run_at > now else "QUEUED"
         card_id = None
-        if runtime == "zyven":
+        if runtime == "zyven" and status == "QUEUED":  # a scheduled agent task gets its card when it is due
             card_id = self.board.create(prompt.strip())["id"]
             status = "RUNNING"
         self.db.execute("INSERT INTO runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -148,9 +148,16 @@ class Control:
         if row and row[0] in ("QUEUED", "SCHEDULED"):
             self._set(run_id, status="CANCELLED")
 
+    def _start_due_agent_runs(self) -> None:
+        for (rid, prompt) in self.db.execute(
+                "SELECT id, prompt FROM runs WHERE runtime='zyven' AND status='SCHEDULED' AND run_at<=?",
+                (time.time(),)).fetchall():
+            self._set(rid, status="RUNNING", card_id=self.board.create(prompt)["id"])
+
     def _loop(self) -> None:
         while True:
             try:
+                self._start_due_agent_runs()
                 due = self.db.execute(
                     "SELECT id FROM runs WHERE runtime='docker' AND status IN ('QUEUED','SCHEDULED') "
                     "AND (run_at IS NULL OR run_at<=?) ORDER BY created LIMIT 1", (time.time(),)).fetchone()
