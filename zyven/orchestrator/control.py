@@ -54,6 +54,9 @@ def _snapshot(root: Path) -> dict[str, tuple[int, int]]:
     return out
 
 
+MIN_REPEAT_SECS, MAX_REPEAT_SECS = 60, 30 * 86400
+
+
 class Control:
     def __init__(self, db_path: Path, data_dir: Path, board) -> None:
         self.db = sqlite3.connect(db_path, check_same_thread=False)
@@ -62,6 +65,8 @@ class Control:
             " network INTEGER, memory TEXT, cpus TEXT, repo_url TEXT, run_at REAL, status TEXT, created REAL,"
             " updated REAL, card_id TEXT, exit_code INTEGER, files TEXT, workdir TEXT);"
             "CREATE TABLE IF NOT EXISTS run_events (run TEXT, seq INTEGER, ts REAL, kind TEXT, text TEXT);")
+        if "repeat_secs" not in {r[1] for r in self.db.execute("PRAGMA table_info(runs)")}:  # older databases
+            self.db.execute("ALTER TABLE runs ADD COLUMN repeat_secs REAL")
         self.root = Path(data_dir) / "control"
         self.root.mkdir(parents=True, exist_ok=True)
         self.board = board
@@ -117,7 +122,8 @@ class Control:
 
     # --- lifecycle ----------------------------------------------------------------------------------
     def create(self, *, title: str, runtime: str, prompt: str, image: str = DEFAULT_IMAGE, network: bool = False,
-               memory: str = "1g", cpus: str = "1", repo_url: str = "", run_at: float | None = None) -> dict:
+               memory: str = "1g", cpus: str = "1", repo_url: str = "", run_at: float | None = None,
+               repeat_secs: float | None = None) -> dict:
         if runtime not in RUNTIMES:
             raise ValueError(f"unknown runtime {runtime!r}")
         if not prompt.strip():
@@ -128,6 +134,8 @@ class Control:
             raise ValueError("repo_url must be an https URL")
         if not re.fullmatch(r"[\w./:\-]+", image):
             raise ValueError("bad image name")
+        if repeat_secs is not None and not MIN_REPEAT_SECS <= repeat_secs <= MAX_REPEAT_SECS:
+            raise ValueError("repeat interval must be between 1 minute and 30 days")
         rid = uuid.uuid4().hex[:8]
         now = time.time()
         status = "SCHEDULED" if run_at and run_at > now else "QUEUED"
@@ -135,10 +143,14 @@ class Control:
         if runtime == "zyven" and status == "QUEUED":  # a scheduled agent task gets its card when it is due
             card_id = self.board.create(prompt.strip())["id"]
             status = "RUNNING"
-        self.db.execute("INSERT INTO runs VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        self.db.execute("INSERT INTO runs (id,title,runtime,prompt,image,network,memory,cpus,repo_url,run_at,status,"
+                        "created,updated,card_id,exit_code,files,workdir) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                         (rid, title.strip() or prompt.strip()[:60], runtime, prompt.strip(), image, int(network), memory,
                          cpus, repo_url, run_at, status, now, now, card_id, None, None, str(self.root / rid)))
+        self.db.execute("UPDATE runs SET repeat_secs=? WHERE id=?", (repeat_secs, rid))
         self.db.commit()
+        if repeat_secs and status == "RUNNING":
+            self._schedule_next(rid)
         return self.get(rid)
 
     def cancel(self, run_id: str) -> None:
@@ -148,11 +160,22 @@ class Control:
         if row and row[0] in ("QUEUED", "SCHEDULED"):
             self._set(run_id, status="CANCELLED")
 
+    def _schedule_next(self, rid: str) -> None:
+        """A repeating run queues its successor when it starts, so cancelling a waiting run ends the series."""
+        r = self.get(rid)
+        every = self.db.execute("SELECT repeat_secs FROM runs WHERE id=?", (rid,)).fetchone()[0]
+        if not every:
+            return
+        self.create(title=r["title"], runtime=r["runtime"], prompt=r["prompt"], image=r["image"], network=r["network"],
+                    memory=r["memory"], cpus=r["cpus"], repo_url=r["repo_url"],
+                    run_at=max(r["run_at"] or 0, time.time()) + every, repeat_secs=every)
+
     def _start_due_agent_runs(self) -> None:
         for (rid, prompt) in self.db.execute(
                 "SELECT id, prompt FROM runs WHERE runtime='zyven' AND status='SCHEDULED' AND run_at<=?",
                 (time.time(),)).fetchall():
             self._set(rid, status="RUNNING", card_id=self.board.create(prompt)["id"])
+            self._schedule_next(rid)
 
     def _loop(self) -> None:
         while True:
@@ -173,6 +196,7 @@ class Control:
         work = self.root / rid
         work.mkdir(parents=True, exist_ok=True)
         self._set(rid, status="RUNNING")
+        self._schedule_next(rid)
         try:
             if r["repo_url"]:
                 self._emit(rid, "info", f"cloning {r['repo_url']}")

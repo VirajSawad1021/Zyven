@@ -60,6 +60,7 @@ class NewRun(BaseModel):
     cpus: str = "1"
     repo_url: str = ""
     run_at: float | None = None
+    repeat_secs: float | None = None
 
 
 class Board:

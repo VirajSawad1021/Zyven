@@ -29,6 +29,7 @@ function NewTask({ rt, onCreated }: { rt: Runtimes; onCreated: (id: string) => v
   const [cpus, setCpus] = useState("1");
   const [repo, setRepo] = useState("");
   const [when, setWhen] = useState("");
+  const [every, setEvery] = useState("0");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const info = rt.runtimes[runtime];
@@ -40,6 +41,7 @@ function NewTask({ rt, onCreated }: { rt: Runtimes; onCreated: (id: string) => v
       const run = await post<Run>("/api/runs", {
         runtime, title, prompt, image, network, memory, cpus, repo_url: repo,
         run_at: when ? new Date(when).getTime() / 1000 : null,
+        repeat_secs: Number(every) || null,
       });
       setPrompt(""); setTitle(""); onCreated(run.id);
     } catch (e) { setErr(e instanceof Error ? e.message : "failed"); } finally { setBusy(false); }
@@ -73,14 +75,18 @@ function NewTask({ rt, onCreated }: { rt: Runtimes; onCreated: (id: string) => v
           <label className="text-[11px] font-semibold text-ink">Image<input className={`${input} mt-1 font-mono`} value={image} onChange={(e) => setImage(e.target.value)} /></label>
           <label className="text-[11px] font-semibold text-ink">Memory<input className={`${input} mt-1`} value={memory} onChange={(e) => setMemory(e.target.value)} /></label>
           <label className="text-[11px] font-semibold text-ink">CPUs<input className={`${input} mt-1`} value={cpus} onChange={(e) => setCpus(e.target.value)} /></label>
-          <label className="text-[11px] font-semibold text-ink">Start at (optional)<input type="datetime-local" className={`${input} mt-1`} value={when} onChange={(e) => setWhen(e.target.value)} /></label>
           <label className="text-[11px] font-semibold text-ink sm:col-span-2 lg:col-span-3">Repo to check out (https, optional; needs network on)
             <input className={`${input} mt-1 font-mono`} placeholder="https://github.com/owner/repo" value={repo} onChange={(e) => setRepo(e.target.value)} /></label>
           <label className="flex items-center gap-2 self-end pb-2 text-[12px]"><input type="checkbox" checked={network} onChange={(e) => setNetwork(e.target.checked)} /> Allow network</label>
         </div>
       )}
+      <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+        <label className="text-[11px] font-semibold text-ink">Start at (optional)<input type="datetime-local" className={`${input} mt-1`} value={when} onChange={(e) => setWhen(e.target.value)} /></label>
+        <label className="text-[11px] font-semibold text-ink">Repeat<select className={`${input} mt-1`} value={every} onChange={(e) => setEvery(e.target.value)}>
+          <option value="0">Once</option><option value="3600">Every hour</option><option value="86400">Every day</option><option value="604800">Every week</option></select></label>
+      </div>
       <div className="mt-3 flex items-center gap-3">
-        <Button onClick={submit} loading={busy} disabled={!prompt.trim()}>{when ? <Calendar className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}{when ? "Schedule task" : "Create task"}</Button>
+        <Button onClick={submit} loading={busy} disabled={!prompt.trim()}>{when || Number(every) ? <Calendar className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}{when || Number(every) ? "Schedule task" : "Create task"}</Button>
         {err && <span className="text-[12.5px] text-bad">{err}</span>}
       </div>
     </Card>
