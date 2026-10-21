@@ -1,0 +1,11 @@
+{
+ "tools": [
+  {
+   "tool": "transpile_sql",
+   "imports": [
+    "import sqlglot"
+   ],
+   "body": "try:\n    if not isinstance(sql, str):\n        raise ValueError(\"The 'sql' parameter must be a string.\")\n    \n    result = sqlglot.transpile(\n        sql=sql,\n        read=read_dialect,\n        write=write_dialect,\n        identity=identity,\n        error_level=error_level\n    )\n    \n    success = True\n    display_summary = f\"Transpiled {len(result)} statements from {read_dialect or 'standard'} to {write_dialect or 'standard'}\"\n    \n    return {\n        \"transpiled_statements\": result,\n        \"success\": success,\n        \"display_summary\": display_summary\n    }\nexcept Exception as e:\n    return {\n        \"transpiled_statements\": [],\n        \"success\": False,\n        \"display_summary\": f\"Transpilation failed: {str(e)}\"\n    }"
+  }
+ ]
+}

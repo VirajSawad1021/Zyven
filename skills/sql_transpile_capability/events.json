@@ -1,0 +1,80 @@
+[
+ {
+  "t": 0.0,
+  "event": "architect.start",
+  "detail": "Sql Transpile"
+ },
+ {
+  "t": 38.05,
+  "event": "architect.done",
+  "detail": "1 tools: transpile_sql",
+  "resolved": {},
+  "dropped": [],
+  "fixes": [
+   "interface lint: transpile_sql: returns none of the related facts the library computes directly from the same input (tokenize); add the ones an agent would need for follow-up questions as named return fields, computed by calling the library, so the agent never derives them itself",
+   "interface lint: revision did not improve the interface; kept the draft",
+   "skipped test tests/dialects/test_bigquery.py: needs pytz (not available in the sandbox)"
+  ]
+ },
+ {
+  "t": 38.05,
+  "event": "compiler.start",
+  "detail": "writing 1 tool bodies"
+ },
+ {
+  "t": 44.26,
+  "event": "compiler.done",
+  "detail": "all tools implemented"
+ },
+ {
+  "t": 44.26,
+  "event": "tester.start",
+  "detail": "writing differential tests from the spec and library (adapter code not shown)"
+ },
+ {
+  "t": 51.66,
+  "event": "tester.done",
+  "detail": "3 cases for 1 tools"
+ },
+ {
+  "t": 51.66,
+  "event": "verify.start",
+  "detail": "attempt 1"
+ },
+ {
+  "t": 58.85,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 58.85,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 58.85,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 28 tests ran, 0 failures, 0 errors (tests/test_transpile.py)",
+  "passed": true
+ },
+ {
+  "t": 58.85,
+  "event": "gate.input_robustness",
+  "detail": "PASS 4/4 equivalent-input probes gave identical results",
+  "passed": true
+ },
+ {
+  "t": 58.85,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 1 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 58.85,
+  "event": "gate.differential",
+  "detail": "PASS 3/3 cases match the library",
+  "passed": true
+ }
+]

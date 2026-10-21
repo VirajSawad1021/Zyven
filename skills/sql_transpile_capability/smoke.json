@@ -1,0 +1,51 @@
+{
+ "tools": {
+  "transpile_sql": {
+   "args": {
+    "sql": "SELECT * FROM users WHERE id = 1;",
+    "read_dialect": "mysql",
+    "write_dialect": "bigquery",
+    "identity": true,
+    "error_level": "error"
+   },
+   "returns": [
+    "transpiled_statements",
+    "success",
+    "display_summary"
+   ],
+   "required": [
+    "sql"
+   ],
+   "variants": [
+    {
+     "sql": "  SELECT * FROM users WHERE id = 1; ",
+     "read_dialect": "mysql",
+     "write_dialect": "bigquery",
+     "identity": true,
+     "error_level": "error"
+    },
+    {
+     "sql": "SELECT * FROM users WHERE id = 1;",
+     "read_dialect": "  mysql ",
+     "write_dialect": "bigquery",
+     "identity": true,
+     "error_level": "error"
+    },
+    {
+     "sql": "SELECT * FROM users WHERE id = 1;",
+     "read_dialect": "mysql",
+     "write_dialect": "  bigquery ",
+     "identity": true,
+     "error_level": "error"
+    },
+    {
+     "sql": "SELECT * FROM users WHERE id = 1;",
+     "read_dialect": "mysql",
+     "write_dialect": "bigquery",
+     "identity": true,
+     "error_level": "  error "
+    }
+   ]
+  }
+ }
+}
