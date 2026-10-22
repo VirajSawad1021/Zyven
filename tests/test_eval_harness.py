@@ -18,7 +18,9 @@ from zyven.sandbox.runner import SandboxResult, _read_capped  # noqa: E402
 
 
 def test_read_capped_drains_but_bounds_output():
-    assert _read_capped(BytesIO(b"x" * 10000), 10) == b"x" * 10
+    stream = BytesIO(b"x" * 10000)
+    assert _read_capped(stream, 10) == b"x" * 10
+    assert stream.read() == b""
     assert _read_capped(BytesIO(b"short"), 10) == b"short"
 
 

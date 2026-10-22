@@ -192,10 +192,10 @@ uv run python eval/run_eval.py --suite stdnum --limit 6 --repeat 3 --interpreter
 uv run python eval/run_eval.py --suite global --limit 6 --label compiled --skill skills/<name>/server.py
 ```
 
-`--interpreter` adds two conditions: Python with the suite library importable, and Python with only
-the standard library. It needs Docker and `zyven-sandbox:py312`. Every JSONL record carries the run
-number, model, host, requested seed and token counts; `eval/results/run-<stamp>.json` holds the run
-configuration.
+`--interpreter` adds two conditions: Python with the suite library importable, and Python without it
+(only the standard library and packages baked into the sandbox image). It needs Docker and
+`zyven-sandbox:py312`. Every JSONL record carries the run number, model, host, requested seed and
+token counts; `eval/results/run-<stamp>.json` holds the run configuration.
 
 ### Working on the frontend
 

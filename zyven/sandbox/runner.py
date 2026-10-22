@@ -116,7 +116,10 @@ def run(
                 proc.wait(timeout=policy.timeout_s)
             except subprocess.TimeoutExpired:
                 timed_out = True
-                subprocess.run(["docker", "kill", name], capture_output=True)
+                try:
+                    subprocess.run(["docker", "kill", name], capture_output=True, timeout=10)
+                except (OSError, subprocess.TimeoutExpired):
+                    pass
                 try:
                     proc.kill()
                 except ProcessLookupError:
