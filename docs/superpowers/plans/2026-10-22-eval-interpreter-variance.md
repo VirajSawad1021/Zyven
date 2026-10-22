@@ -482,7 +482,7 @@ def test_summarize_reports_per_run_mean_and_half_range():
     assert s["cells"]["x"] == (75.0, 25.0)
     assert s["cells"]["y"] == (75.0, 25.0)
     assert s["total"] == (75.0, 25.0)
-    assert s["tokens"] == (40.0, 0.0)
+    assert s["tokens"] == (10.0, 0.0)
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**

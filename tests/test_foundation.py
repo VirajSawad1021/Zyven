@@ -98,6 +98,7 @@ def test_agent_accumulates_token_usage():
     p = make([(200, reply("ANSWER: 42"))])
     r = asyncio.run(run_agent(p, "q"))
     assert (r.prompt_tokens, r.completion_tokens) == (3, 2)
+    assert r.served_by == {"gemma-4-26b-a4b-it@example.invalid"}
 
 
 def test_unexpected_response_shape_raises_provider_error():

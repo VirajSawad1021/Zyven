@@ -31,6 +31,7 @@ class AgentResult:
     recovered: bool = False  # a budget-exhausted reply triggered the one-time "answer now" retry
     prompt_tokens: int = 0
     completion_tokens: int = 0
+    served_by: set[str] = field(default_factory=set)
 
 
 async def run_agent(
@@ -60,6 +61,8 @@ async def run_agent(
 
         result.prompt_tokens += reply.prompt_tokens
         result.completion_tokens += reply.completion_tokens
+        if reply.served_by:
+            result.served_by.add(reply.served_by)
 
         if not reply.tool_calls:
             if reply.finish_reason == "length" and not reply.content and not result.recovered:

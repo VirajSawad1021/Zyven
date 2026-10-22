@@ -16,13 +16,28 @@ MAX_OUTPUT = 6000
 
 
 def resolve_libraries(names: list[str]) -> list[Path]:
-    """Resolve importable packages from the active environment to their package directories."""
+    """Resolve importable packages from the active environment to their package directories.
+
+    Only real package directories installed in site-packages are accepted. Built-in/frozen
+    modules and single-file modules have no safe directory to mount: their parent could be the
+    repository root (including `.env`) or all of site-packages.
+    """
     paths = []
     for name in names:
+        if not name.isidentifier():
+            raise RuntimeError(f"invalid package name {name!r}; use a top-level package name")
         spec = importlib.util.find_spec(name)
-        if spec is None or spec.origin is None:
+        if spec is None or not spec.origin or spec.origin in ("built-in", "frozen"):
             raise RuntimeError(f"cannot find importable package {name!r}")
-        paths.append(Path(spec.origin).parent)
+        origin = Path(spec.origin)
+        if not origin.is_absolute() or not origin.is_file() or origin.name != "__init__.py":
+            raise RuntimeError(f"{name!r} is not an importable package directory")
+        package = origin.resolve().parent
+        if package.name != name:
+            raise RuntimeError(f"cannot resolve {name!r} to a package directory")
+        if not any(part in ("site-packages", "dist-packages") for part in package.parts):
+            raise RuntimeError(f"{name!r} is not installed in site-packages")
+        paths.append(package)
     return paths
 
 
@@ -58,7 +73,8 @@ class PythonToolBox:
         if self.library_names:
             description += " These packages are importable: " + ", ".join(self.library_names) + "."
         else:
-            description += " Only the Python standard library is available; packages cannot be installed."
+            description += (" Only the Python standard library and packages baked into the sandbox image are available; "
+                            "the suite libraries are not installed and packages cannot be installed.")
         return {
             "type": "function",
             "function": {
@@ -75,6 +91,8 @@ class PythonToolBox:
     async def call(self, name: str, arguments: dict[str, Any]) -> tuple[bool, str]:
         if name != "run_python":
             return False, f"Unknown tool {name!r}. Available: run_python"
+        if not isinstance(arguments, dict):
+            return False, f"run_python expects an object with a 'code' key, got {type(arguments).__name__}."
         code = arguments.get("code")
         if not isinstance(code, str) or not code.strip():
             return False, "run_python requires a non-empty string argument named 'code'."
@@ -90,8 +108,12 @@ class PythonToolBox:
         if search_paths:
             policy.extra_env["PYTHONPATH"] = ":".join(search_paths)
 
-        result = runner.run(["python", "-c", code], mounts, policy, workdir="/tmp")
-        text = ((result.stdout or "") + (result.stderr or "")).strip()
+        try:
+            result = runner.run(["python", "-c", code], mounts, policy, workdir="/tmp", max_output=MAX_OUTPUT + 1)
+        except OSError as exc:
+            return False, f"sandbox unavailable: {exc}"
+        parts = [p for p in (result.stdout, result.stderr) if p]
+        text = "\n".join(parts).strip()
         if result.timed_out:
             text = f"timed out after {self.timeout_s}s\n{text}".strip()
         if not text:

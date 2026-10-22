@@ -106,6 +106,7 @@ async def run_condition(provider, tasks, label, toolbox, concurrency, out, syste
             ans = extract_answer(r.final_text)
             rec = {
                 "condition": label, "run": run, "model": provider.model, "host": provider.host, "seed": seed,
+                "served_by": sorted(r.served_by),
                 "task_id": task.id, "category": task.category,
                 "question": task.question, "expected": task.expected, "answer": ans,
                 "correct": (not r.error) and SUITE["score"](task, ans), "error": r.error,
@@ -217,6 +218,8 @@ async def main() -> None:
     args = ap.parse_args()
     if args.repeat < 1:
         ap.error("--repeat must be at least 1")
+    if args.library and not args.interpreter:
+        ap.error("--library requires --interpreter")
 
     provider = ModelProvider.from_env(ROOT / ".env")
     if args.suite == "global":
@@ -251,9 +254,22 @@ async def main() -> None:
         lib_hint = (" You may use the run_python tool to execute Python 3.12 in a network-isolated sandbox. "
                     f"These packages are importable: {', '.join(names)}.")
         plain_hint = (" You may use the run_python tool to execute Python 3.12 in a network-isolated sandbox. "
-                      "Only the Python standard library is available; packages cannot be installed.")
+                      "Only the Python standard library and packages baked into the sandbox image are available; "
+                      "the suite libraries are not installed and packages cannot be installed.")
         conditions.append(("interpreter_lib", PythonToolBox(lib_paths, names), SUITE["system"] + lib_hint))
         conditions.append(("interpreter_no_lib", PythonToolBox(), SUITE["system"] + plain_hint))
+
+    skill_label = f"with_{args.label}"
+    metadata = {
+        "suite": args.suite, "model": provider.model, "host": provider.host, "label": args.label,
+        "tasks_per_category": args.limit, "task_seed": task_seed, "seed": args.seed,
+        "run_seeds": [args.seed + i - 1 if args.seed is not None else None
+                      for i in range(1, args.repeat + 1)],
+        "runs": args.repeat, "conditions": [c[0] for c in conditions] + [skill_label],
+        "max_tokens": MAX_TOKENS, "created": stamp,
+    }
+    metadata_path = results_dir / f"run-{stamp}.json"
+    metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
     records = []
     with path.open("w", encoding="utf-8") as out:
@@ -265,7 +281,6 @@ async def main() -> None:
                 records += await run_condition(provider, tasks, label, toolbox, args.concurrency, out,
                                                system=system, run=run, seed=run_seed)
 
-        skill_label = f"with_{args.label}"
         async with ToolBox() as tb:
             names = []
             for i, script in enumerate(args.skill or [str(ROOT / "toolkit/py_nepali_manual/server.py")]):
@@ -278,15 +293,7 @@ async def main() -> None:
                                                run=run, seed=run_seed)
 
     path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records), encoding="utf-8")
-    metadata = {
-        "suite": args.suite, "model": provider.model, "host": provider.host, "label": args.label,
-        "tasks_per_category": args.limit, "task_seed": task_seed, "seed": args.seed,
-        "run_seeds": [args.seed + i - 1 if args.seed is not None else None
-                      for i in range(1, args.repeat + 1)],
-        "runs": args.repeat, "conditions": [c[0] for c in conditions] + [skill_label],
-        "max_tokens": MAX_TOKENS, "created": stamp,
-    }
-    metadata_path = results_dir / f"run-{stamp}.json"
+    metadata["served_by"] = sorted({h for r in records for h in r.get("served_by", [])})
     metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
     by = summarize(records)
@@ -296,7 +303,8 @@ async def main() -> None:
         f"Suite: {args.suite} · model: `{provider.model}` · host: `{provider.host}` · "
         f"tasks/category: {args.limit} · task seed: {task_seed} · runs: {args.repeat}", "",
         "Cells are mean accuracy (correct/answered) ± half-range across runs. "
-        "API errors (after retries) are excluded and listed separately.", "",
+        "API errors (after retries) are excluded from accuracy and listed separately; "
+        "Avg sec/task and Tokens/task include those attempts.", "",
         f"Output budget: {MAX_TOKENS} tokens per model call in every condition. "
         "'Hit cap' = the model ran out of budget before answering (scored wrong).", "",
         "'Answer-now retries' = budget exhausted once, model asked to answer directly "
