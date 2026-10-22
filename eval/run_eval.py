@@ -18,6 +18,7 @@ from collections import defaultdict
 from dataclasses import asdict
 from pathlib import Path
 
+sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles default to cp1252
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
