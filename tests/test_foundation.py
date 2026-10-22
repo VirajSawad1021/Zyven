@@ -76,6 +76,19 @@ def test_retries_server_errors_then_succeeds():
     assert p.stats.calls == 1 and p.stats.retries == 2
 
 
+def test_cline_wrapped_response_is_unwrapped():
+    p = make([(200, {"success": True, "data": reply("ok")})])
+    r = p.chat([{"role": "user", "content": "hi"}])
+    assert r.content == "ok"
+    assert p.stats.prompt_tokens == 3 and p.stats.completion_tokens == 2
+
+
+def test_unexpected_response_shape_raises_provider_error():
+    p = make([(200, {"success": False, "error": "empty response content"})])
+    with pytest.raises(ProviderError, match="unexpected response shape"):
+        p.chat([{"role": "user", "content": "hi"}])
+
+
 def test_non_retryable_error_raises_immediately():
     p = make([(400, "bad request"), (200, reply("never reached"))])
     with pytest.raises(ProviderError):

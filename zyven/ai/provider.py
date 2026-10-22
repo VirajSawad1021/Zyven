@@ -211,7 +211,14 @@ class ModelProvider:
             else:
                 if resp.status_code == 200:
                     data = resp.json()
-                    choice = data["choices"][0]
+                    # Cline's gateway wraps the OpenAI payload in {"data": {...}, "success": true}.
+                    if isinstance(data.get("data"), dict) and "choices" in data["data"]:
+                        data = data["data"]
+                    choices = data.get("choices")
+                    if not choices:
+                        last_err = f"unexpected response shape: {str(data)[:200]}"
+                        break
+                    choice = choices[0]
                     msg = choice["message"]
                     latency = time.monotonic() - started
                     usage = data.get("usage") or {}
