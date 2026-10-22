@@ -225,6 +225,7 @@ npm run dev                                   # http://localhost:3000, proxies /
 | `toolkit/` | hand-written reference skill (baseline) |
 | `eval/` | task suites, before/after runner, results |
 | `catalog/repos.json` | pinned source repositories, commits and licenses |
+| `scripts/` | offline checks: open-weight model policy, control-center smoke test |
 
 ## Models and sources
 
@@ -241,6 +242,16 @@ local Ollama, with automatic failover to a backup host.
 
 The pinned list lives in `catalog/repos.json`.
 
+The default model is `gemma-4-26b-a4b-it`, distributed under the
+[Gemma Terms of Use](https://ai.google.dev/gemma/terms). The repository enforces the open-weight rule with a
+deterministic, offline check:
+
+```bash
+uv run python scripts/check_open_models.py
+```
+
+It scans committed config, skill provenance and eval reports, and runs in CI on every pull request.
+
 ## Documentation
 
 - **[Architecture](ARCHITECTURE.md)**: System design, subsystems, end-to-end execution flow, and trust boundaries.
@@ -252,10 +263,14 @@ The pinned list lives in `catalog/repos.json`.
 The capability compiler, the self-extending agent and the board work end to end. Open work is tracked in
 [issues](https://github.com/VirajSawad1021/Zyven/issues):
 
-- [#5](https://github.com/VirajSawad1021/Zyven/issues/5) Architecture, AI-usage disclosure and limitations docs
 - [#7](https://github.com/VirajSawad1021/Zyven/issues/7) Re-run every result with the final open-weight model
+  (`scripts/check_open_models.py` now enforces the policy)
 - [#8](https://github.com/VirajSawad1021/Zyven/issues/8) Learning-curve evaluation (skills learned once, reused later)
-- [#9](https://github.com/VirajSawad1021/Zyven/issues/9) Interface lint: tools that return related facts
+- [#9](https://github.com/VirajSawad1021/Zyven/issues/9) Interface lint: measure the effect of the merged related-facts rule
+- [#24](https://github.com/VirajSawad1021/Zyven/issues/24) Evaluation: add a model + Python interpreter baseline
+- [#25](https://github.com/VirajSawad1021/Zyven/issues/25) Evaluation: held-out suite and run-to-run variance
+- [#26](https://github.com/VirajSawad1021/Zyven/issues/26) Catalog: real-world libraries beyond pure calculators
+- [#27](https://github.com/VirajSawad1021/Zyven/issues/27) 60-second demo video of the compile-then-reuse flow
 
 ## License
 

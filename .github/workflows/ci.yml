@@ -21,7 +21,9 @@ jobs:
       - name: Install (locked)
         run: uv sync --locked
       - name: Compile all modules
-        run: uv run python -m compileall -q zyven eval toolkit
+        run: uv run python -m compileall -q zyven eval toolkit scripts
+      - name: Open-weight model policy
+        run: uv run python scripts/check_open_models.py
       - name: Unit tests (no network model calls, no API keys)
         run: uv run pytest -q tests
 

@@ -92,3 +92,5 @@ This document details every file and function in the repository where artificial
 All AI operations in Zyven are built around open-weight models. The default model configuration uses **Gemma 4** (`gemma-4-26b-a4b-it`) hosted via Google AI Studio or open inference endpoints (e.g., Groq, OpenRouter, or local Ollama).
 
 The policy is a project rule, not a hard block: `is_proprietary()` in `zyven/ai/provider.py` recognises proprietary model IDs (`gemini`, `gpt-`, `gpt4`, `o1`, `o3`, `o4`, `claude`, `command-r`; Gemma is excepted). When one is configured, the provider logs a warning, and its label, the skill provenance and evaluation reports carry `[PROPRIETARY - experiment only]`, so such runs cannot be mistaken for submission results.
+
+The committed surfaces are also checked mechanically: `scripts/check_open_models.py` scans config, skill provenance and evaluation reports for proprietary model identifiers and exits non-zero on a violation. It runs in CI on every pull request.
