@@ -83,6 +83,15 @@ def test_cline_wrapped_response_is_unwrapped():
     assert p.stats.prompt_tokens == 3 and p.stats.completion_tokens == 2
 
 
+def test_seed_and_token_usage_are_exposed():
+    seen: list = []
+    p = ModelProvider("https://example.invalid/v1", "m", "k")
+    p._client = fake_host([(200, reply("ok"))], seen)
+    r = p.chat([{"role": "user", "content": "hi"}], seed=123)
+    assert seen[0]["seed"] == 123
+    assert (r.prompt_tokens, r.completion_tokens) == (3, 2)
+
+
 def test_unexpected_response_shape_raises_provider_error():
     p = make([(200, {"success": False, "error": "empty response content"})])
     with pytest.raises(ProviderError, match="unexpected response shape"):
