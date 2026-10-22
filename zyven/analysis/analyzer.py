@@ -127,7 +127,7 @@ def _detect_license(repo: Path) -> str | None:
 
 
 _STDLIB = set(sys.stdlib_module_names) | {"__future__"}
-_TEST_TOOLS = {"pytest", "_pytest"}  # available in the sandbox image
+_TEST_TOOLS = {"pytest", "_pytest", "hypothesis", "pretend"}  # available in the sandbox image
 _NOT_LIBRARY = {"tests", "test", "docs", "doc", "examples", "scripts", "tools", "update", "benchmarks", "build"}
 
 
