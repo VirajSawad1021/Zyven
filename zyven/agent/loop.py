@@ -29,6 +29,9 @@ class AgentResult:
     error: str | None = None
     truncated: bool = False  # model hit the output cap before answering
     recovered: bool = False  # a budget-exhausted reply triggered the one-time "answer now" retry
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    served_by: set[str] = field(default_factory=set)
 
 
 async def run_agent(
@@ -38,6 +41,7 @@ async def run_agent(
     system: str | None = None,
     max_steps: int = 6,
     max_tokens: int | None = None,
+    seed: int | None = None,
 ) -> AgentResult:
     messages: list[dict[str, Any]] = []
     if system:
@@ -50,10 +54,15 @@ async def run_agent(
         result.steps = step
         tools = toolbox.openai_tools if toolbox and toolbox.openai_tools else None
         try:
-            reply = await asyncio.to_thread(provider.chat, messages, tools, None, None, max_tokens)
+            reply = await asyncio.to_thread(provider.chat, messages, tools, None, None, max_tokens, seed)
         except ProviderError as e:
             result.error = str(e)
             break
+
+        result.prompt_tokens += reply.prompt_tokens
+        result.completion_tokens += reply.completion_tokens
+        if reply.served_by:
+            result.served_by.add(reply.served_by)
 
         if not reply.tool_calls:
             if reply.finish_reason == "length" and not reply.content and not result.recovered:

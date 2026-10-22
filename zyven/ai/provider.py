@@ -74,6 +74,8 @@ class ChatResult:
     attempts: int
     finish_reason: str | None = None  # "length" means the output cap was hit
     served_by: str = ""  # host/model that produced this reply (primary or fallback)
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
 
 
 @dataclass
@@ -158,9 +160,10 @@ class ModelProvider:
         response_format: dict[str, Any] | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        seed: int | None = None,
     ) -> ChatResult:
         """Primary host first; on failure (or while it is cooling down) the fallback host serves."""
-        args = (messages, tools, response_format, temperature, max_tokens)
+        args = (messages, tools, response_format, temperature, max_tokens, seed)
         if self.fallback and time.monotonic() < self._down_until:
             self.stats.failovers += 1
             return self.fallback.chat(*args)
@@ -182,12 +185,15 @@ class ModelProvider:
         response_format: dict[str, Any] | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
+        seed: int | None = None,
     ) -> ChatResult:
         body: dict[str, Any] = {
             "model": self.model,
             "messages": self._for_host(messages),
             "temperature": self.temperature if temperature is None else temperature,
         }
+        if seed is not None:
+            body["seed"] = seed
         if tools:
             body["tools"] = tools
         if response_format:
@@ -222,13 +228,15 @@ class ModelProvider:
                     msg = choice["message"]
                     latency = time.monotonic() - started
                     usage = data.get("usage") or {}
+                    prompt_tokens = usage.get("prompt_tokens", 0) or 0
+                    completion_tokens = usage.get("completion_tokens", 0) or 0
                     log.info("model call ok in %.1fs (attempt %d, finish=%s, out_tokens=%s)", latency, attempt,
-                             choice.get("finish_reason"), usage.get("completion_tokens"))
+                             choice.get("finish_reason"), completion_tokens)
                     self.stats.calls += 1
                     self.stats.retries += attempt - 1
                     self.stats.latency_s += latency
-                    self.stats.prompt_tokens += usage.get("prompt_tokens", 0) or 0
-                    self.stats.completion_tokens += usage.get("completion_tokens", 0) or 0
+                    self.stats.prompt_tokens += prompt_tokens
+                    self.stats.completion_tokens += completion_tokens
                     return ChatResult(
                         content=strip_thoughts(msg.get("content")),
                         tool_calls=msg.get("tool_calls") or [],
@@ -237,6 +245,8 @@ class ModelProvider:
                         attempts=attempt,
                         finish_reason=choice.get("finish_reason"),
                         served_by=f"{self.model}@{self.host}",
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens,
                     )
                 last_err = f"HTTP {resp.status_code}: {' '.join(resp.text.split())[:200]}"
                 if resp.status_code not in _RETRYABLE_STATUS:

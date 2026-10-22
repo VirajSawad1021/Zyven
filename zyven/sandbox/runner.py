@@ -11,8 +11,10 @@ import re
 import subprocess
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import BinaryIO
 
 DEFAULT_IMAGE = "zyven-sandbox:py312"
 
@@ -76,18 +78,58 @@ def stdio_command(command: list[str], mounts: dict[Path, str], policy: SandboxPo
                        f"zyven-skill-{uuid.uuid4().hex[:12]}", interactive=True)
 
 
+def _read_capped(stream: BinaryIO, limit: int) -> bytes:
+    """Drain a pipe while retaining at most `limit` bytes, so a chatty child cannot OOM the host."""
+    data = bytearray()
+    while True:
+        chunk = stream.read(8192)
+        if not chunk:
+            return bytes(data)
+        if len(data) < limit:
+            data.extend(chunk[:limit - len(data)])
+
+
 def run(
     command: list[str],
     mounts: dict[Path, str],
     policy: SandboxPolicy | None = None,
     workdir: str = "/src",
+    max_output: int | None = None,
 ) -> SandboxResult:
-    """mounts: host path -> container path. Paths ending in ':rw' in the container side are writable."""
+    """mounts: host path -> container path. Paths ending in ':rw' in the container side are writable.
+
+    `max_output` caps retained stdout and stderr bytes per stream; the rest is drained and discarded.
+    """
     policy = policy or SandboxPolicy()
     name = f"zyven-{uuid.uuid4().hex[:12]}"
     args = docker_args(command, mounts, policy, workdir, name)
 
     started = time.monotonic()
+    if max_output is not None:
+        proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        assert proc.stdout is not None and proc.stderr is not None
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            out_future = pool.submit(_read_capped, proc.stdout, max_output)
+            err_future = pool.submit(_read_capped, proc.stderr, max_output)
+            timed_out = False
+            try:
+                proc.wait(timeout=policy.timeout_s)
+            except subprocess.TimeoutExpired:
+                timed_out = True
+                try:
+                    subprocess.run(["docker", "kill", name], capture_output=True, timeout=10)
+                except (OSError, subprocess.TimeoutExpired):
+                    pass
+                try:
+                    proc.kill()
+                except ProcessLookupError:
+                    pass
+                proc.wait()
+            stdout = out_future.result().decode("utf-8", errors="replace")
+            stderr = err_future.result().decode("utf-8", errors="replace")
+        return SandboxResult(command, proc.returncode, stdout, stderr, time.monotonic() - started,
+                             timed_out=timed_out)
+
     try:
         proc = subprocess.run(args, capture_output=True, text=True, encoding="utf-8",
                               errors="replace", timeout=policy.timeout_s)

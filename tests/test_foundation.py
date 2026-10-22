@@ -5,6 +5,7 @@ No network and no API key: model hosts are replaced by an in-process fake HTTP t
 
 from __future__ import annotations
 
+import asyncio
 import json
 import sys
 from pathlib import Path
@@ -18,6 +19,7 @@ sys.path.insert(0, str(ROOT))
 
 from eval.run_eval import _BS_MONTHS, extract_answer, parse_date, score  # noqa: E402
 from eval.tasks import Task, generate  # noqa: E402
+from zyven.agent.loop import run_agent  # noqa: E402
 from zyven.ai import provider as prov  # noqa: E402
 from zyven.ai.provider import ModelProvider, ProviderError, is_proprietary, strip_thoughts  # noqa: E402
 from zyven.sandbox.runner import SandboxResult, parse_pytest, parse_unittest  # noqa: E402
@@ -81,6 +83,22 @@ def test_cline_wrapped_response_is_unwrapped():
     r = p.chat([{"role": "user", "content": "hi"}])
     assert r.content == "ok"
     assert p.stats.prompt_tokens == 3 and p.stats.completion_tokens == 2
+
+
+def test_seed_and_token_usage_are_exposed():
+    seen: list = []
+    p = ModelProvider("https://example.invalid/v1", "m", "k")
+    p._client = fake_host([(200, reply("ok"))], seen)
+    r = p.chat([{"role": "user", "content": "hi"}], seed=123)
+    assert seen[0]["seed"] == 123
+    assert (r.prompt_tokens, r.completion_tokens) == (3, 2)
+
+
+def test_agent_accumulates_token_usage():
+    p = make([(200, reply("ANSWER: 42"))])
+    r = asyncio.run(run_agent(p, "q"))
+    assert (r.prompt_tokens, r.completion_tokens) == (3, 2)
+    assert r.served_by == {"gemma-4-26b-a4b-it@example.invalid"}
 
 
 def test_unexpected_response_shape_raises_provider_error():

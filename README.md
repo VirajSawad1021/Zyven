@@ -42,6 +42,10 @@ Zyven does that step automatically, and refuses to hand over anything it can't p
 Every run uses the open-weight model `gemma-4-26b-a4b-it`, with the same tasks and budget in each condition. Ground
 truth is computed by the source library itself, and the raw records are in `eval/results/`.
 
+The table below is from single-run measurements. New runs can use `--repeat 3` to report
+mean ± half-range and record the model, host and requested seed for every run. The held-out
+suite remains a separate experiment.
+
 | Suite | Source | Model alone | Model + Zyven-compiled skills |
 |---|---|---|---|
 | IBAN validity, IBAN check digits, Luhn | [python-stdnum](https://github.com/arthurdejong/python-stdnum) | **0 / 18** | **18 / 18** |
@@ -183,8 +187,15 @@ uv run zyven sync --scout                     # clone the catalog and cache the 
 uv run zyven board --port 8765                # board, site and APIs
 
 uv run python eval/run_eval.py --suite stdnum --limit 6 --label compiled --skill skills/<name>/server.py
+uv run python eval/run_eval.py --suite stdnum --limit 6 --repeat 3 --interpreter \
+  --label compiled --skill skills/<name>/server.py
 uv run python eval/run_eval.py --suite global --limit 6 --label compiled --skill skills/<name>/server.py
 ```
+
+`--interpreter` adds two conditions: Python with the suite library importable, and Python without it
+(only the standard library and packages baked into the sandbox image). It needs Docker and
+`zyven-sandbox:py312`. Every JSONL record carries the run number, model, host, requested seed and
+token counts; `eval/results/run-<stamp>.json` holds the run configuration.
 
 ### Working on the frontend
 
