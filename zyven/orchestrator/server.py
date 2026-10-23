@@ -28,7 +28,7 @@ from zyven.ai.provider import ModelProvider
 from zyven.analysis.analyzer import analyze
 from zyven.analysis.explorer import explore
 from zyven.catalog.catalog import Catalog
-from zyven.orchestrator.control import DEFAULT_IMAGE, PLANNED, RUNTIMES, Control
+from zyven.orchestrator.control import DEFAULT_IMAGE, PLANNED, Control, runtime_info
 from zyven.memory.skills import SkillLibrary
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -299,7 +299,7 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
 
     @app.get("/api/runtimes")
     def runtimes():
-        return {"runtimes": RUNTIMES, "planned": PLANNED, "default_image": DEFAULT_IMAGE}
+        return {"runtimes": runtime_info(state["control"].adapters), "planned": PLANNED, "default_image": DEFAULT_IMAGE}
 
     @app.get("/api/runs")
     def runs():
