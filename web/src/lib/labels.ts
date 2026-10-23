@@ -72,7 +72,12 @@ export function eventTone(e: CardEvent): "ok" | "bad" | "warn" | "info" | "ink" 
 
 export function eventDetail(e: CardEvent): string {
   const raw = String(e.data.detail ?? e.data.reason ?? "");
-  return e.kind.startsWith("compile.gate.") ? raw.replace(/^(PASS|FAIL) /, "") : raw;
+  const base = e.kind.startsWith("compile.gate.") ? raw.replace(/^(PASS|FAIL) /, "") : raw;
+  // Surface lint_warnings count from architect.done so it's visible in the task timeline.
+  if (e.kind === "compile.architect.done" && typeof e.data.lint_warnings === "number" && e.data.lint_warnings > 0) {
+    return `${base} · ${e.data.lint_warnings} lint warning${e.data.lint_warnings === 1 ? "" : "s"}`;
+  }
+  return base;
 }
 
 export function relTime(ts: number): string {

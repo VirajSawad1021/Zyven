@@ -166,28 +166,73 @@ def related_facts(a: Analysis, tool) -> list[str]:
 
 
 def _covers(tool, fact: str) -> bool:
-    """Whether one of the tool's return fields already carries this fact (by name or description)."""
+    """Whether one of the tool's return fields already carries this fact (by name or description).
+
+    Fact names may carry a prefix (get_weekday, to_weekday, calc_weekday) that the return field omits,
+    and vice-versa.  Strip all _FACT_PREFIXES from both the fact name and the return field name before
+    comparing so that legitimate coverage is never under-counted.
+    """
     norm = lambda x: re.sub(r"[^a-z0-9]", "", x.lower())  # noqa: E731
-    key = fact
-    for p in _FACT_PREFIXES:
-        key = key.removeprefix(p)
-    k = norm(key)
-    return any(k and (k in norm(r.name) or (len(norm(r.name)) >= 3 and norm(r.name) in k) or k in norm(r.description))
-               for r in tool.returns)
+
+    def _strip_prefixes(name: str) -> str:
+        for p in _FACT_PREFIXES:
+            name = name.removeprefix(p)
+        return name
+
+    k = norm(_strip_prefixes(fact))
+    if not k:
+        return False
+    for r in tool.returns:
+        rk = norm(_strip_prefixes(r.name))
+        rd = norm(r.description)
+        if k in rk or (len(rk) >= 3 and rk in k) or k in rd:
+            return True
+    return False
+
+
+# Minimum number of uncovered related facts required to trigger the *partial-coverage* warning.
+# When a tool already returns some facts but is still missing this many or more, the lint fires again
+# so the Architect is nudged to keep enriching the output.
+_PARTIAL_MISSING_THRESHOLD = 2
 
 
 def lint_interface(spec: CapabilitySpec, a: Analysis | None = None) -> list[str]:
-    """Deterministic agent-usability checks on a spec (no model involved). With the analysis, also checks that
-    each tool returns at least one related fact the library computes directly."""
+    """Deterministic agent-usability checks on a spec (no model involved).
+
+    With the analysis, runs two related-fact checks per tool:
+
+    1. **No coverage** – the tool returns none of the library-computable facts for its input.
+       This is the original check and triggers a strong warning.
+    2. **Partial coverage** – the tool already returns at least one related fact but still omits
+       two or more additional ones the library can compute directly from the same input.  This is
+       a softer nudge so the Architect continues enriching the tool's output without having to
+       start from scratch.
+
+    Both checks list only the *uncovered* fact names so the revision prompt is actionable.
+    """
     w: list[str] = []
     for t in spec.tools:
         if a is not None:
             facts = related_facts(a, t)
-            if facts and not any(_covers(t, f) for f in facts):
-                shown = ", ".join(facts[:_RELATED_SHOWN])
-                w.append(f"{t.name}: returns none of the related facts the library computes directly from the same "
-                         f"input ({shown}); add the ones an agent would need for follow-up questions as named "
-                         "return fields, computed by calling the library, so the agent never derives them itself")
+            if facts:
+                missing = [f for f in facts if not _covers(t, f)]
+                covered_count = len(facts) - len(missing)
+                if covered_count == 0:
+                    # No related fact is present at all – original strong warning.
+                    shown = ", ".join(missing[:_RELATED_SHOWN])
+                    w.append(
+                        f"{t.name}: returns none of the related facts the library computes directly from the same "
+                        f"input ({shown}); add the ones an agent would need for follow-up questions as named "
+                        "return fields, computed by calling the library, so the agent never derives them itself"
+                    )
+                elif len(missing) >= _PARTIAL_MISSING_THRESHOLD:
+                    # Some facts covered but several more are available – softer nudge.
+                    shown = ", ".join(missing[:_RELATED_SHOWN])
+                    w.append(
+                        f"{t.name}: already returns {covered_count} related fact(s) but still omits "
+                        f"{len(missing)} the library computes directly ({shown}); consider adding them as "
+                        "named return fields so the agent avoids redundant follow-up tool calls"
+                    )
         comps = [p.name for p in t.params if p.name.lower().split("_")[-1] in _COMPONENT_NAMES]
         if len(comps) >= 3:
             w.append(f"{t.name}: inputs {comps} are components of one value; take ONE natural-format string "

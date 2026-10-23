@@ -14,7 +14,7 @@ from pathlib import Path
 
 from zyven import __version__
 from zyven.ai.provider import ModelProvider, ProviderError
-from zyven.ai.roles import architect, compiler, repair, tester
+from zyven.ai.roles import architect, compiler, lint_interface, repair, tester
 from zyven.ai.schemas import AdapterCode, CandidateCapability, CapabilitySpec, DiffTests
 from zyven.analysis.analyzer import Analysis
 from zyven.compiler.build import assemble
@@ -72,8 +72,10 @@ def compile_capability(
         except ProviderError as e:
             return _failed(emit, events, started, f"architect: {e}", candidate.name, skills_root)
         spec = out.value
+        lint_warns = lint_interface(spec, a)
         emit("architect.done", detail=f"{len(spec.tools)} tools: {', '.join(t.name for t in spec.tools)}",
-             resolved=out.resolved, dropped=out.dropped, fixes=out.fixes)
+             resolved=out.resolved, dropped=out.dropped, fixes=out.fixes,
+             lint_warnings=len(lint_warns))
 
     skill_dir = (skills_root / spec.name).resolve()
     skill_dir.mkdir(parents=True, exist_ok=True)
@@ -160,6 +162,7 @@ def compile_capability(
         "generated_files": ["server.py"], "compile_seconds": seconds, "attempts": attempt,
         "dropped_tools": dropped,  # tools that could not be verified and are NOT in the package
         "model_calls": provider.stats.calls,
+        "lint_warnings": len(lint_interface(spec, a)),  # interface lint warnings on the final spec; use to track quality
     }, indent=1), encoding="utf-8")
     (skill_dir / "validation-report.json").write_text(json.dumps(report.to_dict() if report else {}, indent=1,
                                                                  ensure_ascii=False), encoding="utf-8")
