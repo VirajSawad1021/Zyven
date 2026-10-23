@@ -7,6 +7,8 @@ new agent type only has to implement `run` and `cancel`.
   docker  a shell command in a locked-down container (network off by default)
   claude  Claude Code in headless mode, on the host, with a restricted tool set; proprietary, so it is
           off unless ZYVEN_ENABLE_CLAUDE=1
+  github  create a repository or an issue with `gh` after approval (github_adapter.py); off unless
+          ZYVEN_ENABLE_GITHUB=1
 
 The built-in Zyven agent is not an adapter: it runs as a board card and the Control center mirrors its status.
 """
@@ -183,4 +185,5 @@ def parse_stream_line(line: str, emit: Callable[[str, str], None]) -> bool:
 
 
 def default_adapters() -> dict[str, RuntimeAdapter]:
-    return {a.name: a for a in (DockerAdapter(), ClaudeCodeAdapter())}
+    from zyven.orchestrator.github_adapter import GitHubAdapter  # imports this module, so import it lazily
+    return {a.name: a for a in (DockerAdapter(), ClaudeCodeAdapter(), GitHubAdapter())}
