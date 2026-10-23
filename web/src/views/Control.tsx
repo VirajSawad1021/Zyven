@@ -68,7 +68,7 @@ function NewTask({ rt, onCreated }: { rt: Runtimes; onCreated: (id: string) => v
 
       <input className={`${input} mb-2`} placeholder="Title (optional)" value={title} onChange={(e) => setTitle(e.target.value)} />
       <textarea className={`${input} min-h-[70px] font-mono`} value={prompt} onChange={(e) => setPrompt(e.target.value)}
-        placeholder={docker ? "Shell command to run in the container, e.g. python -c 'print(6*7)' > answer.txt" : `Describe the task for ${info.label}`} />
+        placeholder={docker ? "Shell command to run in the container, e.g. python -c 'print(6*7)' > answer.txt" : runtime === "github" ? '{"action": "create_repo", "name": "my-repo", "description": "...", "private": true}' : `Describe the task for ${info.label}`} />
 
       {docker && (
         <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
