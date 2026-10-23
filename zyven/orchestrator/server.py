@@ -324,6 +324,19 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
         state["control"].cancel(run_id)
         return {"ok": True}
 
+    @app.get("/api/approvals")
+    def approvals(pending: bool = True):
+        return state["control"].approvals_for(pending_only=pending)
+
+    @app.post("/api/approvals/{approval_id}")
+    def approval_decide(approval_id: str, body: Decision):
+        try:
+            return state["control"].decide(approval_id, body.approved)
+        except KeyError:
+            raise HTTPException(404, "unknown approval") from None
+        except ValueError as e:
+            raise HTTPException(409, str(e)) from None
+
     # --- repo explorer: static analysis -> funnel + module graph (cached per repo, computed in a thread) ---
     jobs: dict[str, dict] = {}
 
