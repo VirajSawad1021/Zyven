@@ -51,9 +51,9 @@ function NewTask({ rt, onCreated }: { rt: Runtimes; onCreated: (id: string) => v
     <Card className="mb-5 p-4">
       <div className="mb-3 flex flex-wrap gap-2">
         {Object.entries(rt.runtimes).map(([id, r]) => (
-          <button key={id} onClick={() => setRuntime(id)}
-            className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-[13px] ${runtime === id ? "border-ink bg-ink text-white" : "border-line-strong bg-white hover:border-ink/40"}`}>
-            {id === "docker" ? <Container className="h-4 w-4" /> : <Bot className="h-4 w-4" />}{r.label}
+          <button key={id} onClick={() => r.available && setRuntime(id)} disabled={!r.available} title={r.available ? r.note : r.note}
+            className={`flex disabled:cursor-not-allowed disabled:opacity-50 items-center gap-2 rounded-xl border px-3 py-2 text-left text-[13px] ${runtime === id ? "border-ink bg-ink text-white" : "border-line-strong bg-white hover:border-ink/40"}`}>
+            {id === "docker" ? <Container className="h-4 w-4" /> : <Bot className="h-4 w-4" />}{r.label}{!r.available && <span className="text-[10px]">off</span>}
             {r.open_weight && <span className={`rounded-full px-1.5 text-[10px] font-semibold ${runtime === id ? "bg-white/20" : "bg-good-bg text-good"}`}>open</span>}
           </button>
         ))}
@@ -68,7 +68,7 @@ function NewTask({ rt, onCreated }: { rt: Runtimes; onCreated: (id: string) => v
 
       <input className={`${input} mb-2`} placeholder="Title (optional)" value={title} onChange={(e) => setTitle(e.target.value)} />
       <textarea className={`${input} min-h-[70px] font-mono`} value={prompt} onChange={(e) => setPrompt(e.target.value)}
-        placeholder={docker ? "Shell command to run in the container, e.g. python -c 'print(6*7)' > answer.txt" : "Describe the task for the Zyven agent"} />
+        placeholder={docker ? "Shell command to run in the container, e.g. python -c 'print(6*7)' > answer.txt" : `Describe the task for ${info.label}`} />
 
       {docker && (
         <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
@@ -113,7 +113,7 @@ function Detail({ id, onClose }: { id: string; onClose: () => void }) {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Badge tone={TONE[run.status]}>{run.status === "RUNNING" && <LiveDot />}{LABEL[run.status]}</Badge>
-          {run.runtime === "docker" && active && <Button size="sm" variant="danger" onClick={() => post(`/api/runs/${id}/cancel`)}><Square className="h-3 w-3" /> Cancel</Button>}
+          {run.runtime !== "zyven" && active && <Button size="sm" variant="danger" onClick={() => post(`/api/runs/${id}/cancel`)}><Square className="h-3 w-3" /> Cancel</Button>}
           <button onClick={onClose} className="rounded-lg p-1.5 text-muted hover:bg-panel-2" aria-label="Close"><X className="h-4 w-4" /></button>
         </div>
       </div>
@@ -195,7 +195,7 @@ export function Control() {
                   <button key={r.id} onClick={() => setSel(r.id)} className={`w-full rounded-xl border bg-white p-3 text-left transition-colors hover:border-ink/40 ${sel === r.id ? "border-ink" : "border-line"}`}>
                     <p className="line-clamp-2 text-[13px] font-medium">{r.title}</p>
                     <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted">
-                      <Badge tone={TONE[r.status]}>{LABEL[r.status]}</Badge>{r.runtime === "docker" ? "Docker" : "Zyven agent"} · {r.status === "SCHEDULED" && r.run_at ? new Date(r.run_at * 1000).toLocaleTimeString() : relTime(r.created)}
+                      <Badge tone={TONE[r.status]}>{LABEL[r.status]}</Badge>{r.runtime === "docker" ? "Docker" : r.runtime === "zyven" ? "Zyven agent" : r.runtime} · {r.status === "SCHEDULED" && r.run_at ? new Date(r.run_at * 1000).toLocaleTimeString() : relTime(r.created)}
                     </p>
                   </button>
                 ))}
