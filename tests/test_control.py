@@ -25,8 +25,7 @@ class FakeBoard:
 
 
 def _control(tmp_path, board) -> Control:
-    c = Control(tmp_path / "control.sqlite", tmp_path, board)
-    c._loop = lambda: None  # not used: the tests call the scheduler directly
+    c = Control(tmp_path / "control.sqlite", tmp_path, board, autostart=False)  # tests call the scheduler directly
     return c
 
 

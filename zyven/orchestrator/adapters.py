@@ -32,6 +32,9 @@ class RunContext:
     cwd: Path                    # where the task should start: the checkout when there is one, else workdir
     emit: Callable[[str, str], None]   # emit(kind, text): kinds are "info", "out", "tool", "error"
     cancelled: Callable[[], bool]
+    # approve(kind, summary, detail="") -> bool: ask the user before an outward action (send, push, post, create).
+    # Blocks until they decide; False when denied, expired or cancelled. Adapters must not act on False.
+    approve: Callable[..., bool] = lambda kind, summary, detail="": False
 
 
 class RuntimeAdapter:

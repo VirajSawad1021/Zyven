@@ -51,17 +51,21 @@ def _snapshot(root: Path) -> dict[str, tuple[int, int]]:
 
 
 MIN_REPEAT_SECS, MAX_REPEAT_SECS = 60, 30 * 86400
+APPROVAL_TTL_S = 3600  # an unanswered request is denied after this long
 
 
 class Control:
-    def __init__(self, db_path: Path, data_dir: Path, board, adapters: dict[str, RuntimeAdapter] | None = None) -> None:
+    def __init__(self, db_path: Path, data_dir: Path, board, adapters: dict[str, RuntimeAdapter] | None = None,
+                 autostart: bool = True) -> None:
         self.adapters = adapters if adapters is not None else default_adapters()
         self.db = sqlite3.connect(db_path, check_same_thread=False)
         self.db.executescript(
             "CREATE TABLE IF NOT EXISTS runs (id TEXT PRIMARY KEY, title TEXT, runtime TEXT, prompt TEXT, image TEXT,"
             " network INTEGER, memory TEXT, cpus TEXT, repo_url TEXT, run_at REAL, status TEXT, created REAL,"
             " updated REAL, card_id TEXT, exit_code INTEGER, files TEXT, workdir TEXT);"
-            "CREATE TABLE IF NOT EXISTS run_events (run TEXT, seq INTEGER, ts REAL, kind TEXT, text TEXT);")
+            "CREATE TABLE IF NOT EXISTS run_events (run TEXT, seq INTEGER, ts REAL, kind TEXT, text TEXT);"
+            "CREATE TABLE IF NOT EXISTS approvals (id TEXT PRIMARY KEY, run TEXT, kind TEXT, summary TEXT, detail TEXT,"
+            " status TEXT, created REAL, decided REAL);")
         if "repeat_secs" not in {r[1] for r in self.db.execute("PRAGMA table_info(runs)")}:  # older databases
             self.db.execute("ALTER TABLE runs ADD COLUMN repeat_secs REAL")
         self.root = Path(data_dir) / "control"
@@ -69,9 +73,12 @@ class Control:
         self.board = board
         self._lock = threading.Lock()
         self._cancel: set[str] = set()
-        self.db.execute("UPDATE runs SET status='FAILED' WHERE status='RUNNING'")  # interrupted by a restart
+        self.db.execute("UPDATE runs SET status='FAILED' WHERE status IN ('RUNNING','NEEDS_APPROVAL') "
+                        "AND runtime != 'zyven'")  # interrupted by a restart
+        self.db.execute("UPDATE approvals SET status='EXPIRED' WHERE status='PENDING'")
         self.db.commit()
-        threading.Thread(target=self._loop, daemon=True).start()
+        if autostart:  # tests drive the worker by hand
+            threading.Thread(target=self._loop, daemon=True).start()
 
     # --- data ---------------------------------------------------------------------------------------
     def _emit(self, run: str, kind: str, text: str) -> None:
@@ -115,6 +122,59 @@ class Control:
         d["log"] = [{"ts": ts, "kind": k, "text": t} for ts, k, t in self.db.execute(
             "SELECT ts,kind,text FROM run_events WHERE run=? ORDER BY seq", (run_id,))]
         return d
+
+    # --- approvals ----------------------------------------------------------------------------------
+    def request_approval(self, rid: str, kind: str, summary: str, detail: str = "", ttl: float = APPROVAL_TTL_S,
+                         poll: float = 0.5) -> bool:
+        """Ask the user before an outward action. Blocks the run's worker until they decide.
+
+        Nothing is approved by default: a timeout, a restart or a cancel all mean "no".
+        """
+        aid = uuid.uuid4().hex[:8]
+        with self._lock:
+            self.db.execute("INSERT INTO approvals VALUES (?,?,?,?,?,?,?,?)",
+                            (aid, rid, kind[:40], summary[:300], detail[:4000], "PENDING", time.time(), None))
+            self.db.commit()
+        self._set(rid, status="NEEDS_APPROVAL")
+        self._emit(rid, "info", f"waiting for approval: {summary[:200]}")
+        deadline = time.monotonic() + ttl
+        status = "PENDING"
+        while status == "PENDING":
+            if rid in self._cancel or time.monotonic() > deadline:
+                with self._lock:
+                    self.db.execute("UPDATE approvals SET status='EXPIRED', decided=? WHERE id=? AND status='PENDING'",
+                                    (time.time(), aid))
+                    self.db.commit()
+            status = self.db.execute("SELECT status FROM approvals WHERE id=?", (aid,)).fetchone()[0]
+            if status == "PENDING":
+                time.sleep(poll)
+        if rid not in self._cancel:
+            self._set(rid, status="RUNNING")
+        self._emit(rid, "info", f"approval {status.lower()}: {summary[:120]}")
+        return status == "APPROVED"
+
+    def decide(self, approval_id: str, approve: bool) -> dict:
+        with self._lock:
+            row = self.db.execute("SELECT status FROM approvals WHERE id=?", (approval_id,)).fetchone()
+            if not row:
+                raise KeyError(approval_id)
+            if row[0] != "PENDING":
+                raise ValueError(f"already {row[0].lower()}")
+            self.db.execute("UPDATE approvals SET status=?, decided=? WHERE id=?",
+                            ("APPROVED" if approve else "DENIED", time.time(), approval_id))
+            self.db.commit()
+        return self.approvals_for(approval_id=approval_id)[0]
+
+    def approvals_for(self, run: str | None = None, pending_only: bool = False, approval_id: str | None = None) -> list[dict]:
+        q, args = "SELECT id,run,kind,summary,detail,status,created,decided FROM approvals WHERE 1=1", []
+        for col, val in (("run", run), ("id", approval_id)):
+            if val:
+                q += f" AND {col}=?"
+                args.append(val)
+        if pending_only:
+            q += " AND status='PENDING'"
+        keys = ["id", "run", "kind", "summary", "detail", "status", "created", "decided"]
+        return [dict(zip(keys, r)) for r in self.db.execute(q + " ORDER BY created DESC", args).fetchall()]
 
     # --- lifecycle ----------------------------------------------------------------------------------
     def create(self, *, title: str, runtime: str, prompt: str, image: str = DEFAULT_IMAGE, network: bool = False,
@@ -211,7 +271,8 @@ class Control:
             before = _snapshot(work)
             ctx = RunContext(run=r, workdir=work, cwd=work / "repo" if r["repo_url"] else work,
                              emit=lambda kind, text: self._emit(rid, kind, text),
-                             cancelled=lambda: rid in self._cancel)
+                             cancelled=lambda: rid in self._cancel,
+                             approve=lambda kind, summary, detail="": self.request_approval(rid, kind, summary, detail))
             code = adapter.run(ctx)
             after = _snapshot(work)
             files = {"added": sorted(set(after) - set(before)),

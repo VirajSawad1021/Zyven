@@ -38,8 +38,7 @@ class Unavailable(RuntimeAdapter):
 
 
 def _control(tmp_path, *adapters) -> Control:
-    c = Control(tmp_path / "c.sqlite", tmp_path, FakeBoard(), {a.name: a for a in adapters})
-    c._loop = lambda: None
+    c = Control(tmp_path / "c.sqlite", tmp_path, FakeBoard(), {a.name: a for a in adapters}, autostart=False)
     return c
 
 
@@ -100,3 +99,81 @@ def test_claude_stream_lines_become_events():
     assert parse_stream_line(json.dumps({"type": "result", "is_error": True}), emit) is True
     parse_stream_line("not json", emit)
     assert events[-1] == ("out", "not json")
+
+
+# --- approvals ---------------------------------------------------------------------------------------
+
+import threading  # noqa: E402
+import time  # noqa: E402
+
+
+class AsksFirst(RuntimeAdapter):
+    name, label = "asks", "Asks first"
+
+    def __init__(self) -> None:
+        self.acted = None
+
+    def run(self, ctx: RunContext) -> int:
+        self.acted = ctx.approve("send_mail", "Send the report to a@example.com", "Subject: Report")
+        ctx.emit("out", "sent" if self.acted else "not sent")
+        return 0
+
+
+def _wait_pending(c, rid, tries=100):
+    for _ in range(tries):
+        pending = c.approvals_for(run=rid, pending_only=True)
+        if pending:
+            return pending[0]
+        time.sleep(0.05)
+    raise AssertionError("no approval appeared")
+
+
+def _run_in_thread(c, rid):
+    t = threading.Thread(target=c._run_worker, args=(rid,))
+    t.start()
+    return t
+
+
+def test_run_waits_for_approval_then_acts_when_approved(tmp_path):
+    a = AsksFirst()
+    c = _control(tmp_path, a)
+    rid = c.create(title="", runtime="asks", prompt="mail it")["id"]
+    t = _run_in_thread(c, rid)
+    ap = _wait_pending(c, rid)
+    assert c.get(rid)["status"] == "NEEDS_APPROVAL" and ap["kind"] == "send_mail"
+    assert a.acted is None  # nothing happened yet
+    assert c.decide(ap["id"], True)["status"] == "APPROVED"
+    t.join(5)
+    assert a.acted is True and c.get(rid)["status"] == "COMPLETED"
+
+
+def test_denied_approval_means_the_adapter_does_not_act(tmp_path):
+    a = AsksFirst()
+    c = _control(tmp_path, a)
+    rid = c.create(title="", runtime="asks", prompt="mail it")["id"]
+    t = _run_in_thread(c, rid)
+    c.decide(_wait_pending(c, rid)["id"], False)
+    t.join(5)
+    assert a.acted is False and any(e["text"] == "not sent" for e in c.get(rid)["log"])
+
+
+def test_unanswered_approval_expires_as_a_denial(tmp_path):
+    c = _control(tmp_path, AsksFirst())
+    rid = c.create(title="", runtime="asks", prompt="x")["id"]
+    assert c.request_approval(rid, "post", "Post a message", ttl=0.2, poll=0.05) is False
+    assert c.approvals_for(run=rid)[0]["status"] == "EXPIRED"
+
+
+def test_cancel_denies_a_waiting_approval_and_decisions_are_final(tmp_path):
+    a = AsksFirst()
+    c = _control(tmp_path, a)
+    rid = c.create(title="", runtime="asks", prompt="x")["id"]
+    t = _run_in_thread(c, rid)
+    ap = _wait_pending(c, rid)
+    c.cancel(rid)
+    t.join(5)
+    assert a.acted is False and c.get(rid)["status"] == "CANCELLED"
+    with pytest.raises(ValueError, match="already"):
+        c.decide(ap["id"], True)
+    with pytest.raises(KeyError):
+        c.decide("missing", True)

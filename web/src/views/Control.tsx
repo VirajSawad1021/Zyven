@@ -150,6 +150,32 @@ function Detail({ id, onClose }: { id: string; onClose: () => void }) {
   );
 }
 
+interface Approval { id: string; run: string; kind: string; summary: string; detail: string; created: number }
+
+function Approvals({ items, onDecided }: { items: Approval[]; onDecided: () => void }) {
+  if (!items.length) return null;
+  const decide = (id: string, approved: boolean) => post(`/api/approvals/${id}`, { approved }).then(onDecided).catch(onDecided);
+  return (
+    <Card className="mb-5 border-warn/40 p-4">
+      <Eyebrow>Waiting for your approval</Eyebrow>
+      <p className="mt-1 text-[12px] text-muted">An agent wants to do something outside its sandbox. Nothing happens unless you approve; unanswered requests are denied after an hour.</p>
+      <div className="mt-3 space-y-2.5">
+        {items.map((a) => (
+          <div key={a.id} className="rounded-xl border border-line bg-white p-3">
+            <p className="text-[13px] font-medium">{a.summary} <span className="ml-1 rounded-full bg-panel-2 px-1.5 font-mono text-[10px] text-muted">{a.kind}</span></p>
+            {a.detail && <pre className="mt-1.5 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-panel px-2.5 py-2 font-mono text-[11.5px]">{a.detail}</pre>}
+            <div className="mt-2.5 flex items-center gap-2">
+              <Button size="sm" onClick={() => decide(a.id, true)}><Check className="h-3 w-3" /> Approve</Button>
+              <Button size="sm" variant="danger" onClick={() => decide(a.id, false)}><X className="h-3 w-3" /> Deny</Button>
+              <span className="font-mono text-[11px] text-muted">run #{a.run} · {relTime(a.created)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 const COLUMNS: { title: string; statuses: string[] }[] = [
   { title: "Running", statuses: ["RUNNING", "QUEUED"] },
   { title: "Needs approval", statuses: ["NEEDS_APPROVAL"] },
@@ -161,7 +187,11 @@ export function Control() {
   const [rt, setRt] = useState<Runtimes | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
   const [sel, setSel] = useState<string | null>(null);
-  const load = useCallback(() => api<Run[]>("/api/runs").then(setRuns).catch(() => {}), []);
+  const [pending, setPending] = useState<Approval[]>([]);
+  const load = useCallback(() => {
+    api<Run[]>("/api/runs").then(setRuns).catch(() => {});
+    api<Approval[]>("/api/approvals").then(setPending).catch(() => {});
+  }, []);
   useEffect(() => {
     api<Runtimes>("/api/runtimes").then(setRt).catch(() => {});
     load();
@@ -181,6 +211,7 @@ export function Control() {
         <Stat value={count(["SCHEDULED"])} label="Scheduled" icon={<Calendar className="h-3.5 w-3.5" />} />
         <Stat value={count(["COMPLETED"])} label="Completed" icon={<Check className="h-3.5 w-3.5" />} />
       </div>
+      <Approvals items={pending} onDecided={load} />
       <NewTask rt={rt} onCreated={(id) => { setSel(id); load(); }} />
       {sel && <Detail id={sel} onClose={() => setSel(null)} />}
       {runs.length === 0 ? (
