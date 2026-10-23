@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT))
 
 from zyven.ai import provider as prov  # noqa: E402
 from zyven.ai.provider import ModelProvider  # noqa: E402
-from zyven.ai.roles import _snake, lint_interface, related_facts
+from zyven.ai.roles import _covers, _snake, _PARTIAL_MISSING_THRESHOLD, lint_interface, related_facts
 from zyven.ai.roles import tester as run_tester  # name must not start with "test" (pytest collection)
 from zyven.ai.schemas import AdapterCode, CapabilitySpec, ReturnField, ToolImpl, ToolParam, ToolSpec  # noqa: E402
 from zyven.analysis.analyzer import analyze  # noqa: E402
@@ -292,6 +292,47 @@ def test_service_object_accessors_are_not_facts(facts_repo):
     t = _impl_tool("convert", ["facts.days.Converter.convert"], "converted")
     assert related_facts(facts_repo, t) == []
     assert lint_interface(_spec(t), facts_repo) == []
+
+
+def test_partial_coverage_warning_fires_when_threshold_met(facts_repo):
+    """When a tool returns one related fact but still omits >= _PARTIAL_MISSING_THRESHOLD more,
+    the lint emits a softer partial-coverage warning listing the uncovered names."""
+    # facts.ids.validate -> related: [is_valid, format]  (2 facts)
+    t = _impl_tool("check", ["facts.ids.validate"], "result", "is_valid")
+    # Now the tool covers 'is_valid' (covered_count=1) but 'format' is still uncovered (missing=1).
+    # 1 missing < _PARTIAL_MISSING_THRESHOLD(2) -> no partial-coverage warning yet.
+    warns = lint_interface(_spec(t), facts_repo)
+    assert not any("already returns" in w for w in warns), "threshold not met, no partial warning expected"
+
+    # facts.days.Day.from_text -> related: [weekday, month_name]  (2 facts)
+    # Cover only 'weekday'; 'month_name' is still missing -> 1 missing, still below threshold.
+    t2 = _impl_tool("parse_day", ["facts.days.Day.from_text"], "date", "weekday")
+    warns2 = lint_interface(_spec(t2), facts_repo)
+    assert not any("already returns" in w for w in warns2), "1 missing < threshold, no partial warning expected"
+
+
+def test_partial_coverage_warning_absent_when_all_facts_covered(facts_repo):
+    """When a tool covers all related facts the lint must be silent on related-fact warnings."""
+    # facts.days.Day.from_text -> related: [weekday, month_name]
+    t = _impl_tool("parse_day", ["facts.days.Day.from_text"], "date", "weekday", "month_name")
+    warns = lint_interface(_spec(t), facts_repo)
+    assert not any("related fact" in w or "already returns" in w for w in warns)
+
+
+def test_covers_strips_fact_prefixes_bidirectionally():
+    """_covers should recognise a return field named 'get_weekday' as matching the fact 'weekday',
+    and vice-versa, so that legitimate coverage is never under-counted."""
+    t = _tool("day_info")
+    # Return field with prefix on the *field* side (get_weekday covers fact 'weekday').
+    t.returns = [ReturnField(name="get_weekday", type="string", description="weekday name")]
+    assert _covers(t, "weekday"), "prefix on field side should be stripped"
+    assert _covers(t, "to_weekday"), "prefix on fact side should also be stripped"
+
+    # Return field without prefix covers prefixed fact name.
+    t.returns = [ReturnField(name="weekday", type="string", description="weekday name")]
+    assert _covers(t, "get_weekday"), "prefix on fact side should be stripped"
+    assert _covers(t, "calc_weekday"), "calc_ prefix on fact side should be stripped"
+    assert not _covers(t, "monthname"), "unrelated fact must not match"
 
 
 def test_snake_case_names():
