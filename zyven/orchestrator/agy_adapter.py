@@ -92,15 +92,13 @@ class AgyAdapter(CLIAgentAdapter):
         exe = self._executable()
         assert exe, "agy is not installed"
         cmd = [*exe, "--output-format", "stream-json", "--mode", "accept-edits", "--sandbox"]
-        model = os.environ.get("ZYVEN_AGY_MODEL", "").strip()
+        model = self.model()
         if model:
-            if not MODEL.fullmatch(model):
-                raise ValueError(f"ZYVEN_AGY_MODEL looks wrong: {model!r}")
             cmd += ["--model", model]
         return [*cmd, "--print"]  # the prompt is appended after this flag
 
     def prepare(self, ctx) -> str:
-        return f"agy --print (accept-edits mode, sandbox on; model: {os.environ.get('ZYVEN_AGY_MODEL') or 'agy default'})"
+        return f"agy --print (accept-edits mode, sandbox on; model: {self.model() or 'agy default'})"
 
     def parse(self, line: str, emit: Callable[[str, str], None], totals: dict[str, float]) -> bool:
         return parse_line(line, emit, totals)

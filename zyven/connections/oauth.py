@@ -148,6 +148,8 @@ class OAuthCoordinator:
         async def run() -> None:
             from mcp import Client
 
+            me = asyncio.current_task()
+
             provider = _Provider(conn["url"], _metadata(redirect_uri),
                                            StoreTokenStorage(self.store, cid, redirect_uri),
                                            redirect_handler=redirect, callback_handler=callback)
@@ -155,8 +157,11 @@ class OAuthCoordinator:
                 async with Client(make_server(conn, {}, auth=provider), read_timeout_seconds=30) as client:
                     tools = list((await client.list_tools()).tools)
                 self.store.update(cid, tools=describe_tools(tools), error=None, checked=time.time())
+            except asyncio.CancelledError:
+                raise  # replaced by a newer attempt or signed out: not an error, and it must not overwrite one
             except BaseException as e:  # noqa: BLE001 - shown to the user; also unblocks start()
-                self.store.update(cid, error=_message(e), checked=time.time())
+                if self._tasks.get(cid) is me:  # only the current attempt may record a failure
+                    self.store.update(cid, error=_message(e), checked=time.time())
                 if not url_ready.done():
                     url_ready.set_exception(RuntimeError(_message(e)))
             finally:
@@ -166,15 +171,22 @@ class OAuthCoordinator:
         self._tasks[cid] = asyncio.create_task(run())
         return await asyncio.wait_for(url_ready, 60)
 
-    def complete(self, state: str, code: str | None, error: str | None) -> None:
-        """Called by the callback page. Unknown `state` values are refused: this is the CSRF check."""
+    def active(self, cid: str) -> bool:
+        """Is a sign-in for this connection still waiting for the user (or for the service)?"""
+        task = self._tasks.get(cid)
+        return bool(task and not task.done())
+
+    def complete(self, state: str, code: str | None, error: str | None, iss: str | None = None) -> None:
+        """Called by the callback page. Unknown `state` values are refused: this is the CSRF check. `iss` is the
+        authorization server's own address (RFC 9207); services such as Notion require it to be checked, so it must
+        be passed on to the SDK exactly as received."""
         flow = self._flows.get(state)
         if flow is None or flow.code.done():
             raise KeyError("unknown or already used sign-in")
         if error or not code:
             flow.code.set_exception(SignInNeeded(error or "the service did not return a code"))
         else:
-            flow.code.set_result(AuthorizationCodeResult(code=code, state=state))
+            flow.code.set_result(AuthorizationCodeResult(code=code, state=state, iss=iss))
 
     def sign_out(self, cid: str) -> None:
         task = self._tasks.pop(cid, None)

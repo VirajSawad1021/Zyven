@@ -12,6 +12,7 @@ Host paths are never taken from the client: every run gets a directory under `<d
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import sqlite3
@@ -44,6 +45,12 @@ def runtime_info(adapters: dict[str, RuntimeAdapter]) -> dict[str, dict]:
 
     with ThreadPoolExecutor(max_workers=max(1, len(adapters))) as pool:
         infos = dict(zip(adapters, pool.map(lambda a: a.info(), adapters.values())))
+    from zyven.orchestrator import settings as rs
+
+    for name, info in infos.items():
+        if name in rs.NAMES:  # the user can switch these on and pick a model from the page
+            info["settings"] = {**{"enabled": False, "model": ""}, **rs.current().get(name)}
+            info["env_enabled"] = os.environ.get(f"ZYVEN_ENABLE_{name.upper()}") == "1"
     return {"zyven": ZYVEN_RUNTIME, **infos}
 
 

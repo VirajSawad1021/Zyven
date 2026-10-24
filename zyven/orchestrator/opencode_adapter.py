@@ -91,10 +91,8 @@ class OpenCodeAdapter(CLIAgentAdapter):
         exe = self._executable()
         assert exe, "opencode is not installed"
         cmd = [*exe, "run", "--standalone", "--format", "json"]
-        model = os.environ.get("ZYVEN_OPENCODE_MODEL", "").strip()
+        model = self.model()
         if model:
-            if not MODEL.fullmatch(model):
-                raise ValueError(f"ZYVEN_OPENCODE_MODEL looks wrong: {model!r}")
             cmd += ["-m", model]
         return cmd
 
@@ -102,7 +100,7 @@ class OpenCodeAdapter(CLIAgentAdapter):
         allow_shell = os.environ.get("ZYVEN_OPENCODE_ALLOW_SHELL") == "1"
         (ctx.cwd / "opencode.json").write_text(json.dumps(permission_config(allow_shell), indent=2), encoding="utf-8")
         return (f"opencode run ({'shell ALLOWED on this machine' if allow_shell else 'no shell, no web, folder only'}; "
-                f"model: {os.environ.get('ZYVEN_OPENCODE_MODEL') or 'OpenCode default'})")
+                f"model: {self.model() or 'OpenCode default'})")
 
     def parse(self, line: str, emit: Callable[[str, str], None], totals: dict[str, float]) -> bool:
         return parse_line(line, emit, totals)

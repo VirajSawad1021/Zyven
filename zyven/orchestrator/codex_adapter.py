@@ -94,16 +94,14 @@ class CodexAdapter(CLIAgentAdapter):
                "--skip-git-repo-check", "--ephemeral"]
         if cwd is not None:
             cmd += ["-C", str(cwd)]
-        model = os.environ.get("ZYVEN_CODEX_MODEL", "").strip()
+        model = self.model()
         if model:
-            if not MODEL.fullmatch(model):
-                raise ValueError(f"ZYVEN_CODEX_MODEL looks wrong: {model!r}")
             cmd += ["-m", model]
         return [*cmd, "-"]  # "-" reads the prompt from stdin
 
     def prepare(self, ctx) -> str:
         return (f"codex exec ({os.environ.get('ZYVEN_CODEX_SANDBOX', 'workspace-write')} sandbox: task folder only, no network; "
-                f"model: {os.environ.get('ZYVEN_CODEX_MODEL') or 'Codex default'})")
+                f"model: {self.model() or 'Codex default'})")
 
     def parse(self, line: str, emit: Callable[[str, str], None], totals: dict[str, float]) -> bool:
         return parse_line(line, emit, totals)

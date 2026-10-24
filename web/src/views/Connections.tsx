@@ -8,7 +8,7 @@ import { api, post } from "../lib/api";
 interface Tool { name: string; description: string; needs_approval: boolean }
 interface Conn {
   id: string; name: string; kind: "http" | "stdio"; url?: string; command?: string; args?: string[];
-  enabled: boolean; tools: Tool[] | null; error: string | null; secret_names: string[]; oauth?: boolean; signed_in?: boolean;
+  enabled: boolean; tools: Tool[] | null; error: string | null; secret_names: string[]; oauth?: boolean; signed_in?: boolean; signing_in?: boolean;
 }
 interface Template { id: string; label: string; kind: "http" | "stdio"; oauth?: boolean; hint: string; url: string; command: string; args: string[]; secrets: string[] }
 interface Data { connections: Conn[]; templates: Template[]; stdio_allowed: boolean }
@@ -114,14 +114,15 @@ function ConnCard({ c, onChange }: { c: Conn; onChange: () => void }) {
           {c.secret_names.length > 0 && <p className="mt-0.5 text-[11px] text-muted">Stored here: {c.secret_names.join(", ")}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Badge tone={c.enabled ? "good" : c.error ? "bad" : "neutral"}>{c.enabled ? "On" : c.error ? "Failed" : c.oauth && !c.signed_in ? "Not signed in" : c.tools ? "Tested, off" : "Not tested"}</Badge>
-          {c.oauth && !c.signed_in && <Button size="sm" loading={busy} onClick={signIn}>Sign in</Button>}
+          <Badge tone={c.enabled ? "good" : c.error ? "bad" : "neutral"}>{c.enabled ? "On" : c.signing_in ? "Signing in" : c.error ? "Failed" : c.oauth && !c.signed_in ? "Not signed in" : c.tools ? "Tested, off" : "Not tested"}</Badge>
+          {c.oauth && !c.signed_in && <Button size="sm" loading={busy || !!c.signing_in} onClick={signIn}>{c.signing_in ? "Waiting for you…" : "Sign in"}</Button>}
           {c.oauth && c.signed_in && <Button size="sm" variant="secondary" onClick={() => run(() => post(`/api/connections/${c.id}/signout`))}>Sign out</Button>}
           {(!c.oauth || c.signed_in) && <Button size="sm" variant="secondary" loading={busy} onClick={() => run(() => post(`/api/connections/${c.id}/test`))}>Test</Button>}
           {c.tools && <Button size="sm" onClick={() => run(() => post(`/api/connections/${c.id}/enabled`, { enabled: !c.enabled }))}>{c.enabled ? "Turn off" : "Turn on"}</Button>}
           <button aria-label="Remove" onClick={() => run(() => api(`/api/connections/${c.id}`, { method: "DELETE" }))} className="rounded-lg p-1.5 text-muted hover:bg-panel-2"><Trash2 className="h-4 w-4" /></button>
         </div>
       </div>
+      {c.signing_in && <p className="mt-2 text-[12px] text-body">Finish signing in on the page that opened. If you pressed Sign in more than once, use the newest tab and close the others.</p>}
       {(err || c.error) && <p className="mt-2 break-words rounded-lg bg-bad-bg px-3 py-2 font-mono text-[11.5px] text-bad">{err ?? c.error}</p>}
       {c.tools && (
         <div className="mt-3 border-t border-line pt-3">

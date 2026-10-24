@@ -28,6 +28,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable
 
+from zyven.orchestrator import settings
 from zyven.orchestrator.adapters import RUN_TIMEOUT_S, RunContext, RuntimeAdapter, kill_tree
 
 STATUS_TTL_S = 60
@@ -76,6 +77,13 @@ class CLIAgentAdapter(RuntimeAdapter):
         return None, ""
 
     # --- shared behaviour -------------------------------------------------------------------------------
+    def model(self) -> str:
+        """The model chosen on the Control center page, else ZYVEN_<NAME>_MODEL, else '' (the program's own default)."""
+        value = settings.model_for(self.name)
+        if value and not settings.MODEL.fullmatch(value):
+            raise ValueError(f"the {self.label} model looks wrong: {value!r}")
+        return value
+
     def _executable(self) -> list[str] | None:
         if self._exe:
             return self._exe
@@ -83,8 +91,8 @@ class CLIAgentAdapter(RuntimeAdapter):
         return [found] if found else None
 
     def available(self) -> tuple[bool, str]:
-        if os.environ.get(self.env_flag) != "1":
-            return False, f"Off by default: {self.privacy}. Set {self.env_flag}=1 to enable."
+        if not settings.is_enabled(self.name, self.env_flag):
+            return False, f"Off by default: {self.privacy}. Switch it on in the Control center (or set {self.env_flag}=1)."
         if not self._executable():
             return False, f"`{self.binary}` is not on PATH. {self.sign_in_help}"
         return True, ""

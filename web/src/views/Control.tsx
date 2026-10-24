@@ -7,7 +7,8 @@ import { api, post } from "../lib/api";
 import { relTime, type Tone } from "../lib/labels";
 
 interface RuntimeStatus { installed: boolean; signed_in: boolean | null; detail: string }
-interface RuntimeInfo { label: string; open_weight: boolean; available: boolean; note: string; exposes: Record<string, boolean>; status?: RuntimeStatus }
+interface RuntimeInfo { label: string; open_weight: boolean; available: boolean; note: string; exposes: Record<string, boolean>; status?: RuntimeStatus;
+  settings?: { enabled: boolean; model: string }; env_enabled?: boolean }
 interface Runtimes { runtimes: Record<string, RuntimeInfo>; planned: Record<string, string>; default_image: string }
 interface Run {
   id: string; title: string; runtime: string; prompt: string; image: string; network: boolean; memory: string; cpus: string;
@@ -20,7 +21,32 @@ const LABEL: Record<string, string> = { QUEUED: "Queued", SCHEDULED: "Scheduled"
 const EXPOSES: Record<string, string> = { live_output: "live output", tool_calls: "tool calls", approvals: "approvals", file_changes: "file changes", tokens: "token usage" };
 const input = "w-full rounded-xl border border-line-strong/80 bg-white px-3 py-2 text-[13px] text-ink placeholder:text-[#aaa79f] focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink";
 
-function NewTask({ rt, onCreated }: { rt: Runtimes; onCreated: (id: string) => void }) {
+function RuntimeSwitch({ id, info, onChanged }: { id: string; info: RuntimeInfo; onChanged: () => void }) {
+  const [model, setModel] = useState(info.settings?.model ?? "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  if (!info.settings) return null;
+  const save = async (body: { enabled?: boolean; model?: string }) => {
+    setBusy(true); setErr(null);
+    try { await post(`/api/runtime-settings/${id}`, body); onChanged(); } catch (e) { setErr(e instanceof Error ? e.message : "failed"); } finally { setBusy(false); }
+  };
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-2.5 rounded-xl border border-line bg-panel px-3 py-2.5">
+      {info.env_enabled
+        ? <Badge tone="good">On (set by environment variable)</Badge>
+        : <Button size="sm" variant={info.settings.enabled ? "secondary" : "primary"} loading={busy} onClick={() => save({ enabled: !info.settings!.enabled })}>{info.settings.enabled ? "Turn off" : "Turn on"}</Button>}
+      {id !== "github" && (
+        <>
+          <input className={`${input} max-w-[260px]`} placeholder="model (empty = the program's own default)" value={model} onChange={(e) => setModel(e.target.value)} />
+          <Button size="sm" variant="secondary" loading={busy} disabled={model === (info.settings.model ?? "")} onClick={() => save({ model })}>Save model</Button>
+        </>
+      )}
+      {err && <span className="text-[12.5px] text-bad">{err}</span>}
+    </div>
+  );
+}
+
+function NewTask({ rt, onCreated, onSettingsChanged }: { rt: Runtimes; onCreated: (id: string) => void; onSettingsChanged: () => void }) {
   const [runtime, setRuntime] = useState("docker");
   const [title, setTitle] = useState("");
   const [prompt, setPrompt] = useState("");
@@ -71,6 +97,7 @@ function NewTask({ rt, onCreated }: { rt: Runtimes; onCreated: (id: string) => v
           {info.status.detail && <span className="text-muted">{info.status.detail}</span>}
         </p>
       )}
+      <RuntimeSwitch key={`${runtime}:${info.settings?.model ?? ""}`} id={runtime} info={info} onChanged={onSettingsChanged} />
       <p className="mb-3 text-[12px] text-body">{info.note} <span className="text-muted">
         Exposes: {Object.entries(info.exposes).map(([k, v]) => `${EXPOSES[k]} ${v ? "✓" : "✗"}`).join(" · ")}. Anything marked ✗ is shown as &ldquo;not exposed&rdquo;, never estimated.</span></p>
 
@@ -223,7 +250,7 @@ export function Control() {
         <Stat value={count(["COMPLETED"])} label="Completed" icon={<Check className="h-3.5 w-3.5" />} />
       </div>
       <Approvals items={pending} onDecided={load} />
-      <NewTask rt={rt} onCreated={(id) => { setSel(id); load(); }} />
+      <NewTask rt={rt} onCreated={(id) => { setSel(id); load(); }} onSettingsChanged={() => api<Runtimes>("/api/runtimes").then(setRt).catch(() => {})} />
       {sel && <Detail id={sel} onClose={() => setSel(null)} />}
       {runs.length === 0 ? (
         <Empty seed="control" title="No tasks yet" body="Create a Docker task above, for example a command that writes a file, and watch the output stream in live." />

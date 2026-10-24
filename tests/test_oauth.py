@@ -138,3 +138,50 @@ def test_oauth_connections_take_no_pasted_headers_and_a_secret_needs_its_id(tmp_
     c = store.add(name="Google", kind="http", url="https://mcp.example.com/mcp", oauth=True,
                   oauth_client_id="abc.apps.example.com", oauth_client_secret="shh-secret")
     assert "shh-secret" not in json.dumps(store.list()) and c["secret_names"] == []
+
+
+def test_the_issuer_from_the_redirect_is_checked_not_thrown_away(tmp_path):
+    """Notion advertises authorization_response_iss_parameter_supported and rejects a sign-in whose redirect
+    handling drops `iss`. The value must reach the SDK, which compares it with the server's issuer."""
+    store = ConnectionStore(tmp_path)
+
+    async def go(base, provider):
+        coord = OAuthCoordinator(store)
+        good = store.add(name="Good issuer", kind="http", url=base + "/mcp", oauth=True)["id"]
+        code, state = await _click_allow(await coord.start(good, REDIRECT))
+        coord.complete(state, code, None, iss=base)
+        await asyncio.wait_for(coord._tasks[good], 30)
+        assert store.get(good)["signed_in"] is True and store.get(good)["error"] is None
+
+        bad = store.add(name="Wrong issuer", kind="http", url=base + "/mcp", oauth=True)["id"]
+        code, state = await _click_allow(await coord.start(bad, REDIRECT))
+        coord.complete(state, code, None, iss="https://evil.example")  # a mix-up attack: the answer came from elsewhere
+        await asyncio.wait_for(asyncio.gather(coord._tasks[bad], return_exceptions=True), 30)
+        assert store.get(bad)["signed_in"] is False and "iss mismatch" in store.get(bad)["error"]
+
+    with oauth_mcp_server() as (base, provider):
+        asyncio.run(go(base, provider))
+
+
+def test_pressing_sign_in_again_replaces_the_old_attempt_without_leaving_an_error(tmp_path):
+    store = ConnectionStore(tmp_path)
+
+    async def go(base, provider):
+        coord = OAuthCoordinator(store)
+        cid = store.add(name="Hosted demo", kind="http", url=base + "/mcp", oauth=True)["id"]
+        first = await coord.start(cid, REDIRECT)
+        old_state = parse_qs(urlparse(first).query)["state"][0]
+        assert coord.active(cid)
+        second = await coord.start(cid, REDIRECT)  # the user clicked again: the first attempt is replaced
+        await asyncio.sleep(0.2)
+        assert store.get(cid)["error"] is None  # the cancelled attempt must not record a failure
+        with pytest.raises(KeyError):
+            coord.complete(old_state, "code", None)  # a tab from the first attempt is refused, plainly
+        code, state = await _click_allow(second)
+        coord.complete(state, code, None)
+        await asyncio.wait_for(coord._tasks[cid], 30)
+        done = store.get(cid)
+        assert done["signed_in"] is True and done["error"] is None and not coord.active(cid)
+
+    with oauth_mcp_server() as (base, provider):
+        asyncio.run(go(base, provider))

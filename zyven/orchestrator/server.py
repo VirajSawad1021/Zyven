@@ -33,6 +33,8 @@ from zyven.connections.oauth import OAuthCoordinator
 from zyven.connections.runtime import load_enabled
 from zyven.connections.store import ConnectionError_, ConnectionStore, stdio_allowed
 from zyven.connections.templates import TEMPLATES
+from zyven.orchestrator import settings as runtime_settings
+from zyven.orchestrator.guard import install as install_guard
 from zyven.orchestrator.control import DEFAULT_IMAGE, PLANNED, Control, runtime_info
 from zyven.memory.skills import SkillLibrary
 
@@ -70,6 +72,11 @@ class NewConnection(BaseModel):
     oauth: bool = False
     oauth_client_id: str = ""
     oauth_client_secret: str = ""
+
+
+class RuntimeChange(BaseModel):
+    enabled: bool | None = None
+    model: str | None = None
 
 
 class Toggle(BaseModel):
@@ -274,6 +281,7 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
                       Catalog(ROOT / "catalog" / "repos.json", data_dir), ModelProvider.from_env(env_path))
         state["board"] = board
         state["control"] = Control(board_dir / "board.sqlite", board_dir, board)
+        runtime_settings.install(runtime_settings.RuntimeSettings(board_dir))
         state["connections"] = board.connections = ConnectionStore(board_dir)
         board.workspaces = board_dir / "workspaces"
         state["oauth"] = OAuthCoordinator(state["connections"])
@@ -282,6 +290,7 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
         worker.cancel()
 
     app = FastAPI(title="Zyven board", lifespan=lifespan)
+    install_guard(app)  # refuse other websites and foreign host names: the board can run programs
 
     # The Next.js site (web/out) is mounted last, after every API route. The single-file page is a
     # no-build fallback: it is served at / when the site is not built, and always at /legacy.
@@ -340,6 +349,15 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
     def runtimes():
         return {"runtimes": runtime_info(state["control"].adapters), "planned": PLANNED, "default_image": DEFAULT_IMAGE}
 
+    @app.post("/api/runtime-settings/{name}")
+    def runtime_setting(name: str, body: RuntimeChange):
+        try:
+            return runtime_settings.current().update(name, body.enabled, body.model)
+        except KeyError:
+            raise HTTPException(404, "unknown runtime") from None
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from None
+
     @app.get("/api/runs")
     def runs():
         return state["control"].list()
@@ -366,7 +384,8 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
     # --- connections: MCP servers the user connects (secrets stay on this machine) ---
     @app.get("/api/connections")
     def connections():
-        return {"connections": state["connections"].list(), "templates": TEMPLATES, "stdio_allowed": stdio_allowed()}
+        rows = [{**c, "signing_in": state["oauth"].active(c["id"])} for c in state["connections"].list()]
+        return {"connections": rows, "templates": TEMPLATES, "stdio_allowed": stdio_allowed()}
 
     @app.post("/api/connections")
     def connection_add(body: NewConnection):
@@ -404,7 +423,7 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
         return state["connections"].get(cid)
 
     @app.get("/oauth/callback")
-    async def oauth_callback(code: str | None = None, error: str | None = None,
+    async def oauth_callback(code: str | None = None, error: str | None = None, iss: str | None = None,
                              oauth_state: str = Query("", alias="state")):
         def page(title: str, body: str, status: int = 200) -> HTMLResponse:
             html = (f"<!doctype html><meta charset=utf-8><title>{title}</title><body style='font:16px system-ui;"
@@ -412,10 +431,11 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
             return HTMLResponse(html, status_code=status)
 
         try:
-            state["oauth"].complete(oauth_state, code, error)
+            state["oauth"].complete(oauth_state, code, error, iss)
         except KeyError:
-            return page("Sign-in not recognised", "This sign-in link is unknown or was already used. "
-                        "Start again from the Connections page.", 400)
+            return page("Sign-in not recognised", "This tab belongs to an older sign-in attempt: pressing Sign in again "
+                        "replaces the previous one. Close this tab, use the newest sign-in tab, or press Sign in once "
+                        "more on the Connections page.", 400)
         if error or not code:
             return page("Sign-in cancelled", "The service did not sign you in. You can close this tab.")
         return page("Signed in", "You can close this tab and go back to Zyven.")

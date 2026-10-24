@@ -75,9 +75,11 @@ class ClaudeCodeAdapter(CLIAgentAdapter):
         assert exe, "claude is not installed"
         tools = os.environ.get("ZYVEN_CLAUDE_TOOLS", DEFAULT_TOOLS)
         cap = os.environ.get("ZYVEN_CLAUDE_MAX_USD", "1.00")
-        return [*exe, "-p", "--output-format", "stream-json", "--verbose", "--tools", tools,
-                "--permission-mode", "acceptEdits", "--setting-sources", "user",
-                "--no-session-persistence", "--max-budget-usd", cap]
+        cmd = [*exe, "-p", "--output-format", "stream-json", "--verbose", "--tools", tools,
+               "--permission-mode", "acceptEdits", "--setting-sources", "user", "--no-session-persistence"]
+        if self.model():
+            cmd += ["--model", self.model()]
+        return [*cmd, "--max-budget-usd", cap]
 
     def prepare(self, ctx) -> str:
         cmd = self.command(ctx.cwd)

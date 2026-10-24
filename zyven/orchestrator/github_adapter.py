@@ -18,6 +18,7 @@ import shutil
 import subprocess
 from typing import Callable
 
+from zyven.orchestrator import settings
 from zyven.orchestrator.adapters import RunContext, RuntimeAdapter
 
 REPO_NAME = re.compile(r"[A-Za-z0-9._-]{1,100}")
@@ -68,8 +69,8 @@ class GitHubAdapter(RuntimeAdapter):
         self._runner = runner or subprocess.run
 
     def available(self) -> tuple[bool, str]:
-        if os.environ.get("ZYVEN_ENABLE_GITHUB") != "1":
-            return False, "Off by default (acts on your GitHub account). Set ZYVEN_ENABLE_GITHUB=1 to enable."
+        if not settings.is_enabled("github", "ZYVEN_ENABLE_GITHUB"):
+            return False, "Off by default (acts on your GitHub account). Switch it on in the Control center (or set ZYVEN_ENABLE_GITHUB=1)."
         if not shutil.which("gh"):
             return False, "`gh` is not on PATH. Install the GitHub CLI and run `gh auth login`."
         return True, ""
