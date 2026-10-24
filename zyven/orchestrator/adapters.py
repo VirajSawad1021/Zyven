@@ -7,6 +7,8 @@ new agent type only has to implement `run` and `cancel`.
   docker  a shell command in a locked-down container (network off by default)
   claude  Claude Code in headless mode, on the host, with a restricted tool set; proprietary, so it is
           off unless ZYVEN_ENABLE_CLAUDE=1
+  opencode  OpenCode, headless, locked to its task folder (opencode_adapter.py); off unless
+          ZYVEN_ENABLE_OPENCODE=1
   github  create a repository or an issue with `gh` after approval (github_adapter.py); off unless
           ZYVEN_ENABLE_GITHUB=1
 
@@ -147,7 +149,15 @@ class ClaudeCodeAdapter(RuntimeAdapter):
     def cancel(self, run_id: str) -> None:
         p = self._procs.get(run_id)
         if p and p.poll() is None:
-            p.kill()
+            kill_tree(p)
+
+
+def kill_tree(p: subprocess.Popen) -> None:
+    """Stop a process and everything it started (agent CLIs launch helpers; killing only the parent leaks them)."""
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/PID", str(p.pid), "/T", "/F"], capture_output=True)
+    else:
+        p.kill()
 
 
 def _short(value: Any, limit: int = 160) -> str:
@@ -185,5 +195,6 @@ def parse_stream_line(line: str, emit: Callable[[str, str], None]) -> bool:
 
 
 def default_adapters() -> dict[str, RuntimeAdapter]:
-    from zyven.orchestrator.github_adapter import GitHubAdapter  # imports this module, so import it lazily
-    return {a.name: a for a in (DockerAdapter(), ClaudeCodeAdapter(), GitHubAdapter())}
+    from zyven.orchestrator.github_adapter import GitHubAdapter  # these import this module, so import them lazily
+    from zyven.orchestrator.opencode_adapter import OpenCodeAdapter
+    return {a.name: a for a in (DockerAdapter(), ClaudeCodeAdapter(), OpenCodeAdapter(), GitHubAdapter())}
