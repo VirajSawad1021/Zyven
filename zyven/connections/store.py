@@ -66,9 +66,11 @@ class ConnectionStore:
 
     # --- public API ---------------------------------------------------------------------------------
     def _public(self, cid: str, c: dict[str, Any], secrets: dict[str, Any]) -> dict[str, Any]:
+        mine = secrets.get(cid, {})
         out = {k: v for k, v in c.items()}
         out["id"] = cid
-        out["secret_names"] = sorted(secrets.get(cid, {}))  # names only, never values
+        out["secret_names"] = sorted(k for k in mine if not k.startswith("_"))  # names only, never values
+        out["signed_in"] = "_oauth_tokens" in mine  # OAuth connections: do we hold a token
         return out
 
     def list(self) -> list[dict[str, Any]]:
@@ -82,9 +84,11 @@ class ConnectionStore:
         return self._public(cid, meta[cid], self._read(self._secrets))
 
     def add(self, *, name: str, kind: str, url: str = "", command: str = "", args: list[str] | None = None,
-            secrets: dict[str, str] | None = None) -> dict[str, Any]:
+            secrets: dict[str, str] | None = None, oauth: bool = False, oauth_client_id: str = "",
+            oauth_client_secret: str = "") -> dict[str, Any]:
         """kind "http": a hosted MCP server (secrets are sent as headers). kind "stdio": a local command
-        (secrets are passed as environment variables)."""
+        (secrets are passed as environment variables). oauth=True (http only): the user signs in through the
+        service's own page; a client id/secret is only needed when the service does not register apps itself."""
         name = name.strip()
         if not NAME.fullmatch(name):
             raise ConnectionError_("give the connection a short name")
@@ -92,8 +96,12 @@ class ConnectionStore:
         for k in secrets:
             if not SECRET_KEY.fullmatch(k):
                 raise ConnectionError_(f"bad secret name {k!r}")
+        if oauth and kind != "http":
+            raise ConnectionError_("OAuth sign-in only applies to hosted (URL) connections")
+        if oauth and secrets:
+            raise ConnectionError_("an OAuth connection signs in through the service; it takes no pasted headers")
         if kind == "http":
-            entry: dict[str, Any] = {"name": name, "kind": "http", "url": _check_url(url.strip())}
+            entry: dict[str, Any] = {"name": name, "kind": "http", "url": _check_url(url.strip()), "oauth": bool(oauth)}
         elif kind == "stdio":
             if not stdio_allowed():
                 raise ConnectionError_("local-command connectors are off. They run code on this machine; "
@@ -105,6 +113,11 @@ class ConnectionStore:
             raise ConnectionError_("kind must be http or stdio")
         entry.update({"enabled": False, "tools": None, "error": None, "checked": None})
         cid = uuid.uuid4().hex[:8]
+        if oauth and (oauth_client_id or oauth_client_secret):
+            if not oauth_client_id.strip():
+                raise ConnectionError_("an OAuth client secret needs its client id")
+            secrets = {"_oauth_client": json.dumps({"client_id": oauth_client_id.strip(),
+                                                    "client_secret": oauth_client_secret or None})}
         with self._lock:
             meta, sec = self._read(self._meta), self._read(self._secrets)
             meta[cid] = entry
@@ -138,6 +151,21 @@ class ConnectionStore:
             sec.pop(cid, None)
             self._write(self._meta, meta)
             self._write(self._secrets, sec, private=True)
+
+    def set_secret(self, cid: str, key: str, value: str) -> None:
+        with self._lock:
+            sec = self._read(self._secrets)
+            sec.setdefault(cid, {})[key] = value
+            self._write(self._secrets, sec, private=True)
+
+    def delete_secret(self, cid: str, key: str) -> None:
+        with self._lock:
+            sec = self._read(self._secrets)
+            if sec.get(cid, {}).pop(key, None) is not None:
+                self._write(self._secrets, sec, private=True)
+
+    def secret(self, cid: str, key: str) -> str | None:
+        return self._read(self._secrets).get(cid, {}).get(key)
 
     def secrets_for(self, cid: str) -> dict[str, str]:
         """Internal: the values, for launching or calling the server. Never expose this over the API."""

@@ -47,7 +47,7 @@ def test_read_only_tools_run_freely_and_the_rest_ask_first(demo):
 
     async def go():
         async with ToolBox() as tb:
-            names = await tb.add_transport("demo", make_server(store.get(cid), {}), prefix="demo__", gate=gate)
+            names = await tb.add_transport("demo", make_server(store.get(cid), store.secrets_for(cid)), prefix="demo__", gate=gate)
             assert set(names) == {"demo__lookup", "demo__send_message", "demo__whoami"}
             ok1, out1 = await tb.call("demo__lookup", {"q": "x"})
             assert ok1 and "found x" in out1 and asked == []  # read-only: no question
@@ -65,7 +65,7 @@ def test_a_denied_call_never_reaches_the_server(demo):
 
     async def go():
         async with ToolBox() as tb:
-            await tb.add_transport("demo", make_server(store.get(cid), {}), prefix="demo__", gate=deny)
+            await tb.add_transport("demo", make_server(store.get(cid), store.secrets_for(cid)), prefix="demo__", gate=deny)
             ok, out = await tb.call("demo__send_message", {"text": "hi"})
             assert ok is False and out.startswith("Denied")
 
@@ -77,7 +77,7 @@ def test_without_a_gate_nothing_is_blocked_for_trusted_local_skills(demo):
 
     async def go():
         async with ToolBox() as tb:
-            await tb.add_transport("demo", make_server(store.get(cid), {}))
+            await tb.add_transport("demo", make_server(store.get(cid), store.secrets_for(cid)))
             ok, out = await tb.call("send_message", {"text": "hi"})
             assert ok and "sent" in out
 
