@@ -111,7 +111,8 @@ def test_prompt_goes_on_stdin_never_in_the_arguments_and_the_folder_is_locked(tm
     assert seen["stdin"] == nasty and nasty not in " ".join(seen["argv"])
     assert seen["argv"][:3] == ["run", "--standalone", "--format"]
     assert json.loads(seen["config"])["permission"]["bash"] == "deny"  # in place before the program started
-    assert run["status"] == "COMPLETED" and "opencode.json" in run["files"]["added"]
+    assert run["status"] == "COMPLETED" and "opencode.json" not in run["files"]["added"]  # Zyven's own file is not a result
+    assert (c.workdir(rid) / "opencode.json").exists()  # but it was written, before the program started
     texts = [e["text"] for e in run["log"]]
     assert "finished" in texts and any("10 in / 5 out" in t for t in texts) and any(t.startswith("write(") for t in texts)
 

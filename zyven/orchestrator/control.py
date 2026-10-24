@@ -288,8 +288,9 @@ class Control:
                              approve=lambda kind, summary, detail="": self.request_approval(rid, kind, summary, detail))
             code = adapter.run(ctx)
             after = _snapshot(work)
-            files = {"added": sorted(set(after) - set(before)),
-                     "modified": sorted(k for k in after if k in before and after[k] != before[k])}
+            own = set(getattr(adapter, "scaffold_files", ()))  # files Zyven wrote for the agent, not work the agent did
+            files = {"added": sorted(set(after) - set(before) - own),
+                     "modified": sorted(k for k in after if k in before and after[k] != before[k] and k not in own)}
             status = "CANCELLED" if rid in self._cancel else "COMPLETED" if code == 0 else "FAILED"
             self._emit(rid, "info", f"exited with code {code}")
             self._set(rid, status=status, exit_code=code, files=json.dumps(files))

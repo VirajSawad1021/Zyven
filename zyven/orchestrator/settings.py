@@ -39,6 +39,32 @@ class RuntimeSettings:
     def all(self) -> dict[str, dict[str, Any]]:
         return {n: self.get(n) for n in NAMES}
 
+    def export_dir(self) -> str | None:
+        return (self._data.get("_export") or {}).get("dir") or None
+
+    def set_export_dir(self, raw: str) -> str:
+        """The one folder the user allows results to be copied into. It must already exist, be absolute, and not be a
+        system folder or the drive root; nothing is ever created or overwritten here beyond a new subfolder per run."""
+        p = Path(raw.strip().strip('"')).expanduser()
+        if not p.is_absolute():
+            raise ValueError("give the full path of an existing folder (starting from the drive, such as your Desktop)")
+        p = p.resolve()
+        if not p.is_dir():
+            raise ValueError(f"{p} is not an existing folder")
+        if p.parent == p or any(part.lower() in ("windows", "program files", "program files (x86)", "system32", "etc", "usr", "bin", "boot")
+                                for part in p.parts[1:2]):
+            raise ValueError("choose a normal folder such as your Desktop or Documents, not a system folder")
+        with self._lock:
+            self._data["_export"] = {"dir": str(p)}
+            self._save()
+        return str(p)
+
+    def _save(self) -> None:
+        if self.path:
+            tmp = self.path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(self._data, indent=1), encoding="utf-8")
+            tmp.replace(self.path)
+
     def update(self, name: str, enabled: bool | None = None, model: str | None = None) -> dict[str, Any]:
         if name not in NAMES:
             raise KeyError(name)
@@ -52,10 +78,7 @@ class RuntimeSettings:
                 cur["enabled"] = bool(enabled)
             if model is not None:
                 cur["model"] = model
-            if self.path:
-                tmp = self.path.with_suffix(".tmp")
-                tmp.write_text(json.dumps(self._data, indent=1), encoding="utf-8")
-                tmp.replace(self.path)
+            self._save()
             return dict(cur)
 
 

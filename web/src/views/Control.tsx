@@ -129,6 +129,44 @@ function NewTask({ rt, onCreated, onSettingsChanged }: { rt: Runtimes; onCreated
   );
 }
 
+function ExportBar({ id }: { id: string }) {
+  const [info, setInfo] = useState<{ export_dir: string | null; suggested: string } | null>(null);
+  const [path, setPath] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { api<{ export_dir: string | null; suggested: string }>("/api/export-settings").then(setInfo).catch(() => {}); }, []);
+  if (!info) return null;
+  const save = async () => {
+    setErr(null);
+    try { const r = await post<{ export_dir: string }>("/api/export-settings", { export_dir: path }); setInfo({ ...info, export_dir: r.export_dir }); setEditing(false); }
+    catch (e) { setErr(e instanceof Error ? e.message : "failed"); }
+  };
+  const copy = async () => {
+    setErr(null); setMsg(null);
+    try { const r = await post<{ copied: number; to: string }>(`/api/runs/${id}/export`); setMsg(`Copied ${r.copied} file${r.copied === 1 ? "" : "s"} to ${r.to}`); }
+    catch (e) { setErr(e instanceof Error ? e.message : "failed"); }
+  };
+  return (
+    <div className="mt-2.5 flex flex-wrap items-center gap-2 text-[12px]">
+      {info.export_dir && !editing ? (
+        <>
+          <button onClick={copy} className="rounded-lg bg-ink px-2.5 py-1 text-white">Save a copy to {info.export_dir.split(/[/\\]/).pop() || info.export_dir}</button>
+          <button onClick={() => { setPath(info.export_dir ?? ""); setEditing(true); }} className="text-muted underline-offset-2 hover:underline">change folder</button>
+        </>
+      ) : (
+        <>
+          <input className={`${input} max-w-[360px] font-mono`} placeholder={`Existing folder, e.g. ${info.suggested}`} value={path} onChange={(e) => setPath(e.target.value)} />
+          <button onClick={() => { setPath(info.suggested); }} className="text-muted underline-offset-2 hover:underline">use Desktop</button>
+          <button onClick={save} disabled={!path.trim()} className="rounded-lg border border-line-strong px-2.5 py-1 hover:bg-panel-2 disabled:opacity-50">Set export folder</button>
+        </>
+      )}
+      {msg && <span className="text-good">{msg}</span>}
+      {err && <span className="text-bad">{err}</span>}
+    </div>
+  );
+}
+
 function Detail({ id, onClose, runtimes }: { id: string; onClose: () => void; runtimes: Record<string, RuntimeInfo> }) {
   const [run, setRun] = useState<Run | null>(null);
   useEffect(() => {
@@ -189,6 +227,7 @@ function Detail({ id, onClose, runtimes }: { id: string; onClose: () => void; ru
                   {run.files.modified.map((f) => <li key={f} className="text-warn">~ <a className="underline-offset-2 hover:underline" href={`/api/runs/${id}/files/${f}`}>{f}</a></li>)}
                 </ul>
               )}
+              {run.files.added.length + run.files.modified.length > 0 && <ExportBar id={id} />}
             </div>
           )}
         </>

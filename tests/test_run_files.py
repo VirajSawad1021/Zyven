@@ -89,3 +89,42 @@ def test_open_folder_opens_only_the_runs_own_folder(served, monkeypatch):
     r = client.post(f"/api/runs/{rid}/reveal")
     assert r.status_code == 200 and opened == [ctl.workdir(rid)]
     assert client.post("/api/runs/nope/reveal").status_code == 404
+
+
+# --- export folder -----------------------------------------------------------------------------------------------
+
+def test_export_needs_a_chosen_folder_and_rejects_bad_ones(served, tmp_path):
+    client, ctl, rid = served
+    assert client.post(f"/api/runs/{rid}/export").status_code == 400  # nothing chosen yet
+    assert client.get("/api/export-settings").json()["export_dir"] is None
+    for bad in ("relative/folder", str(tmp_path / "does-not-exist"), tmp_path.anchor):
+        r = client.post("/api/export-settings", json={"export_dir": bad})
+        assert r.status_code == 400, bad
+    if os.name == "nt":
+        assert client.post("/api/export-settings", json={"export_dir": r"C:\Windows"}).status_code == 400
+    assert client.post("/api/export-settings", json={"export_dir": str(tmp_path)}).status_code == 200
+
+
+def test_export_copies_the_runs_files_into_a_new_subfolder_and_never_overwrites(served, tmp_path):
+    client, ctl, rid = served
+    dest = tmp_path / "Desktop"
+    dest.mkdir()
+    (dest / "keep.txt").write_text("mine", encoding="utf-8")
+    assert client.post("/api/export-settings", json={"export_dir": str(dest)}).json()["export_dir"] == str(dest.resolve())
+    first = client.post(f"/api/runs/{rid}/export").json()
+    assert first["copied"] == 2 and Path(first["to"]).parent == dest.resolve()
+    assert (Path(first["to"]) / "index.html").read_text(encoding="utf-8") == "<script>alert(1)</script>"
+    assert (Path(first["to"]) / "sub" / "notes.txt").read_text(encoding="utf-8") == "hello"
+    second = client.post(f"/api/runs/{rid}/export").json()  # again: a new folder, the first is untouched
+    assert second["to"] != first["to"] and Path(second["to"]).is_dir() and Path(first["to"]).is_dir()
+    assert (dest / "keep.txt").read_text(encoding="utf-8") == "mine"
+    assert not any(p.name == "unlisted.txt" for p in dest.rglob("*"))  # only what the run produced
+
+
+def test_the_export_setting_survives_a_restart(tmp_path):
+    from zyven.orchestrator.settings import RuntimeSettings
+
+    folder = tmp_path / "out"
+    folder.mkdir()
+    RuntimeSettings(tmp_path).set_export_dir(str(folder))
+    assert RuntimeSettings(tmp_path).export_dir() == str(folder.resolve())

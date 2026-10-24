@@ -81,6 +81,7 @@ class OpenCodeAdapter(CLIAgentAdapter):
     env_flag = "ZYVEN_ENABLE_OPENCODE"
     privacy = "the task text goes to the model provider OpenCode is set up with"
     project_config_dirs = (".opencode",)
+    scaffold_files = ("opencode.json",)  # the permission file Zyven writes; not part of the user's results
     sign_in_help = "Install it from opencode.ai; `opencode auth login` adds your own provider."
     open_weight = False  # depends on the model the user picks; not verified here
     exposes = {"live_output": True, "tool_calls": True, "approvals": False, "file_changes": True, "tokens": True}

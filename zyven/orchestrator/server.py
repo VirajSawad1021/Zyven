@@ -78,6 +78,10 @@ class NewConnection(BaseModel):
     oauth_client_secret: str = ""
 
 
+class ExportFolder(BaseModel):
+    export_dir: str
+
+
 class RuntimeChange(BaseModel):
     enabled: bool | None = None
     model: str | None = None
@@ -424,6 +428,43 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
                 z.write(path, rel)
         return Response(buf.getvalue(), media_type="application/zip",
                         headers={"Content-Disposition": f'attachment; filename="run-{run_id}.zip"'})
+
+    @app.get("/api/export-settings")
+    def export_settings():
+        return {"export_dir": runtime_settings.current().export_dir(), "suggested": str(Path.home() / "Desktop")}
+
+    @app.post("/api/export-settings")
+    def export_settings_set(body: ExportFolder):
+        try:
+            return {"export_dir": runtime_settings.current().set_export_dir(body.export_dir)}
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from None
+
+    @app.post("/api/runs/{run_id}/export")
+    def run_export(run_id: str):
+        """Copy the files this run created or changed into the user's chosen export folder, in a new subfolder.
+        The click is the permission; nothing already there is overwritten."""
+        import re
+        import shutil
+
+        target = runtime_settings.current().export_dir()
+        if not target or not Path(target).is_dir():
+            raise HTTPException(400, "choose an export folder first")
+        run = state["control"].get(run_id)
+        names = sorted(set((run.get("files") or {}).get("added", [])) | set((run.get("files") or {}).get("modified", [])))
+        if not names:
+            raise HTTPException(400, "this run changed no files")
+        slug = re.sub(r"[^A-Za-z0-9._-]+", "-", run["title"]).strip("-.")[:40] or "run"
+        dest, n = Path(target) / slug, 2
+        while dest.exists():
+            dest = Path(target) / f"{slug}-{n}"
+            n += 1
+        for rel in names:
+            src = _run_file(run_id, rel)
+            out = dest / rel
+            out.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, out)
+        return {"copied": len(names), "to": str(dest)}
 
     @app.post("/api/runs/{run_id}/reveal")
     def run_reveal(run_id: str):
