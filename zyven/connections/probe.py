@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 from typing import Any
 
@@ -22,19 +23,22 @@ def describe_tools(tools: list[Any]) -> list[dict[str, Any]]:
             for t in tools]
 
 
-async def _list_tools(conn: dict[str, Any], secrets: dict[str, str]) -> list[Any]:
-    from mcp import Client
+def make_server(conn: dict[str, Any], secrets: dict[str, str]) -> Any:
+    """What `mcp.Client` connects to for this connection: a URL transport with the secrets as headers, or stdio
+    parameters with the secrets in the environment."""
     from mcp.client.stdio import StdioServerParameters
     from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client
 
     if conn["kind"] == "http":
         headers = {k.replace("_", "-"): v for k, v in secrets.items()}  # e.g. Authorization
-        http = create_mcp_http_client(headers=headers or None)
-        server: Any = streamable_http_client(conn["url"], http_client=http)
-    else:
-        env = {**__import__("os").environ, **secrets}
-        server = StdioServerParameters(command=conn["command"], args=conn["args"], env=env)
-    async with Client(server, read_timeout_seconds=30) as client:
+        return streamable_http_client(conn["url"], http_client=create_mcp_http_client(headers=headers or None))
+    return StdioServerParameters(command=conn["command"], args=conn["args"], env={**os.environ, **secrets})
+
+
+async def _list_tools(conn: dict[str, Any], secrets: dict[str, str]) -> list[Any]:
+    from mcp import Client
+
+    async with Client(make_server(conn, secrets), read_timeout_seconds=30) as client:
         return list((await client.list_tools()).tools)
 
 

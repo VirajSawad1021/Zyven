@@ -105,3 +105,18 @@ def test_unknown_annotations_mean_ask_first():
     class T:  # a server that sets no hints
         annotations = None
     assert needs_approval(T()) is True
+
+
+def test_templates_are_well_formed_and_oauth_ones_are_marked_unavailable():
+    from zyven.connections.templates import TEMPLATES
+
+    ids = [t["id"] for t in TEMPLATES]
+    assert len(ids) == len(set(ids)) and {"notion", "slack", "gmail", "github"} <= set(ids)
+    for t in TEMPLATES:
+        assert t["kind"] in ("http", "stdio") and t["hint"]
+        if t["kind"] == "http":
+            assert t["url"] == "" or t["url"].startswith("https://")
+        if t.get("oauth"):
+            assert t["secrets"] == []  # nothing to paste: they need a sign-in flow we do not have
+        else:
+            assert t["secrets"] or t["id"] in ("filesystem", "custom-stdio")

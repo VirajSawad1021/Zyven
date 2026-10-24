@@ -35,7 +35,20 @@ class ApprovalRequest:
     match_reason: str
 
 
-ApproveFn = Callable[[ApprovalRequest], Awaitable[bool]]
+@dataclass
+class ToolApprovalRequest:
+    """The agent wants to run a tool from a connected service that is not read-only."""
+
+    connection: str
+    tool: str
+    arguments: dict
+
+    def as_dict(self) -> dict:
+        return {"kind": "tool_call", "connection": self.connection, "tool": self.tool, "arguments": self.arguments}
+
+
+ApproveFn = Callable[[ApprovalRequest | ToolApprovalRequest], Awaitable[bool]]
+ConnectFn = Callable[[ToolBox, Callable[..., None], ApproveFn], Awaitable[list[str]]]
 
 
 @dataclass
@@ -58,6 +71,7 @@ async def run_self_extending(
     on_event: EventFn = lambda k, d: print(f"[card] {k}: {d.get('detail', '')}", flush=True),
     system: str | None = None,
     max_tokens: int | None = 4096,
+    connect: ConnectFn | None = None,
 ) -> SelfExtendResult:
     events: list[dict] = []
     failed_compiles: list[str] = []
@@ -70,6 +84,8 @@ async def run_self_extending(
     result = SelfExtendResult(status="FAILED", answer=None, events=events, failed_compiles=failed_compiles,
                               rejected=rejected)
     async with ToolBox() as tb:
+        if connect is not None:  # tools from services the user connected; writes ask first
+            await connect(tb, emit, approve)
         emit("RUNNING", detail=f"{len(tb.openai_tools)} tools loaded")
         gap = await asyncio.to_thread(gap_check, provider, task, tb.openai_tools)
         emit("GAP_CHECK", detail="tools sufficient" if not gap.missing_capabilities else

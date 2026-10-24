@@ -29,6 +29,7 @@ from zyven.analysis.analyzer import analyze
 from zyven.analysis.explorer import explore
 from zyven.catalog.catalog import Catalog
 from zyven.connections.probe import probe as probe_connection
+from zyven.connections.runtime import load_enabled
 from zyven.connections.store import ConnectionError_, ConnectionStore, stdio_allowed
 from zyven.connections.templates import TEMPLATES
 from zyven.orchestrator.control import DEFAULT_IMAGE, PLANNED, Control, runtime_info
@@ -87,6 +88,7 @@ class Board:
             " updated REAL, answer TEXT, learned TEXT, reused TEXT);"
             "CREATE TABLE IF NOT EXISTS events (card TEXT, seq INTEGER, ts REAL, kind TEXT, data TEXT);")
         self.library, self.catalog, self.provider = library, catalog, provider
+        self.connections: ConnectionStore | None = None  # services the user connected (set when the app starts)
         self.queue: asyncio.Queue[str] = asyncio.Queue()
         self.listeners: set[asyncio.Queue] = set()
         self.approvals: dict[str, asyncio.Future] = {}
@@ -165,9 +167,16 @@ class Board:
                     self.approvals.pop(cid, None)
 
             try:
+                connect = None
+                if self.connections is not None:
+                    store = self.connections
+
+                    async def connect(tb, emit, ask, store=store):
+                        return await load_enabled(tb, store, emit, ask)
+
                 res = await run_self_extending(self.provider, task, self.library, self.catalog, approve,
                                                on_event=lambda k, d, cid=cid: self.emit(cid, k, d),
-                                               system=AGENT_SYSTEM)
+                                               system=AGENT_SYSTEM, connect=connect)
                 answer = res.answer.final_text if res.answer else ""
                 with self._lock:
                     self.db.execute("UPDATE cards SET answer=?, learned=?, reused=?, status=? WHERE id=?",
@@ -254,7 +263,7 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
                       Catalog(ROOT / "catalog" / "repos.json", data_dir), ModelProvider.from_env(env_path))
         state["board"] = board
         state["control"] = Control(board_dir / "board.sqlite", board_dir, board)
-        state["connections"] = ConnectionStore(board_dir)
+        state["connections"] = board.connections = ConnectionStore(board_dir)
         worker = asyncio.create_task(board.worker())
         yield
         worker.cancel()
