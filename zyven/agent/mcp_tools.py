@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import sys
 from contextlib import AsyncExitStack
@@ -57,6 +58,7 @@ class ToolBox:
         self._route: dict[str, str] = {}  # tool name -> server name
         self._orig: dict[str, str] = {}  # tool name -> the name the server knows it by (differs when prefixed)
         self._gates: dict[str, Gate] = {}  # tools that need a yes before every call
+        self._native: dict[str, Callable[[dict[str, Any]], str]] = {}  # built-in tools: plain functions
         self.openai_tools: list[dict[str, Any]] = []
 
     async def __aenter__(self) -> "ToolBox":
@@ -101,6 +103,17 @@ class ToolBox:
             added.append(public)
         return added
 
+    def add_native(self, name: str, description: str, parameters: dict[str, Any],
+                   fn: Callable[[dict[str, Any]], str], gate: Gate | None = None) -> None:
+        """A built-in tool: `fn(arguments)` returns the text the model sees, or raises ValueError with a message
+        the model can act on. With a gate, every call waits for a yes first."""
+        self._native[name] = fn
+        self._route[name] = "native"
+        if gate is not None:
+            self._gates[name] = gate
+        self.openai_tools.append({"type": "function", "function": {"name": name, "description": description,
+                                                                    "parameters": parameters}})
+
     @property
     def tool_names(self) -> list[str]:
         return list(self._route)
@@ -113,6 +126,13 @@ class ToolBox:
         gate = self._gates.get(name)
         if gate is not None and not await gate(name, arguments):
             return False, "Denied: the user did not approve this action, so it was not run. Do not retry it."
+        if name in self._native:
+            try:
+                return True, await asyncio.to_thread(self._native[name], arguments)
+            except ValueError as e:  # a refusal the model can fix: bad path, bad argument
+                return False, str(e)
+            except Exception as e:  # noqa: BLE001 - never raise into the agent loop
+                return False, f"Tool {name} failed: {e}"
         try:
             result = await self._clients[server].call_tool(self._orig.get(name, name), arguments)
         except Exception as e:  # noqa: BLE001 - surface any transport/tool failure to the model

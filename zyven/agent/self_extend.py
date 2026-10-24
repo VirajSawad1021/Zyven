@@ -12,10 +12,10 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from zyven.agent.gap import CapabilityMatch, MissingCapability, gap_check, match_capability
+from zyven.agent.gap import CapabilityMatch, GapCheck, MissingCapability, gap_check, match_capability
 from zyven.agent.loop import AgentResult, run_agent
 from zyven.agent.mcp_tools import ToolBox
-from zyven.ai.provider import ModelProvider
+from zyven.ai.provider import ModelProvider, ProviderError
 from zyven.catalog.catalog import Catalog
 from zyven.compiler.pipeline import compile_capability
 from zyven.memory.skills import SkillLibrary, skill_server_spec
@@ -72,10 +72,12 @@ async def run_self_extending(
     system: str | None = None,
     max_tokens: int | None = 4096,
     connect: ConnectFn | None = None,
+    workspace_dir: Path | None = None,
 ) -> SelfExtendResult:
     events: list[dict] = []
     failed_compiles: list[str] = []
     rejected: list[str] = []
+    no_match: list[str] = []  # needs for which neither the library nor the catalog had anything
 
     def emit(kind: str, **data) -> None:
         events.append({"event": kind, **data})
@@ -86,10 +88,20 @@ async def run_self_extending(
     async with ToolBox() as tb:
         if connect is not None:  # tools from services the user connected; writes ask first
             await connect(tb, emit, approve)
+        if workspace_dir is not None:  # a folder to write and run code in; internet access asks first
+            from zyven.agent.workspace import Workspace, attach
+            from zyven.connections.runtime import make_gate
+
+            ws = Workspace(workspace_dir)
+            attach(tb, ws, make_gate("Sandbox with internet access", emit, approve))
         emit("RUNNING", detail=f"{len(tb.openai_tools)} tools loaded")
-        gap = await asyncio.to_thread(gap_check, provider, task, tb.openai_tools)
-        emit("GAP_CHECK", detail="tools sufficient" if not gap.missing_capabilities else
-             "; ".join(m.description for m in gap.missing_capabilities), plan=gap.plan)
+        try:
+            gap = await asyncio.to_thread(gap_check, provider, task, tb.openai_tools)
+            emit("GAP_CHECK", detail="tools sufficient" if not gap.missing_capabilities else
+                 "; ".join(m.description for m in gap.missing_capabilities), plan=gap.plan)
+        except ProviderError as e:  # the gap check only advises; a model glitch must not end the task
+            gap = GapCheck(plan=[], can_complete_with_current_tools=True, missing_capabilities=[])
+            emit("GAP_CHECK", detail=f"gap check unavailable ({str(e)[:90]}); continuing with the tools I have", plan=[])
 
         for need in gap.missing_capabilities:
             # 1) Already learned? Search the skill library first.
@@ -107,6 +119,7 @@ async def run_self_extending(
             m = await asyncio.to_thread(match_capability, provider, need, catalog.options())
             if not m.choice:
                 emit("NO_MATCH", detail=m.reason)
+                no_match.append(need.description)
                 continue
             repo, cand, analysis = catalog.resolve(m.choice)
 
@@ -153,6 +166,8 @@ async def run_self_extending(
             agent_system = f"{system}\n\n{notice}" if system else notice
 
         answer = await run_agent(provider, task, tb, system=agent_system, max_tokens=max_tokens)
+        if workspace_dir is not None and ws.files():
+            emit("workspace.files", detail=", ".join(ws.files()[:30]), path=str(workspace_dir))
         for c in answer.tool_calls:
             for s in result.learned + result.reused:
                 library.record_call(s, c.name, c.ok, task)
@@ -163,6 +178,12 @@ async def run_self_extending(
             result.status = "UNVERIFIED"
         else:
             result.status = "DONE"
+        if not answer.final_text:  # a failure must say why, in words the user can act on
+            lacking = [m for m in no_match] + failed_compiles + rejected
+            answer.final_text = "I could not finish this. " + (
+                f"Provider error: {answer.error}. " if answer.error else
+                ("I have no tool for: " + "; ".join(lacking) + ". Connect a service for it on the Connections page, "
+                 "or ask for something my tools cover. " if lacking else "I ended without an answer. "))
         emit(result.status, detail=(answer.final_text or answer.error or "")[-300:],
              tool_calls=[(c.name, c.arguments) for c in answer.tool_calls])
     return result

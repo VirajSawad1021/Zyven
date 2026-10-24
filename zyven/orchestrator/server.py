@@ -43,7 +43,12 @@ ART = ROOT / "web" / "public" / "art"
 
 AGENT_SYSTEM = (
     "You are a helpful assistant that completes the user's task using your tools when they apply. "
-    "Report tool results faithfully; do not recompute what a tool already returned. Be concise."
+    "Report tool results faithfully; do not recompute what a tool already returned. Be concise. "
+    "You also have a working folder: write_file creates files, run_command runs them in a sandbox with no "
+    "internet, read_file and list_files look around. Test what you write before saying it works. If a package is "
+    "needed, run_command_with_network (the user is asked first) can install it with "
+    "`pip install --target /work/.pkgs <name>`. To publish, send or post something, use a connected service's tools "
+    "if you have them. If you do not have a tool for it, say plainly what is missing; never pretend it was done."
 )
 
 
@@ -93,6 +98,7 @@ class Board:
             "CREATE TABLE IF NOT EXISTS events (card TEXT, seq INTEGER, ts REAL, kind TEXT, data TEXT);")
         self.library, self.catalog, self.provider = library, catalog, provider
         self.connections: ConnectionStore | None = None  # services the user connected (set when the app starts)
+        self.workspaces: Path | None = None  # one working folder per task lives under here
         self.queue: asyncio.Queue[str] = asyncio.Queue()
         self.listeners: set[asyncio.Queue] = set()
         self.approvals: dict[str, asyncio.Future] = {}
@@ -180,7 +186,8 @@ class Board:
 
                 res = await run_self_extending(self.provider, task, self.library, self.catalog, approve,
                                                on_event=lambda k, d, cid=cid: self.emit(cid, k, d),
-                                               system=AGENT_SYSTEM, connect=connect)
+                                               system=AGENT_SYSTEM, connect=connect,
+                                               workspace_dir=self.workspaces / cid if self.workspaces else None)
                 answer = res.answer.final_text if res.answer else ""
                 with self._lock:
                     self.db.execute("UPDATE cards SET answer=?, learned=?, reused=?, status=? WHERE id=?",
@@ -268,6 +275,7 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
         state["board"] = board
         state["control"] = Control(board_dir / "board.sqlite", board_dir, board)
         state["connections"] = board.connections = ConnectionStore(board_dir)
+        board.workspaces = board_dir / "workspaces"
         state["oauth"] = OAuthCoordinator(state["connections"])
         worker = asyncio.create_task(board.worker())
         yield
