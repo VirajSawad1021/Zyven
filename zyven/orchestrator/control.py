@@ -38,7 +38,13 @@ PLANNED = {
 
 
 def runtime_info(adapters: dict[str, RuntimeAdapter]) -> dict[str, dict]:
-    return {"zyven": ZYVEN_RUNTIME, **{n: a.info() for n, a in adapters.items()}}
+    """Every runtime's description. Command-line agents also report installed / signed in, which runs each program,
+    so the checks go in parallel (and each adapter caches its answer for a minute)."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=max(1, len(adapters))) as pool:
+        infos = dict(zip(adapters, pool.map(lambda a: a.info(), adapters.values())))
+    return {"zyven": ZYVEN_RUNTIME, **infos}
 
 
 def _snapshot(root: Path) -> dict[str, tuple[int, int]]:
@@ -68,7 +74,7 @@ class Control:
             " status TEXT, created REAL, decided REAL);")
         if "repeat_secs" not in {r[1] for r in self.db.execute("PRAGMA table_info(runs)")}:  # older databases
             self.db.execute("ALTER TABLE runs ADD COLUMN repeat_secs REAL")
-        self.root = Path(data_dir) / "control"
+        self.root = Path(data_dir).resolve() / "control"  # absolute: programs started in a task folder resolve paths from inside it
         self.root.mkdir(parents=True, exist_ok=True)
         self.board = board
         self._lock = threading.Lock()

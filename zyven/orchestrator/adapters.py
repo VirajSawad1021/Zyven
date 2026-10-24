@@ -5,10 +5,8 @@ code. The Control center owns everything else (queue, schedule, repeat, repo che
 new agent type only has to implement `run` and `cancel`.
 
   docker  a shell command in a locked-down container (network off by default)
-  claude  Claude Code in headless mode, on the host, with a restricted tool set; proprietary, so it is
-          off unless ZYVEN_ENABLE_CLAUDE=1
-  opencode  OpenCode, headless, locked to its task folder (opencode_adapter.py); off unless
-          ZYVEN_ENABLE_OPENCODE=1
+  claude, codex, opencode, agy  command-line coding agents run headless (cli_agent.py and one module each); every
+          one is off unless its ZYVEN_ENABLE_* variable is 1
   github  create a repository or an issue with `gh` after approval (github_adapter.py); off unless
           ZYVEN_ENABLE_GITHUB=1
 
@@ -96,62 +94,6 @@ class DockerAdapter(RuntimeAdapter):
         subprocess.run(["docker", "kill", f"zyven-run-{run_id}"], capture_output=True)
 
 
-class ClaudeCodeAdapter(RuntimeAdapter):
-    """Claude Code, headless (`claude -p --output-format stream-json`).
-
-    It runs on the host because it needs the user's own login, so the guard rails are its own: a small tool
-    allowlist (no shell by default), a working folder of its own, a spending cap and no saved session.
-    Override with ZYVEN_CLAUDE_TOOLS (comma separated) and ZYVEN_CLAUDE_MAX_USD.
-    """
-
-    name = "claude"
-    label = "Claude Code"
-    open_weight = False
-    exposes = {"live_output": True, "tool_calls": True, "approvals": False, "file_changes": True, "tokens": True}
-    note = "Claude Code in headless mode with a restricted tool set. Proprietary model: experiments, not submission results."
-    DEFAULT_TOOLS = "Read,Write,Edit,Glob,Grep"
-
-    def __init__(self) -> None:
-        self._procs: dict[str, subprocess.Popen] = {}
-
-    def available(self) -> tuple[bool, str]:
-        if os.environ.get("ZYVEN_ENABLE_CLAUDE") != "1":
-            return False, "Off by default (proprietary model). Set ZYVEN_ENABLE_CLAUDE=1 to enable."
-        if not shutil.which("claude"):
-            return False, "`claude` is not on PATH. Install Claude Code and log in with `claude`."
-        return True, ""
-
-    def command(self, prompt: str) -> list[str]:
-        tools = os.environ.get("ZYVEN_CLAUDE_TOOLS", self.DEFAULT_TOOLS)
-        cap = os.environ.get("ZYVEN_CLAUDE_MAX_USD", "1.00")
-        return ["claude", "-p", prompt, "--output-format", "stream-json", "--verbose", "--tools", tools,
-                "--no-session-persistence", "--max-budget-usd", cap]
-
-    def run(self, ctx: RunContext) -> int:
-        rid = ctx.run["id"]
-        cmd = self.command(ctx.run["prompt"])
-        ctx.emit("info", f"claude -p (tools: {cmd[cmd.index('--tools') + 1]}; cap ${cmd[-1]}; runs on the host)")
-        p = subprocess.Popen(cmd, cwd=ctx.cwd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-        self._procs[rid] = p
-        killer = threading.Timer(RUN_TIMEOUT_S, lambda: self.cancel(rid))
-        killer.start()
-        failed = False
-        try:
-            for line in p.stdout:  # type: ignore[union-attr]
-                failed = parse_stream_line(line, ctx.emit) or failed
-            code = p.wait()
-            return code or (1 if failed else 0)
-        finally:
-            killer.cancel()
-            self._procs.pop(rid, None)
-
-    def cancel(self, run_id: str) -> None:
-        p = self._procs.get(run_id)
-        if p and p.poll() is None:
-            kill_tree(p)
-
-
 def kill_tree(p: subprocess.Popen) -> None:
     """Stop a process and everything it started (agent CLIs launch helpers; killing only the parent leaks them)."""
     if os.name == "nt":
@@ -160,41 +102,18 @@ def kill_tree(p: subprocess.Popen) -> None:
         p.kill()
 
 
-def _short(value: Any, limit: int = 160) -> str:
-    text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
-    return text if len(text) <= limit else text[:limit] + "…"
-
-
-def parse_stream_line(line: str, emit: Callable[[str, str], None]) -> bool:
-    """Turn one Claude Code stream-json line into run events. Returns True when the run reported an error."""
-    line = line.strip()
-    if not line:
-        return False
-    try:
-        msg = json.loads(line)
-    except json.JSONDecodeError:
-        emit("out", line)  # not JSON: show it as plain output
-        return False
-    kind = msg.get("type")
-    if kind == "assistant":
-        for block in (msg.get("message") or {}).get("content") or []:
-            if block.get("type") == "text" and block.get("text", "").strip():
-                emit("out", block["text"].strip())
-            elif block.get("type") == "tool_use":
-                emit("tool", f"{block.get('name')}({_short(block.get('input', {}))})")
-    elif kind == "result":
-        usage = msg.get("usage") or {}
-        bits = [f"{usage.get('input_tokens', 0)} in / {usage.get('output_tokens', 0)} out tokens"]
-        if msg.get("total_cost_usd") is not None:
-            bits.append(f"${msg['total_cost_usd']:.4f}")
-        emit("info", "done: " + ", ".join(bits))
-        if msg.get("result"):
-            emit("out", str(msg["result"]).strip())
-        return bool(msg.get("is_error"))
-    return False
+def __getattr__(name: str):  # the Claude adapter lives in claude_adapter.py; keep the old import path working
+    if name in ("ClaudeCodeAdapter", "parse_stream_line"):
+        from zyven.orchestrator import claude_adapter
+        return getattr(claude_adapter, name)
+    raise AttributeError(name)
 
 
 def default_adapters() -> dict[str, RuntimeAdapter]:
-    from zyven.orchestrator.github_adapter import GitHubAdapter  # these import this module, so import them lazily
+    from zyven.orchestrator.agy_adapter import AgyAdapter  # these import this module, so import them lazily
+    from zyven.orchestrator.claude_adapter import ClaudeCodeAdapter
+    from zyven.orchestrator.codex_adapter import CodexAdapter
+    from zyven.orchestrator.github_adapter import GitHubAdapter
     from zyven.orchestrator.opencode_adapter import OpenCodeAdapter
-    return {a.name: a for a in (DockerAdapter(), ClaudeCodeAdapter(), OpenCodeAdapter(), GitHubAdapter())}
+    return {a.name: a for a in (DockerAdapter(), ClaudeCodeAdapter(), CodexAdapter(), OpenCodeAdapter(), AgyAdapter(),
+                                GitHubAdapter())}

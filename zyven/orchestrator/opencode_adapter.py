@@ -20,12 +20,11 @@ from __future__ import annotations
 import json
 import os
 import re
-import shutil
-import subprocess
-import threading
+from pathlib import Path
 from typing import Any, Callable
 
-from zyven.orchestrator.adapters import RUN_TIMEOUT_S, RunContext, RuntimeAdapter, kill_tree
+from zyven.orchestrator.adapters import RunContext
+from zyven.orchestrator.cli_agent import CLIAgentAdapter, run_quiet
 
 MODEL = re.compile(r"[\w./:#\-]{1,100}")
 
@@ -75,33 +74,20 @@ def parse_line(line: str, emit: Callable[[str, str], None], totals: dict[str, fl
     return False
 
 
-class OpenCodeAdapter(RuntimeAdapter):
+class OpenCodeAdapter(CLIAgentAdapter):
     name = "opencode"
     label = "OpenCode"
+    binary = "opencode"
+    env_flag = "ZYVEN_ENABLE_OPENCODE"
+    privacy = "the task text goes to the model provider OpenCode is set up with"
+    project_config_dirs = (".opencode",)
+    sign_in_help = "Install it from opencode.ai; `opencode auth login` adds your own provider."
     open_weight = False  # depends on the model the user picks; not verified here
     exposes = {"live_output": True, "tool_calls": True, "approvals": False, "file_changes": True, "tokens": True}
     note = ("OpenCode in headless mode, locked to its task folder (no shell, no web). "
             "You choose the model; Zyven does not verify that it is open-weight.")
 
-    def __init__(self, executable: list[str] | None = None) -> None:
-        self._exe = executable  # tests point this at a stand-in program
-        self._procs: dict[str, subprocess.Popen] = {}
-
-    def _executable(self) -> list[str] | None:
-        if self._exe:
-            return self._exe
-        found = shutil.which("opencode")
-        return [found] if found else None
-
-    def available(self) -> tuple[bool, str]:
-        if os.environ.get("ZYVEN_ENABLE_OPENCODE") != "1":
-            return False, ("Off by default: the task text goes to the model provider OpenCode is set up with. "
-                           "Set ZYVEN_ENABLE_OPENCODE=1 to enable.")
-        if not self._executable():
-            return False, "`opencode` is not on PATH. Install it from opencode.ai and run `opencode auth login`."
-        return True, ""
-
-    def command(self) -> list[str]:
+    def command(self, cwd: Path | None = None) -> list[str]:
         exe = self._executable()
         assert exe, "opencode is not installed"
         cmd = [*exe, "run", "--standalone", "--format", "json"]
@@ -112,42 +98,19 @@ class OpenCodeAdapter(RuntimeAdapter):
             cmd += ["-m", model]
         return cmd
 
-    def run(self, ctx: RunContext) -> int:
-        rid = ctx.run["id"]
-        if ctx.run["repo_url"] and (ctx.cwd / ".opencode").exists():
-            ctx.emit("error", "this repository ships its own OpenCode settings (.opencode); refusing to run it with them")
-            return 2
+    def prepare(self, ctx: RunContext) -> str:
         allow_shell = os.environ.get("ZYVEN_OPENCODE_ALLOW_SHELL") == "1"
         (ctx.cwd / "opencode.json").write_text(json.dumps(permission_config(allow_shell), indent=2), encoding="utf-8")
-        cmd = self.command()
-        ctx.emit("info", f"opencode run ({'shell ALLOWED on this machine' if allow_shell else 'no shell, no web, folder only'}; "
-                         f"model: {os.environ.get('ZYVEN_OPENCODE_MODEL') or 'OpenCode default'})")
-        # OpenCode takes its project folder from $PWD when it is set, so a parent shell's PWD would silently point it
-        # (and the permission file we just wrote) at the wrong folder. Pin it to the task folder.
-        env = {**os.environ, "PWD": str(ctx.cwd)}
-        env.pop("OLDPWD", None)
-        p = subprocess.Popen(cmd, cwd=ctx.cwd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace")
-        self._procs[rid] = p
-        killer = threading.Timer(RUN_TIMEOUT_S, lambda: self.cancel(rid))
-        killer.start()
-        totals = {"in": 0, "out": 0, "cost": 0.0}
-        failed = False
-        try:
-            assert p.stdin is not None and p.stdout is not None
-            p.stdin.write(ctx.run["prompt"])
-            p.stdin.close()
-            for line in p.stdout:
-                failed = parse_line(line, ctx.emit, totals) or failed
-            code = p.wait()
-            ctx.emit("info", f"done: {int(totals['in'])} in / {int(totals['out'])} out tokens"
-                             + (f", ${totals['cost']:.4f}" if totals["cost"] else ""))
-            return code or (1 if failed else 0)
-        finally:
-            killer.cancel()
-            self._procs.pop(rid, None)
+        return (f"opencode run ({'shell ALLOWED on this machine' if allow_shell else 'no shell, no web, folder only'}; "
+                f"model: {os.environ.get('ZYVEN_OPENCODE_MODEL') or 'OpenCode default'})")
 
-    def cancel(self, run_id: str) -> None:
-        p = self._procs.get(run_id)
-        if p and p.poll() is None:
-            kill_tree(p)
+    def parse(self, line: str, emit: Callable[[str, str], None], totals: dict[str, float]) -> bool:
+        return parse_line(line, emit, totals)
+
+    def sign_in_state(self) -> tuple[bool | None, str]:
+        out = run_quiet([*(self._executable() or []), "auth", "list"])
+        if not out:
+            return None, ""
+        if "No authenticated" in out:
+            return None, "No provider signed in; OpenCode's free hosted models still work. `opencode auth login` adds your own."
+        return True, "Signed in to a provider."

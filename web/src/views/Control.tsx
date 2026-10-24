@@ -6,7 +6,8 @@ import { Badge, Button, Card, Empty, Eyebrow, Hero, LiveDot, Stat } from "../com
 import { api, post } from "../lib/api";
 import { relTime, type Tone } from "../lib/labels";
 
-interface RuntimeInfo { label: string; open_weight: boolean; available: boolean; note: string; exposes: Record<string, boolean> }
+interface RuntimeStatus { installed: boolean; signed_in: boolean | null; detail: string }
+interface RuntimeInfo { label: string; open_weight: boolean; available: boolean; note: string; exposes: Record<string, boolean>; status?: RuntimeStatus }
 interface Runtimes { runtimes: Record<string, RuntimeInfo>; planned: Record<string, string>; default_image: string }
 interface Run {
   id: string; title: string; runtime: string; prompt: string; image: string; network: boolean; memory: string; cpus: string;
@@ -51,8 +52,8 @@ function NewTask({ rt, onCreated }: { rt: Runtimes; onCreated: (id: string) => v
     <Card className="mb-5 p-4">
       <div className="mb-3 flex flex-wrap gap-2">
         {Object.entries(rt.runtimes).map(([id, r]) => (
-          <button key={id} onClick={() => r.available && setRuntime(id)} disabled={!r.available} title={r.available ? r.note : r.note}
-            className={`flex disabled:cursor-not-allowed disabled:opacity-50 items-center gap-2 rounded-xl border px-3 py-2 text-left text-[13px] ${runtime === id ? "border-ink bg-ink text-white" : "border-line-strong bg-white hover:border-ink/40"}`}>
+          <button key={id} onClick={() => setRuntime(id)} title={r.note}
+            className={`flex disabled:cursor-not-allowed disabled:opacity-50 items-center gap-2 rounded-xl border px-3 py-2 text-left text-[13px] ${runtime === id ? "border-ink bg-ink text-white" : "border-line-strong bg-white hover:border-ink/40"} ${r.available ? "" : "opacity-60"}`}>
             {id === "docker" ? <Container className="h-4 w-4" /> : <Bot className="h-4 w-4" />}{r.label}{!r.available && <span className="text-[10px]">off</span>}
             {r.open_weight && <span className={`rounded-full px-1.5 text-[10px] font-semibold ${runtime === id ? "bg-white/20" : "bg-good-bg text-good"}`}>open</span>}
           </button>
@@ -63,6 +64,13 @@ function NewTask({ rt, onCreated }: { rt: Runtimes; onCreated: (id: string) => v
           </span>
         ))}
       </div>
+      {info.status && (
+        <p className="mb-1.5 flex items-center gap-1.5 text-[12px]">
+          <span className={`h-2 w-2 rounded-full ${!info.status.installed ? "bg-bad" : info.status.signed_in === false ? "bg-warn" : info.status.signed_in ? "bg-good" : "bg-muted"}`} />
+          <span className="font-medium">{!info.status.installed ? "Not installed" : info.status.signed_in === false ? "Not signed in" : info.status.signed_in ? "Installed and signed in" : "Installed"}</span>
+          {info.status.detail && <span className="text-muted">{info.status.detail}</span>}
+        </p>
+      )}
       <p className="mb-3 text-[12px] text-body">{info.note} <span className="text-muted">
         Exposes: {Object.entries(info.exposes).map(([k, v]) => `${EXPOSES[k]} ${v ? "✓" : "✗"}`).join(" · ")}. Anything marked ✗ is shown as &ldquo;not exposed&rdquo;, never estimated.</span></p>
 
@@ -86,7 +94,8 @@ function NewTask({ rt, onCreated }: { rt: Runtimes; onCreated: (id: string) => v
           <option value="0">Once</option><option value="3600">Every hour</option><option value="86400">Every day</option><option value="604800">Every week</option></select></label>
       </div>
       <div className="mt-3 flex items-center gap-3">
-        <Button onClick={submit} loading={busy} disabled={!prompt.trim()}>{when || Number(every) ? <Calendar className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}{when || Number(every) ? "Schedule task" : "Create task"}</Button>
+        <Button onClick={submit} loading={busy} disabled={!prompt.trim() || !info.available}>{when || Number(every) ? <Calendar className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}{when || Number(every) ? "Schedule task" : "Create task"}</Button>
+        {!info.available && <span className="text-[12.5px] text-warn">This runtime is off. See the note above for how to turn it on.</span>}
         {err && <span className="text-[12.5px] text-bad">{err}</span>}
       </div>
     </Card>
@@ -193,10 +202,12 @@ export function Control() {
     api<Approval[]>("/api/approvals").then(setPending).catch(() => {});
   }, []);
   useEffect(() => {
-    api<Runtimes>("/api/runtimes").then(setRt).catch(() => {});
+    const loadRuntimes = () => api<Runtimes>("/api/runtimes").then(setRt).catch(() => {});
+    loadRuntimes();
     load();
     const t = setInterval(load, 2000);
-    return () => clearInterval(t);
+    const t2 = setInterval(loadRuntimes, 8000);  // sign-in checks finish in the background; pick up the answer
+    return () => { clearInterval(t); clearInterval(t2); };
   }, [load]);
   if (!rt) return <Hero eyebrow="Control center" title="Loading…" />;
   const count = (s: string[]) => runs.filter((r) => s.includes(r.status)).length;

@@ -11,7 +11,8 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from zyven.orchestrator.adapters import ClaudeCodeAdapter, RunContext, RuntimeAdapter, parse_stream_line  # noqa: E402
+from zyven.orchestrator.adapters import RunContext, RuntimeAdapter  # noqa: E402
+from zyven.orchestrator.claude_adapter import ClaudeCodeAdapter, parse_stream_line  # noqa: E402
 from zyven.orchestrator.control import Control, runtime_info  # noqa: E402
 from tests.test_control import FakeBoard  # noqa: E402
 
@@ -80,9 +81,12 @@ def test_claude_adapter_is_off_by_default_and_limits_tools(monkeypatch):
     a = ClaudeCodeAdapter()
     ok, why = a.available()
     assert not ok and "ZYVEN_ENABLE_CLAUDE=1" in why and a.open_weight is False
-    cmd = a.command("make a file")
+    monkeypatch.setattr("shutil.which", lambda name: "claude")
+    cmd = a.command()
     assert cmd[:2] == ["claude", "-p"] and "Bash" not in cmd[cmd.index("--tools") + 1]
     assert "--no-session-persistence" in cmd and "--max-budget-usd" in cmd
+    assert cmd[cmd.index("--setting-sources") + 1] == "user" and cmd[cmd.index("--permission-mode") + 1] == "acceptEdits"
+    assert "make a file" not in cmd  # the prompt goes on stdin
 
 
 def test_claude_stream_lines_become_events():
