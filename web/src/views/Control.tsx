@@ -129,7 +129,7 @@ function NewTask({ rt, onCreated, onSettingsChanged }: { rt: Runtimes; onCreated
   );
 }
 
-function Detail({ id, onClose }: { id: string; onClose: () => void }) {
+function Detail({ id, onClose, runtimes }: { id: string; onClose: () => void; runtimes: Record<string, RuntimeInfo> }) {
   const [run, setRun] = useState<Run | null>(null);
   useEffect(() => {
     let live = true;
@@ -140,6 +140,9 @@ function Detail({ id, onClose }: { id: string; onClose: () => void }) {
   }, [id]);
   if (!run) return null;
   const active = ["RUNNING", "QUEUED", "SCHEDULED"].includes(run.status);
+  const doneLine = [...(run.log ?? [])].reverse().find((l) => l.text.startsWith("done:"));
+  const tokens = doneLine ? doneLine.text.replace(/^done:\s*/, "") : "";
+  const toolCalls = (run.log ?? []).filter((l) => l.kind === "tool").length;
   return (
     <Card className="mb-5 overflow-hidden">
       <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-3">
@@ -161,21 +164,29 @@ function Detail({ id, onClose }: { id: string; onClose: () => void }) {
       ) : (
         <>
           <pre className="m-0 max-h-[320px] overflow-auto bg-ink px-4 py-3 font-mono text-[12px] leading-relaxed text-[#e9e7e1]">
-            {(run.log ?? []).map((l, i) => <div key={i} className={l.kind === "error" ? "text-[#f0a0a0]" : l.kind === "info" ? "text-[#8d8b84]" : ""}>{l.kind === "info" ? "# " : ""}{l.text}</div>)}
+            {(run.log ?? []).map((l, i) => <div key={i} className={l.kind === "error" ? "text-[#f0a0a0]" : l.kind === "info" ? "text-[#8d8b84]" : l.kind === "tool" ? "text-[#9db8e8]" : ""}>{l.kind === "info" ? "# " : l.kind === "tool" ? "» " : ""}{l.text}</div>)}
             {!run.log?.length && <span className="text-[#8d8b84]"># waiting for output…</span>}
           </pre>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 px-4 py-2.5 text-[12px] text-body">
             <span>Exit code: <b className="font-mono">{run.exit_code ?? "—"}</b></span>
-            <span>Token usage: <i className="text-muted">not exposed</i></span>
-            <span>Tool calls: <i className="text-muted">not exposed</i></span>
+            <span>Token usage: {tokens ? <b className="font-mono">{tokens}</b> : <i className="text-muted">not exposed</i>}</span>
+            <span>Tool calls: {runtimes[run.runtime]?.exposes?.tool_calls ? <b className="font-mono">{toolCalls}</b> : <i className="text-muted">not exposed</i>}</span>
           </div>
           {run.files && (
             <div className="border-t border-line px-4 py-3 text-[12.5px]">
-              <Eyebrow>Changed files</Eyebrow>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Eyebrow>Changed files</Eyebrow>
+                {run.files.added.length + run.files.modified.length > 0 && (
+                  <span className="flex gap-2">
+                    <a href={`/api/runs/${id}/archive`} className="rounded-lg border border-line-strong px-2.5 py-1 text-[12px] hover:bg-panel-2">Download all (.zip)</a>
+                    <button onClick={() => post(`/api/runs/${id}/reveal`).catch(() => {})} className="rounded-lg border border-line-strong px-2.5 py-1 text-[12px] hover:bg-panel-2">Open folder</button>
+                  </span>
+                )}
+              </div>
               {run.files.added.length + run.files.modified.length === 0 ? <p className="mt-1 text-muted">No files changed.</p> : (
                 <ul className="mt-1.5 space-y-0.5 font-mono text-[12px]">
-                  {run.files.added.map((f) => <li key={f} className="text-good">+ {f}</li>)}
-                  {run.files.modified.map((f) => <li key={f} className="text-warn">~ {f}</li>)}
+                  {run.files.added.map((f) => <li key={f} className="text-good">+ <a className="underline-offset-2 hover:underline" href={`/api/runs/${id}/files/${f}`}>{f}</a></li>)}
+                  {run.files.modified.map((f) => <li key={f} className="text-warn">~ <a className="underline-offset-2 hover:underline" href={`/api/runs/${id}/files/${f}`}>{f}</a></li>)}
                 </ul>
               )}
             </div>
@@ -251,7 +262,7 @@ export function Control() {
       </div>
       <Approvals items={pending} onDecided={load} />
       <NewTask rt={rt} onCreated={(id) => { setSel(id); load(); }} onSettingsChanged={() => api<Runtimes>("/api/runtimes").then(setRt).catch(() => {})} />
-      {sel && <Detail id={sel} onClose={() => setSel(null)} />}
+      {sel && <Detail id={sel} onClose={() => setSel(null)} runtimes={rt.runtimes} />}
       {runs.length === 0 ? (
         <Empty seed="control" title="No tasks yet" body="Create a Docker task above, for example a command that writes a file, and watch the output stream in live." />
       ) : (

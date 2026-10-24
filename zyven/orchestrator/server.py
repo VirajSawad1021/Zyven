@@ -11,6 +11,9 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import subprocess
+import sys
 import sqlite3
 import threading
 import time
@@ -19,7 +22,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -33,6 +36,7 @@ from zyven.connections.oauth import OAuthCoordinator
 from zyven.connections.runtime import load_enabled
 from zyven.connections.store import ConnectionError_, ConnectionStore, stdio_allowed
 from zyven.connections.templates import TEMPLATES
+from zyven.agent.workspace import safe_path
 from zyven.orchestrator import settings as runtime_settings
 from zyven.orchestrator.guard import install as install_guard
 from zyven.orchestrator.control import DEFAULT_IMAGE, PLANNED, Control, runtime_info
@@ -375,6 +379,63 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
             return state["control"].get(run_id)
         except KeyError:
             raise HTTPException(404, "unknown run") from None
+
+    def _run_file(run_id: str, rel: str):
+        """A file a run created or changed, resolved inside that run's own folder (never a client-supplied host path)."""
+        try:
+            run = state["control"].get(run_id)
+        except KeyError:
+            raise HTTPException(404, "unknown run") from None
+        changed = set((run.get("files") or {}).get("added", [])) | set((run.get("files") or {}).get("modified", []))
+        if rel not in changed:
+            raise HTTPException(404, "that file was not created or changed by this run")
+        try:
+            path = safe_path(state["control"].workdir(run_id), rel)
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from None
+        if not path.is_file():
+            raise HTTPException(404, "the file is gone")
+        return path
+
+    @app.get("/api/runs/{run_id}/files/{rel:path}")
+    def run_file(run_id: str, rel: str):
+        path = _run_file(run_id, rel)
+        # Always a download, never shown by the board: a file a model wrote (an HTML page, say) must not run on this origin.
+        return FileResponse(path, filename=path.name, media_type="application/octet-stream",
+                            headers={"X-Content-Type-Options": "nosniff"})
+
+    @app.get("/api/runs/{run_id}/archive")
+    def run_archive(run_id: str):
+        import io
+        import zipfile
+
+        try:
+            run = state["control"].get(run_id)
+        except KeyError:
+            raise HTTPException(404, "unknown run") from None
+        names = sorted(set((run.get("files") or {}).get("added", [])) | set((run.get("files") or {}).get("modified", [])))
+        buf, total = io.BytesIO(), 0
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+            for rel in names:
+                path = _run_file(run_id, rel)
+                total += path.stat().st_size
+                if total > 50 * 1024 * 1024:
+                    raise HTTPException(413, "the changed files are over 50 MB; open the folder instead")
+                z.write(path, rel)
+        return Response(buf.getvalue(), media_type="application/zip",
+                        headers={"Content-Disposition": f'attachment; filename="run-{run_id}.zip"'})
+
+    @app.post("/api/runs/{run_id}/reveal")
+    def run_reveal(run_id: str):
+        """Open this run's folder in the file manager of the machine the board runs on."""
+        folder = state["control"].workdir(run_id)
+        if not folder.is_dir():
+            raise HTTPException(404, "the run has no folder")
+        if os.name == "nt":
+            os.startfile(folder)  # noqa: S606 - a folder the board created itself, not a client-supplied path
+        else:
+            subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", str(folder)])
+        return {"opened": str(folder)}
 
     @app.post("/api/runs/{run_id}/cancel")
     def run_cancel(run_id: str):

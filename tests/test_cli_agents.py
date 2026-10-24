@@ -308,3 +308,18 @@ def test_task_folders_are_absolute_even_when_the_board_directory_is_relative(tmp
     seen = json.loads((c.workdir(rid) / "seen.json").read_text(encoding="utf-8"))
     assert Path(seen["cwd"]).is_absolute() and Path(seen["pwd"]).is_absolute()
     assert c.get(rid)["status"] == "COMPLETED"
+
+
+def test_codex_never_loads_the_users_plugins_or_mcp_servers(tmp_path, monkeypatch):
+    a = _make(CodexAdapter, tmp_path, monkeypatch, "ZYVEN_ENABLE_CODEX")
+    cmd = a.command(tmp_path)
+    assert "--ignore-user-config" in cmd and "--ignore-rules" in cmd
+    disabled = [cmd[i + 1] for i, x in enumerate(cmd) if x == "--disable"]
+    assert {"computer_use", "browser_use", "apps"} <= set(disabled)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="the Windows sandbox setting")
+def test_codex_gets_its_windows_sandbox_explicitly_because_the_user_config_is_ignored(tmp_path, monkeypatch):
+    a = _make(CodexAdapter, tmp_path, monkeypatch, "ZYVEN_ENABLE_CODEX")
+    cmd = a.command(tmp_path)
+    assert "windows.sandbox=unelevated" in cmd and "--ignore-user-config" in cmd

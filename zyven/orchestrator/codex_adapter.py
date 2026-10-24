@@ -8,6 +8,11 @@ to the Desktop and, with the overrides, to %TEMP% were refused, and the in-folde
 Event format, taken from real runs: thread/turn events, `item.*` events (agent_message, command_execution,
 file_change), and a final `turn.completed` with token usage.
 
+Containment note (found when a real task made Codex reach for the user's computer-use and JavaScript plugins to
+copy a file to the Desktop): the sandbox covers shell commands only, so Zyven starts Codex with --ignore-user-config
+(your plugins, MCP servers and notify hooks are not loaded; your login still is), --ignore-rules, and the computer,
+browser and apps features disabled.
+
 Windows note (found the hard way): Codex's sandbox runs commands as a more restricted identity. A task folder with
 owner-only permissions, such as one made by Python's tempfile.mkdtemp(), is not writable to it, so Codex reports
 "Failed to write file" even inside its own folder. Task folders under the board directory have normal permissions.
@@ -91,7 +96,13 @@ class CodexAdapter(CLIAgentAdapter):
                "-c", "sandbox_workspace_write.exclude_tmpdir_env_var=true",
                "-c", "sandbox_workspace_write.exclude_slash_tmp=true",
                "-c", "sandbox_workspace_write.network_access=false",
-               "--skip-git-repo-check", "--ephemeral"]
+               "--skip-git-repo-check", "--ephemeral",
+               # The sandbox limits shell commands only. A user's own config can switch on plugins and MCP servers
+               # (computer control, a browser, a JavaScript REPL) that act outside it, so none of that is loaded.
+               "--ignore-user-config", "--ignore-rules",
+               "--disable", "computer_use", "--disable", "browser_use", "--disable", "apps"]
+        if os.name == "nt":  # this setting lives in the user's config file, which is ignored above; without it Codex
+            cmd += ["-c", "windows.sandbox=unelevated"]  # has no Windows sandbox and treats the disk as read-only
         if cwd is not None:
             cmd += ["-C", str(cwd)]
         model = self.model()
