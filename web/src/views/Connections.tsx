@@ -8,7 +8,7 @@ import { api, post } from "../lib/api";
 interface Tool { name: string; description: string; needs_approval: boolean }
 interface Conn {
   id: string; name: string; kind: "http" | "stdio"; url?: string; command?: string; args?: string[];
-  enabled: boolean; tools: Tool[] | null; error: string | null; secret_names: string[];
+  enabled: boolean; tools: Tool[] | null; error: string | null; secret_names: string[]; oauth?: boolean; signed_in?: boolean;
 }
 interface Template { id: string; label: string; kind: "http" | "stdio"; oauth?: boolean; hint: string; url: string; command: string; args: string[]; secrets: string[] }
 interface Data { connections: Conn[]; templates: Template[]; stdio_allowed: boolean }
@@ -22,17 +22,23 @@ function AddConnection({ data, onAdded }: { data: Data; onAdded: () => void }) {
   const [command, setCommand] = useState("");
   const [args, setArgs] = useState("");
   const [secrets, setSecrets] = useState<Record<string, string>>({});
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   function pick(t: Template) {
-    setTpl(t); setName(t.label); setUrl(t.url); setCommand(t.command); setArgs(t.args.join(" ")); setSecrets({}); setErr(null);
+    setTpl(t); setName(t.label); setUrl(t.url); setCommand(t.command); setArgs(t.args.join(" ")); setSecrets({});
+    setClientId(""); setClientSecret(""); setErr(null);
   }
   async function submit() {
     if (!tpl) return;
     setBusy(true); setErr(null);
     try {
-      await post("/api/connections", { name, kind: tpl.kind, url, command, args: args.split(/\s+/).filter(Boolean), secrets });
+      await post("/api/connections", {
+        name, kind: tpl.kind, url, command, args: args.split(/\s+/).filter(Boolean), secrets,
+        oauth: !!tpl.oauth, oauth_client_id: clientId, oauth_client_secret: clientSecret,
+      });
       setTpl(null); onAdded();
     } catch (e) { setErr(e instanceof Error ? e.message : "failed"); } finally { setBusy(false); }
   }
@@ -44,9 +50,9 @@ function AddConnection({ data, onAdded }: { data: Data; onAdded: () => void }) {
         {data.templates.map((t) => {
           const off = !t.oauth && t.kind === "stdio" && !data.stdio_allowed;
           return (
-            <button key={t.id} disabled={!!t.oauth} onClick={() => pick(t)} title={t.oauth ? t.hint : off ? "Local commands are off. Set ZYVEN_ALLOW_STDIO_CONNECTORS=1 to allow them." : t.hint}
-              className={`rounded-xl border px-3 py-2 text-left text-[13px] ${tpl?.id === t.id ? "border-ink bg-ink text-white" : "border-line-strong bg-white hover:border-ink/40"} ${off || t.oauth ? "cursor-not-allowed opacity-50" : ""}`}>
-              {t.label}{t.oauth && <span className="ml-1.5 text-[10px]">needs sign-in, soon</span>}{off && <span className="ml-1.5 text-[10px]">off</span>}
+            <button key={t.id} onClick={() => pick(t)} title={off ? "Local commands are off. Set ZYVEN_ALLOW_STDIO_CONNECTORS=1 to allow them." : t.hint}
+              className={`rounded-xl border px-3 py-2 text-left text-[13px] ${tpl?.id === t.id ? "border-ink bg-ink text-white" : "border-line-strong bg-white hover:border-ink/40"} ${off ? "opacity-50" : ""}`}>
+              {t.label}{t.oauth && <span className="ml-1.5 text-[10px]">sign in</span>}{off && <span className="ml-1.5 text-[10px]">off</span>}
             </button>
           );
         })}
@@ -62,6 +68,14 @@ function AddConnection({ data, onAdded }: { data: Data; onAdded: () => void }) {
               <>
                 <label className="text-[11px] font-semibold text-ink">Command<input className={`${input} mt-1 font-mono`} value={command} onChange={(e) => setCommand(e.target.value)} /></label>
                 <label className="text-[11px] font-semibold text-ink sm:col-span-2">Arguments<input className={`${input} mt-1 font-mono`} value={args} onChange={(e) => setArgs(e.target.value)} /></label>
+              </>
+            )}
+            {tpl.oauth && (
+              <>
+                <label className="text-[11px] font-semibold text-ink">OAuth client ID <span className="font-normal text-muted">(only if the service needs you to register an app)</span>
+                  <input className={`${input} mt-1 font-mono`} value={clientId} onChange={(e) => setClientId(e.target.value)} /></label>
+                <label className="text-[11px] font-semibold text-ink">OAuth client secret <span className="font-normal text-muted">(kept on this machine)</span>
+                  <input type="password" autoComplete="off" className={`${input} mt-1 font-mono`} value={clientSecret} onChange={(e) => setClientSecret(e.target.value)} /></label>
               </>
             )}
             {tpl.secrets.map((k) => (
@@ -87,6 +101,10 @@ function ConnCard({ c, onChange }: { c: Conn; onChange: () => void }) {
     try { await fn(); } catch (e) { setErr(e instanceof Error ? e.message : "failed"); } finally { setBusy(false); onChange(); }
   };
   const asks = c.tools?.filter((t) => t.needs_approval).length ?? 0;
+  const signIn = () => run(async () => {
+    const r = await post<{ url: string | null }>(`/api/connections/${c.id}/signin`);
+    if (r.url) window.open(r.url, "_blank", "noopener");
+  });
   return (
     <Card className="p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -96,8 +114,10 @@ function ConnCard({ c, onChange }: { c: Conn; onChange: () => void }) {
           {c.secret_names.length > 0 && <p className="mt-0.5 text-[11px] text-muted">Stored here: {c.secret_names.join(", ")}</p>}
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Badge tone={c.enabled ? "good" : c.error ? "bad" : "neutral"}>{c.enabled ? "On" : c.error ? "Failed" : c.tools ? "Tested, off" : "Not tested"}</Badge>
-          <Button size="sm" variant="secondary" loading={busy} onClick={() => run(() => post(`/api/connections/${c.id}/test`))}>Test</Button>
+          <Badge tone={c.enabled ? "good" : c.error ? "bad" : "neutral"}>{c.enabled ? "On" : c.error ? "Failed" : c.oauth && !c.signed_in ? "Not signed in" : c.tools ? "Tested, off" : "Not tested"}</Badge>
+          {c.oauth && !c.signed_in && <Button size="sm" loading={busy} onClick={signIn}>Sign in</Button>}
+          {c.oauth && c.signed_in && <Button size="sm" variant="secondary" onClick={() => run(() => post(`/api/connections/${c.id}/signout`))}>Sign out</Button>}
+          {(!c.oauth || c.signed_in) && <Button size="sm" variant="secondary" loading={busy} onClick={() => run(() => post(`/api/connections/${c.id}/test`))}>Test</Button>}
           {c.tools && <Button size="sm" onClick={() => run(() => post(`/api/connections/${c.id}/enabled`, { enabled: !c.enabled }))}>{c.enabled ? "Turn off" : "Turn on"}</Button>}
           <button aria-label="Remove" onClick={() => run(() => api(`/api/connections/${c.id}`, { method: "DELETE" }))} className="rounded-lg p-1.5 text-muted hover:bg-panel-2"><Trash2 className="h-4 w-4" /></button>
         </div>
@@ -122,7 +142,11 @@ function ConnCard({ c, onChange }: { c: Conn; onChange: () => void }) {
 export function Connections() {
   const [data, setData] = useState<Data | null>(null);
   const load = useCallback(() => api<Data>("/api/connections").then(setData).catch(() => {}), []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    const t = setInterval(load, 2500); // a sign-in finishes in another tab; pick it up without a reload
+    return () => clearInterval(t);
+  }, [load]);
   if (!data) return <Hero eyebrow="Connections" title="Loading…" />;
   return (
     <>

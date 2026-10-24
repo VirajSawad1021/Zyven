@@ -18,8 +18,8 @@ import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -29,6 +29,7 @@ from zyven.analysis.analyzer import analyze
 from zyven.analysis.explorer import explore
 from zyven.catalog.catalog import Catalog
 from zyven.connections.probe import probe as probe_connection
+from zyven.connections.oauth import OAuthCoordinator
 from zyven.connections.runtime import load_enabled
 from zyven.connections.store import ConnectionError_, ConnectionStore, stdio_allowed
 from zyven.connections.templates import TEMPLATES
@@ -61,6 +62,9 @@ class NewConnection(BaseModel):
     command: str = ""
     args: list[str] = []
     secrets: dict[str, str] = {}
+    oauth: bool = False
+    oauth_client_id: str = ""
+    oauth_client_secret: str = ""
 
 
 class Toggle(BaseModel):
@@ -264,6 +268,7 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
         state["board"] = board
         state["control"] = Control(board_dir / "board.sqlite", board_dir, board)
         state["connections"] = board.connections = ConnectionStore(board_dir)
+        state["oauth"] = OAuthCoordinator(state["connections"])
         worker = asyncio.create_task(board.worker())
         yield
         worker.cancel()
@@ -368,6 +373,44 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
             return await probe_connection(state["connections"], cid)
         except KeyError:
             raise HTTPException(404, "unknown connection") from None
+
+    @app.post("/api/connections/{cid}/signin")
+    async def connection_signin(cid: str, request: Request):
+        redirect_uri = str(request.base_url).rstrip("/") + "/oauth/callback"
+        try:
+            url = await state["oauth"].start(cid, redirect_uri)
+        except KeyError:
+            raise HTTPException(404, "unknown connection") from None
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from None
+        except Exception as e:  # noqa: BLE001 - the service refused or is unreachable: tell the user why
+            raise HTTPException(502, f"could not start the sign-in: {e}"[:300]) from None
+        return {"url": url, "signed_in": url is None}
+
+    @app.post("/api/connections/{cid}/signout")
+    def connection_signout(cid: str):
+        try:
+            state["oauth"].sign_out(cid)
+        except KeyError:
+            raise HTTPException(404, "unknown connection") from None
+        return state["connections"].get(cid)
+
+    @app.get("/oauth/callback")
+    async def oauth_callback(code: str | None = None, error: str | None = None,
+                             oauth_state: str = Query("", alias="state")):
+        def page(title: str, body: str, status: int = 200) -> HTMLResponse:
+            html = (f"<!doctype html><meta charset=utf-8><title>{title}</title><body style='font:16px system-ui;"
+                    f"max-width:32em;margin:15vh auto;padding:0 1em'><h2>{title}</h2><p>{body}</p>")
+            return HTMLResponse(html, status_code=status)
+
+        try:
+            state["oauth"].complete(oauth_state, code, error)
+        except KeyError:
+            return page("Sign-in not recognised", "This sign-in link is unknown or was already used. "
+                        "Start again from the Connections page.", 400)
+        if error or not code:
+            return page("Sign-in cancelled", "The service did not sign you in. You can close this tab.")
+        return page("Signed in", "You can close this tab and go back to Zyven.")
 
     @app.post("/api/connections/{cid}/enabled")
     def connection_enable(cid: str, body: Toggle):

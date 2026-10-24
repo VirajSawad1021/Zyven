@@ -6,7 +6,7 @@ import re
 from typing import Any, Awaitable, Callable
 
 from zyven.agent.mcp_tools import Gate, ToolBox
-from zyven.connections.probe import make_server
+from zyven.connections.probe import server_for
 from zyven.connections.store import ConnectionStore
 
 Emit = Callable[..., None]
@@ -44,7 +44,7 @@ async def load_enabled(tb: ToolBox, store: ConnectionStore, emit: Emit, ask: Ask
         prefix = tool_prefix(c["name"], prefixes)
         prefixes.add(prefix)
         try:
-            names = await tb.add_transport(f"connection:{c['id']}", make_server(c, store.secrets_for(c["id"])),
+            names = await tb.add_transport(f"connection:{c['id']}", server_for(store, c["id"], c),
                                            prefix=prefix, gate=make_gate(c["name"], emit, ask))
         except Exception as e:  # noqa: BLE001 - a broken connection must not break the agent
             emit("CONNECTION_FAILED", detail=f"{c['name']}: {type(e).__name__}: {str(e)[:160]}")

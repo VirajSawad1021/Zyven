@@ -26,11 +26,15 @@ TEMPLATES = [
     {"id": "custom-stdio", "label": "Local command", "kind": "stdio",
      "hint": "Any program that speaks MCP over stdin/stdout. It runs on this machine with your permissions.",
      "url": "", "command": "", "args": [], "secrets": []},
+    {"id": "notion-hosted", "label": "Notion (hosted by Notion)", "kind": "http", "oauth": True,
+     "hint": "Notion's own hosted server, signed in through Notion. No token to paste.",
+     "url": "https://mcp.notion.com/mcp", "command": "", "args": [], "secrets": []},
     {"id": "gmail", "label": "Gmail (Google hosted)", "kind": "http", "oauth": True,
-     "hint": "Google's hosted Gmail server (preview) can read mail and create drafts, not send. It needs a Google Cloud "
-             "project and an OAuth sign-in, which Zyven does not support yet.",
+     "hint": "Google's hosted Gmail server (preview) can read mail and create drafts, not send. Google does not register "
+             "apps automatically: create a Google Cloud project, enable the Gmail API and the Gmail MCP API, make an OAuth "
+             "client with redirect URI http://127.0.0.1:8765/oauth/callback (use your board's address), and paste its client id and secret below.",
      "url": "https://gmailmcp.googleapis.com/mcp/v1", "command": "", "args": [], "secrets": []},
     {"id": "slack-hosted", "label": "Slack (hosted by Slack)", "kind": "http", "oauth": True,
-     "hint": "Slack's own hosted server signs in with OAuth, which Zyven does not support yet. Use the bot-token template meanwhile.",
+     "hint": "Slack's own hosted server, signed in through Slack. If Slack asks for an app, paste its client id and secret below.",
      "url": "https://mcp.slack.com/mcp", "command": "", "args": [], "secrets": []},
 ]
