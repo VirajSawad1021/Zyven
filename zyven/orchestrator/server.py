@@ -28,6 +28,9 @@ from zyven.ai.provider import ModelProvider
 from zyven.analysis.analyzer import analyze
 from zyven.analysis.explorer import explore
 from zyven.catalog.catalog import Catalog
+from zyven.connections.probe import probe as probe_connection
+from zyven.connections.store import ConnectionError_, ConnectionStore, stdio_allowed
+from zyven.connections.templates import TEMPLATES
 from zyven.orchestrator.control import DEFAULT_IMAGE, PLANNED, Control, runtime_info
 from zyven.memory.skills import SkillLibrary
 
@@ -48,6 +51,19 @@ class NewCard(BaseModel):
 
 class Decision(BaseModel):
     approved: bool
+
+
+class NewConnection(BaseModel):
+    name: str
+    kind: str
+    url: str = ""
+    command: str = ""
+    args: list[str] = []
+    secrets: dict[str, str] = {}
+
+
+class Toggle(BaseModel):
+    enabled: bool
 
 
 class NewRun(BaseModel):
@@ -238,6 +254,7 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
                       Catalog(ROOT / "catalog" / "repos.json", data_dir), ModelProvider.from_env(env_path))
         state["board"] = board
         state["control"] = Control(board_dir / "board.sqlite", board_dir, board)
+        state["connections"] = ConnectionStore(board_dir)
         worker = asyncio.create_task(board.worker())
         yield
         worker.cancel()
@@ -322,6 +339,42 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
     @app.post("/api/runs/{run_id}/cancel")
     def run_cancel(run_id: str):
         state["control"].cancel(run_id)
+        return {"ok": True}
+
+    # --- connections: MCP servers the user connects (secrets stay on this machine) ---
+    @app.get("/api/connections")
+    def connections():
+        return {"connections": state["connections"].list(), "templates": TEMPLATES, "stdio_allowed": stdio_allowed()}
+
+    @app.post("/api/connections")
+    def connection_add(body: NewConnection):
+        try:
+            return state["connections"].add(**body.model_dump())
+        except ConnectionError_ as e:
+            raise HTTPException(400, str(e)) from None
+
+    @app.post("/api/connections/{cid}/test")
+    async def connection_test(cid: str):
+        try:
+            return await probe_connection(state["connections"], cid)
+        except KeyError:
+            raise HTTPException(404, "unknown connection") from None
+
+    @app.post("/api/connections/{cid}/enabled")
+    def connection_enable(cid: str, body: Toggle):
+        try:
+            return state["connections"].set_enabled(cid, body.enabled)
+        except KeyError:
+            raise HTTPException(404, "unknown connection") from None
+        except ConnectionError_ as e:
+            raise HTTPException(400, str(e)) from None
+
+    @app.delete("/api/connections/{cid}")
+    def connection_remove(cid: str):
+        try:
+            state["connections"].remove(cid)
+        except KeyError:
+            raise HTTPException(404, "unknown connection") from None
         return {"ok": True}
 
     @app.get("/api/approvals")
