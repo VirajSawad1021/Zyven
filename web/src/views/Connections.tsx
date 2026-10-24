@@ -10,7 +10,7 @@ interface Conn {
   id: string; name: string; kind: "http" | "stdio"; url?: string; command?: string; args?: string[];
   enabled: boolean; tools: Tool[] | null; error: string | null; secret_names: string[];
 }
-interface Template { id: string; label: string; kind: "http" | "stdio"; hint: string; url: string; command: string; args: string[]; secrets: string[] }
+interface Template { id: string; label: string; kind: "http" | "stdio"; oauth?: boolean; hint: string; url: string; command: string; args: string[]; secrets: string[] }
 interface Data { connections: Conn[]; templates: Template[]; stdio_allowed: boolean }
 
 const input = "w-full rounded-xl border border-line-strong/80 bg-white px-3 py-2 text-[13px] text-ink placeholder:text-[#aaa79f] focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink";
@@ -42,11 +42,11 @@ function AddConnection({ data, onAdded }: { data: Data; onAdded: () => void }) {
       <Eyebrow>Add a connection</Eyebrow>
       <div className="mt-2.5 flex flex-wrap gap-2">
         {data.templates.map((t) => {
-          const off = t.kind === "stdio" && !data.stdio_allowed;
+          const off = !t.oauth && t.kind === "stdio" && !data.stdio_allowed;
           return (
-            <button key={t.id} onClick={() => pick(t)} title={off ? "Local commands are off. Set ZYVEN_ALLOW_STDIO_CONNECTORS=1 to allow them." : t.hint}
-              className={`rounded-xl border px-3 py-2 text-left text-[13px] ${tpl?.id === t.id ? "border-ink bg-ink text-white" : "border-line-strong bg-white hover:border-ink/40"} ${off ? "opacity-50" : ""}`}>
-              {t.label}{off && <span className="ml-1.5 text-[10px]">off</span>}
+            <button key={t.id} disabled={!!t.oauth} onClick={() => pick(t)} title={t.oauth ? t.hint : off ? "Local commands are off. Set ZYVEN_ALLOW_STDIO_CONNECTORS=1 to allow them." : t.hint}
+              className={`rounded-xl border px-3 py-2 text-left text-[13px] ${tpl?.id === t.id ? "border-ink bg-ink text-white" : "border-line-strong bg-white hover:border-ink/40"} ${off || t.oauth ? "cursor-not-allowed opacity-50" : ""}`}>
+              {t.label}{t.oauth && <span className="ml-1.5 text-[10px]">needs sign-in, soon</span>}{off && <span className="ml-1.5 text-[10px]">off</span>}
             </button>
           );
         })}
