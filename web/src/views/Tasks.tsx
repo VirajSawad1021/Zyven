@@ -25,8 +25,8 @@ function AgentPanel({ cards, skills }: { cards: TaskCard[]; skills: Skill[] }) {
     pill = <><Shield className="h-3.5 w-3.5" /> Waiting for your approval</>;
     rows = (
       <>
-        <div className={row}><span className="min-w-0 truncate">{r.capability_title ?? "a capability"}</span><span className="shrink-0 text-muted">{r.license}</span></div>
-        <div className={row}><span className="min-w-0 truncate font-mono text-[12px]">{String(r.repo_url ?? "").replace("https://github.com/", "")}</span></div>
+        <div className={row}><span className="min-w-0 truncate">{r.kind === "tool_call" ? `Run ${r.tool}` : (r.capability_title ?? "a capability")}</span><span className="shrink-0 text-muted">{r.kind === "tool_call" ? r.connection : r.license}</span></div>
+        <div className={row}><span className="min-w-0 truncate font-mono text-[12px]">{r.kind === "tool_call" ? JSON.stringify(r.arguments) : String(r.repo_url ?? "").replace("https://github.com/", "")}</span></div>
       </>
     );
   } else if (active) {
@@ -164,6 +164,22 @@ function ApprovalPanel({ card }: { card: TaskCard }) {
     try { await post(`/api/cards/${card.id}/decision`, { approved }); } finally { setBusy(false); }
   }
   const dt = "whitespace-nowrap font-medium text-muted";
+  if (r.kind === "tool_call") {
+    return (
+      <div className="mt-4 overflow-hidden rounded-2xl border border-warn/30 bg-warn-bg">
+        <p className="flex items-center gap-2 border-b border-warn/15 px-4 py-2.5 text-[13px] font-semibold text-warn"><Shield className="h-4 w-4" /> Approval needed: the agent wants to act through {r.connection}</p>
+        <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 px-4 py-3 text-[13px]">
+          <dt className={dt}>Action</dt><dd className="break-words font-mono text-[12px]">{r.tool}</dd>
+          <dt className={dt}>With</dt><dd><pre className="m-0 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-white/70 px-2.5 py-2 font-mono text-[11.5px]">{JSON.stringify(r.arguments, null, 2)}</pre></dd>
+          <dt className={dt}>Note</dt><dd>This tool is not marked read-only by its server. Nothing happens unless you approve.</dd>
+        </dl>
+        <div className="flex flex-wrap gap-2 px-4 pb-4">
+          <Button size="sm" disabled={busy} onClick={() => decide(true)}><Check className="h-3.5 w-3.5" /> Approve &amp; run</Button>
+          <Button size="sm" variant="danger" disabled={busy} onClick={() => decide(false)}><X className="h-3.5 w-3.5" /> Deny</Button>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-warn/30 bg-warn-bg">
       <p className="flex items-center gap-2 border-b border-warn/15 px-4 py-2.5 text-[13px] font-semibold text-warn"><Shield className="h-4 w-4" /> Approval needed: nothing compiles until you decide</p>
