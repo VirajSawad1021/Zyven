@@ -120,3 +120,18 @@ def test_templates_are_well_formed_and_oauth_ones_are_marked_unavailable():
             assert t["secrets"] == []  # nothing to paste: they need a sign-in flow we do not have
         else:
             assert t["secrets"] or t["id"] in ("filesystem", "custom-stdio")
+
+
+def test_every_template_label_is_an_acceptable_connection_name(store):
+    from zyven.connections.templates import TEMPLATES
+
+    for t in TEMPLATES:
+        kind_args = {"url": "https://mcp.example.com/mcp"} if t["kind"] == "http" else {"command": "npx"}
+        c = store.add(name=t["label"], kind=t["kind"], oauth=bool(t.get("oauth")), **kind_args)
+        assert c["name"] == t["label"]
+
+
+@pytest.mark.parametrize("name", ["", "   ", "a" * 61, "<script>", "x;rm -rf /", "a/b", "a\nb"])
+def test_odd_names_are_still_refused(store, name):
+    with pytest.raises(ConnectionError_, match="short name"):
+        store.add(name=name, kind="http", url="https://mcp.example.com/mcp")

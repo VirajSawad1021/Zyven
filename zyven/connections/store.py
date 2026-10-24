@@ -19,7 +19,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-NAME = re.compile(r"[\w .\-]{1,60}")
+NAME = re.compile(r"[\w .,()&'\-]{1,60}")
 SECRET_KEY = re.compile(r"[A-Za-z_][A-Za-z0-9_\-]{0,63}")
 
 
