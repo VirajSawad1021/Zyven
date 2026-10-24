@@ -1,0 +1,91 @@
+{
+ "name": "sql_transpile_capability",
+ "title": "SQL Transpilation Service",
+ "summary": "A capability to transpile SQL code between different dialects (e.g., MySQL to BigQuery, Spark to Snowflake) using the sqlglot library.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "transpile_sql",
+   "description": "Transpile one or more SQL statements from a source dialect to a target dialect.",
+   "params": [
+    {
+     "name": "sql",
+     "type": "string",
+     "description": "The SQL code string to transpile.",
+     "required": true,
+     "example": "SELECT * FROM table"
+    },
+    {
+     "name": "read_dialect",
+     "type": "string",
+     "description": "The source dialect (e.g., 'mysql', 'spark', 'postgres'). If None, it attempts to parse as standard SQL.",
+     "required": false,
+     "example": "mysql"
+    },
+    {
+     "name": "write_dialect",
+     "type": "string",
+     "description": "The target dialect (e.g., 'bigquery', 'snowflake', 'duckdb'). If None, it will use the source dialect if identity is True.",
+     "required": false,
+     "example": "bigquery"
+    },
+    {
+     "name": "identity",
+     "type": "boolean",
+     "description": "If True and write_dialect is not specified, the source dialect will be used as both read and write dialect.",
+     "required": false,
+     "example": true
+    },
+    {
+     "name": "error_level",
+     "type": "string",
+     "description": "The desired error level for the parser (e.g., 'error', 'warn', 'none').",
+     "required": false,
+     "example": "error"
+    }
+   ],
+   "returns": [
+    {
+     "name": "transpiled_statements",
+     "type": "array",
+     "description": "A list of the transpiled SQL statements, one per statement in the input SQL string array/list of statements separated by semicolons or newlines in the original input string (if applicable). Each element is a string representing a single transformed SQL statement array of strings."
+    },
+    {
+     "name": "success",
+     "type": "boolean",
+     "description": "Whether the transpilation process completed successfully without errors (if applicable). Note: The library returns a list of strings, so success is inferred from the presence of statements in the list or the absence of errors during execution)."
+    },
+    {
+     "name": "display_summary",
+     "type": "string",
+     "description": "A human-readable summary of the transpilation result (e.g., 'Transpiled 2 statements from mysql to bigquery')."
+    }
+   ],
+   "implementation_symbols": [
+    "sqlglot.transpile"
+   ],
+   "implementation_notes": "Call `sqlglot.transpile(sql=sql, read=read_dialect, write=write_dialect, identity=identity, error_level=error_level)`. The result is a list of strings. The 'success' and 'display_summary' fields in the return object should be constructed by the agent or the tool wrapper based on the result list.",
+   "example_args": {
+    "sql": "SELECT * FROM users WHERE id = 1;",
+    "read_dialect": "mysql",
+    "write_dialect": "bigquery",
+    "identity": true,
+    "error_level": "error"
+   }
+  }
+ ],
+ "included_symbols": [
+  "sqlglot.transpile"
+ ],
+ "excluded_symbols": [],
+ "dependencies": [
+  "sqlglot"
+ ],
+ "side_effects": [],
+ "relevant_tests": [
+  "tests/test_transpile.py"
+ ],
+ "uncertainties": [
+  "The exact list of supported dialects is not explicitly provided in the tool, but can be inferred from the library's Dialect.get_or_raise method. If an invalid dialect is provided, it will raise an error."
+ ]
+}

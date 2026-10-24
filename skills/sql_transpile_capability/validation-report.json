@@ -1,0 +1,281 @@
+{
+ "passed": true,
+ "verified_for": [
+  "policy",
+  "import",
+  "upstream_tests",
+  "input_robustness",
+  "mcp_smoke",
+  "differential"
+ ],
+ "gates": [
+  {
+   "name": "policy",
+   "passed": true,
+   "detail": "imports and builtins within policy",
+   "data": {}
+  },
+  {
+   "name": "import",
+   "passed": true,
+   "detail": "server module imports cleanly",
+   "data": {}
+  },
+  {
+   "name": "upstream_tests",
+   "passed": true,
+   "detail": "28 tests ran, 0 failures, 0 errors (tests/test_transpile.py)",
+   "data": {
+    "ran": 28,
+    "failures": 0,
+    "errors": 0
+   }
+  },
+  {
+   "name": "input_robustness",
+   "passed": true,
+   "detail": "4/4 equivalent-input probes gave identical results",
+   "data": {
+    "probes": [
+     {
+      "tool": "transpile_sql",
+      "args": {
+       "sql": "  SELECT * FROM users WHERE id = 1; ",
+       "read_dialect": "mysql",
+       "write_dialect": "bigquery",
+       "identity": true,
+       "error_level": "error"
+      },
+      "ok": true,
+      "output": {
+       "transpiled_statements": [
+        "SELECT * FROM users WHERE id = 1"
+       ],
+       "success": true,
+       "display_summary": "Transpiled 1 statements from mysql to bigquery"
+      }
+     },
+     {
+      "tool": "transpile_sql",
+      "args": {
+       "sql": "SELECT * FROM users WHERE id = 1;",
+       "read_dialect": "  mysql ",
+       "write_dialect": "bigquery",
+       "identity": true,
+       "error_level": "error"
+      },
+      "ok": true,
+      "output": {
+       "transpiled_statements": [
+        "SELECT * FROM users WHERE id = 1"
+       ],
+       "success": true,
+       "display_summary": "Transpiled 1 statements from   mysql  to bigquery"
+      }
+     },
+     {
+      "tool": "transpile_sql",
+      "args": {
+       "sql": "SELECT * FROM users WHERE id = 1;",
+       "read_dialect": "mysql",
+       "write_dialect": "  bigquery ",
+       "identity": true,
+       "error_level": "error"
+      },
+      "ok": true,
+      "output": {
+       "transpiled_statements": [
+        "SELECT * FROM users WHERE id = 1"
+       ],
+       "success": true,
+       "display_summary": "Transpiled 1 statements from mysql to   bigquery "
+      }
+     },
+     {
+      "tool": "transpile_sql",
+      "args": {
+       "sql": "SELECT * FROM users WHERE id = 1;",
+       "read_dialect": "mysql",
+       "write_dialect": "bigquery",
+       "identity": true,
+       "error_level": "  error "
+      },
+      "ok": true,
+      "output": {
+       "transpiled_statements": [
+        "SELECT * FROM users WHERE id = 1"
+       ],
+       "success": true,
+       "display_summary": "Transpiled 1 statements from mysql to bigquery"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "mcp_smoke",
+   "passed": true,
+   "detail": "1 tools called with example args; invalid input rejected",
+   "data": {
+    "server_started": true,
+    "listed_tools": [
+     "transpile_sql"
+    ],
+    "missing_tools": [],
+    "calls": [
+     {
+      "tool": "transpile_sql",
+      "args": {
+       "sql": "SELECT * FROM users WHERE id = 1;",
+       "read_dialect": "mysql",
+       "write_dialect": "bigquery",
+       "identity": true,
+       "error_level": "error"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "transpiled_statements": [
+        "SELECT * FROM users WHERE id = 1"
+       ],
+       "success": true,
+       "display_summary": "Transpiled 1 statements from mysql to bigquery"
+      },
+      "missing_fields": []
+     }
+    ],
+    "invalid_calls": [
+     {
+      "ok": true,
+      "tool": "transpile_sql",
+      "detail": "rejected cleanly"
+     }
+    ],
+    "robustness": [
+     {
+      "tool": "transpile_sql",
+      "args": {
+       "sql": "  SELECT * FROM users WHERE id = 1; ",
+       "read_dialect": "mysql",
+       "write_dialect": "bigquery",
+       "identity": true,
+       "error_level": "error"
+      },
+      "ok": true,
+      "output": {
+       "transpiled_statements": [
+        "SELECT * FROM users WHERE id = 1"
+       ],
+       "success": true,
+       "display_summary": "Transpiled 1 statements from mysql to bigquery"
+      }
+     },
+     {
+      "tool": "transpile_sql",
+      "args": {
+       "sql": "SELECT * FROM users WHERE id = 1;",
+       "read_dialect": "  mysql ",
+       "write_dialect": "bigquery",
+       "identity": true,
+       "error_level": "error"
+      },
+      "ok": true,
+      "output": {
+       "transpiled_statements": [
+        "SELECT * FROM users WHERE id = 1"
+       ],
+       "success": true,
+       "display_summary": "Transpiled 1 statements from   mysql  to bigquery"
+      }
+     },
+     {
+      "tool": "transpile_sql",
+      "args": {
+       "sql": "SELECT * FROM users WHERE id = 1;",
+       "read_dialect": "mysql",
+       "write_dialect": "  bigquery ",
+       "identity": true,
+       "error_level": "error"
+      },
+      "ok": true,
+      "output": {
+       "transpiled_statements": [
+        "SELECT * FROM users WHERE id = 1"
+       ],
+       "success": true,
+       "display_summary": "Transpiled 1 statements from mysql to   bigquery "
+      }
+     },
+     {
+      "tool": "transpile_sql",
+      "args": {
+       "sql": "SELECT * FROM users WHERE id = 1;",
+       "read_dialect": "mysql",
+       "write_dialect": "bigquery",
+       "identity": true,
+       "error_level": "  error "
+      },
+      "ok": true,
+      "output": {
+       "transpiled_statements": [
+        "SELECT * FROM users WHERE id = 1"
+       ],
+       "success": true,
+       "display_summary": "Transpiled 1 statements from mysql to bigquery"
+      }
+     }
+    ],
+    "still_alive_after_calls": true
+   }
+  },
+  {
+   "name": "differential",
+   "passed": true,
+   "detail": "3/3 cases match the library",
+   "data": {
+    "results": [
+     {
+      "tool": "transpile_sql",
+      "args": {
+       "sql": "SELECT * FROM table WHERE id = 1;",
+       "read_dialect": "mysql",
+       "write_dialect": "bigquery"
+      },
+      "field": "transpiled_statements",
+      "expr": "sqlglot.transpile(sql='SELECT * FROM table WHERE id = 1;', read='mysql', write='bigquery')",
+      "expected": "['SELECT * FROM table WHERE id = 1']",
+      "got": "['SELECT * FROM table WHERE id = 1']",
+      "status": "match"
+     },
+     {
+      "tool": "transpile_sql",
+      "args": {
+       "sql": "SELECT col1, col2 FROM my_table; SELECT col3 FROM other_table;",
+       "read_dialect": "postgres",
+       "write_dialect": "snowflake"
+      },
+      "field": "transpiled_statements",
+      "expr": "sqlglot.transpile(sql='SELECT col1, col2 FROM my_table; SELECT col3 FROM other_table;', read='postgres', write='snowflake')",
+      "expected": "['SELECT col1, col2 FROM my_table', 'SELECT col3 FROM other_table']",
+      "got": "['SELECT col1, col2 FROM my_table', 'SELECT col3 FROM other_table']",
+      "status": "match"
+     },
+     {
+      "tool": "transpile_sql",
+      "args": {
+       "sql": "SELECT * FROM table",
+       "read_dialect": "spark",
+       "identity": true
+      },
+      "field": "transpiled_statements",
+      "expr": "sqlglot.transpile(sql='SELECT * FROM table', read='spark', identity=True)",
+      "expected": "['SELECT * FROM table']",
+      "got": "['SELECT * FROM table']",
+      "status": "match"
+     }
+    ]
+   }
+  }
+ ],
+ "failing_tools": {}
+}

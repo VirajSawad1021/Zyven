@@ -1,0 +1,21 @@
+{
+ "repository": "https://github.com/tobymao/sqlglot.git",
+ "commit": "67961afbed7c986dfe26ab82db89a25814c1bdcb",
+ "license": "MIT",
+ "generator": "zyven 0.1.0",
+ "model": "gemma-4-26b-a4b-it@generativelanguage.googleapis.com",
+ "capability": "sql_transpile_capability",
+ "mode": "wrap",
+ "included_symbols": [
+  "sqlglot.transpile"
+ ],
+ "source_checkout": "/tmp/sqlglot_clone",
+ "source_root": ".",
+ "generated_files": [
+  "server.py"
+ ],
+ "compile_seconds": 58.9,
+ "attempts": 1,
+ "dropped_tools": {},
+ "model_calls": 4
+}

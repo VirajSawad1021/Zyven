@@ -1,0 +1,43 @@
+{
+ "cases": [
+  {
+   "tool": "transpile_sql",
+   "args": {
+    "sql": "SELECT * FROM table WHERE id = 1;",
+    "read_dialect": "mysql",
+    "write_dialect": "bigquery"
+   },
+   "field": "transpiled_statements",
+   "reference_imports": [
+    "import sqlglot"
+   ],
+   "reference_expr": "sqlglot.transpile(sql='SELECT * FROM table WHERE id = 1;', read='mysql', write='bigquery')"
+  },
+  {
+   "tool": "transpile_sql",
+   "args": {
+    "sql": "SELECT col1, col2 FROM my_table; SELECT col3 FROM other_table;",
+    "read_dialect": "postgres",
+    "write_dialect": "snowflake"
+   },
+   "field": "transpiled_statements",
+   "reference_imports": [
+    "import sqlglot"
+   ],
+   "reference_expr": "sqlglot.transpile(sql='SELECT col1, col2 FROM my_table; SELECT col3 FROM other_table;', read='postgres', write='snowflake')"
+  },
+  {
+   "tool": "transpile_sql",
+   "args": {
+    "sql": "SELECT * FROM table",
+    "read_dialect": "spark",
+    "identity": true
+   },
+   "field": "transpiled_statements",
+   "reference_imports": [
+    "import sqlglot"
+   ],
+   "reference_expr": "sqlglot.transpile(sql='SELECT * FROM table', read='spark', identity=True)"
+  }
+ ]
+}
