@@ -18,6 +18,7 @@ from collections import defaultdict
 from dataclasses import asdict
 from pathlib import Path
 
+sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles default to cp1252
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
@@ -153,7 +154,7 @@ async def main() -> None:
     ap.add_argument("--limit", type=int, default=10, help="tasks per category")
     ap.add_argument("--concurrency", type=int, default=3)
     ap.add_argument("--skip-baseline", action="store_true")
-    ap.add_argument("--suite", choices=["nepali", "stdnum", "global"], default="nepali")
+    ap.add_argument("--suite", choices=["nepali", "stdnum", "global", "packaging"], default="nepali")
     args = ap.parse_args()
 
     provider = ModelProvider.from_env(ROOT / ".env")
@@ -161,6 +162,10 @@ async def main() -> None:
         from eval import tasks_global
         SUITE.update(system=SYSTEM_BASE + " " + tasks_global.SYSTEM_HINT, score=tasks_global.score,
                      generate=tasks_global.generate)
+    if args.suite == "packaging":
+        from eval import tasks_packaging
+        SUITE.update(system=SYSTEM_BASE + " " + tasks_packaging.SYSTEM_HINT, score=tasks_packaging.score,
+                     generate=tasks_packaging.generate)
     if args.suite == "stdnum":
         from eval import tasks_stdnum
         SUITE.update(system=SYSTEM_BASE + " " + tasks_stdnum.SYSTEM_HINT, score=tasks_stdnum.score,

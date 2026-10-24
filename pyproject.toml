@@ -23,6 +23,7 @@ toolkit = [
     "python-stdnum @ git+https://github.com/arthurdejong/python-stdnum@006192e59be8ed6e08fd680256868a6c31eb2ba9",
     "hijridate @ git+https://github.com/dralshehri/hijridate@f6f0f4f69da8e58dc65179213822ef7b83a77dcd",
     "pyluach @ git+https://github.com/simlist/pyluach@c1ffe4265f25ab7f5d850f4720111470f27e7ce5",
+    "packaging @ git+https://github.com/pypa/packaging@929fd4b1410ac7ef61ef3f45b2f5d7e87711a9b5",
     "phonenumbers @ git+https://github.com/daviddrysdale/python-phonenumbers@e92147091eca7db103f35cb4daed85376ab79328#subdirectory=python",
 ]
 dev = ["pytest>=8"]

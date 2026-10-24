@@ -99,6 +99,8 @@ def cmd_compile(args) -> None:
         cand = base.model_copy(update={"name": args.capability, "entry_points": ok,
                                        "description": args.description or base.description})
         print(f"boundary set by reviewer: {', '.join(ok)}")
+    if args.test and cand is not None:
+        cand = cand.model_copy(update={"tests": args.test})
     if cand is None:
         sys.exit(f"capability {args.capability!r} not found; available: {', '.join(c.name for c in candidates)}")
     r = compile_capability(p, a, candidate=cand, skills_root=Path(args.out), max_repairs=args.max_repairs)
@@ -119,6 +121,7 @@ def main() -> None:
     s.add_argument("--rescout", action="store_true")
     s.add_argument("--entry", action="append", help="override entry points (human-edited boundary); repeatable")
     s.add_argument("--description", help="capability description when defining it with --entry")
+    s.add_argument("--test", action="append", help="upstream test file to run for verification (repo-relative); repeatable")
     s.set_defaults(fn=cmd_compile)
     s = sub.add_parser("sync"); s.add_argument("--scout", action="store_true", help="also scout capabilities (model calls)")
     s.add_argument("--rescout", action="store_true", help="re-scout repos that already have cached results")

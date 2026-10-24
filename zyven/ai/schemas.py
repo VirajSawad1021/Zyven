@@ -16,6 +16,7 @@ class CandidateCapability(BaseModel):
     entry_points: list[str] = Field(description="fully qualified symbol ids copied exactly from the digest")
     why_agents_need_it: str = Field(description="why a language model cannot reliably do this without a tool")
     risk_notes: list[str] = Field(default_factory=list, description="side effects, heavy deps, or uncertainty")
+    tests: list[str] = Field(default_factory=list, description="reviewer-chosen upstream test files to run (repo-relative)")
 
 
 class ScoutResult(BaseModel):
