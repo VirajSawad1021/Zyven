@@ -148,15 +148,18 @@ def _skill_spec(name: str, script: Path):
 
 
 async def main() -> None:
+    global MAX_TOKENS
     ap = argparse.ArgumentParser()
     ap.add_argument("--skill", action="append", help="MCP server script; repeat for several skills")
     ap.add_argument("--label", default="manual")
     ap.add_argument("--limit", type=int, default=10, help="tasks per category")
     ap.add_argument("--concurrency", type=int, default=3)
     ap.add_argument("--skip-baseline", action="store_true")
+    ap.add_argument("--max-tokens", type=int, default=MAX_TOKENS, help="output budget per model call, same in every condition")
     ap.add_argument("--baseline-only", action="store_true", help="run only the model alone (no skill condition)")
     ap.add_argument("--suite", choices=["nepali", "stdnum", "global", "packaging", "networkx"], default="nepali")
     args = ap.parse_args()
+    MAX_TOKENS = args.max_tokens
 
     provider = ModelProvider.from_env(ROOT / ".env")
     if args.suite == "global":
