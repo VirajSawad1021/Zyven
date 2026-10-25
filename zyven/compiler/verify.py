@@ -9,7 +9,9 @@ G4 mcp_smoke   server starts over stdio, lists every spec tool, each example cal
 
 from __future__ import annotations
 
+import ast
 import json
+import re
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
@@ -64,10 +66,48 @@ def input_variants(args: dict) -> list[dict]:
     return out
 
 
+def _text_to_value(text: str, want: type):
+    """An array or object written as text. Tolerates a trailing comma or semicolon and Python-style literals."""
+    t = text.strip().rstrip(",;").strip()
+    for load in (json.loads, ast.literal_eval):
+        try:
+            value = load(t)
+        except Exception:  # noqa: BLE001 - not parseable that way: try the next
+            continue
+        if isinstance(value, want):
+            return value
+    return None
+
+
+def typed_args(params, args: dict) -> dict:
+    """Example arguments can only hold text, numbers and booleans, but a tool may declare list or object parameters, so
+    the designer writes those as JSON text. Turn each value into the type its parameter declares, so the tool is called
+    the way an agent would call it (a list, not the text of a list). A value that cannot be converted is left as it was."""
+    types = {p.name: p.type for p in params}
+    out = {}
+    for k, v in args.items():
+        want = types.get(k)
+        if isinstance(v, str):
+            if want in ("array", "object"):
+                parsed = _text_to_value(v, list if want == "array" else dict)
+                v = v if parsed is None else parsed
+            elif want == "integer" and re.fullmatch(r"\s*-?\d+\s*", v):
+                v = int(v)
+            elif want == "number" and re.fullmatch(r"\s*-?\d+(\.\d+)?\s*", v):
+                v = float(v)
+            elif want == "boolean" and v.strip().lower() in ("true", "false"):
+                v = v.strip().lower() == "true"
+        out[k] = v
+    return out
+
+
 def smoke_plan(spec: CapabilitySpec) -> dict:
-    return {"tools": {t.name: {"args": t.example_args, "returns": [r.name for r in t.returns],
-                               "required": [p.name for p in t.params if p.required],
-                               "variants": input_variants(t.example_args)} for t in spec.tools}}
+    plan = {}
+    for t in spec.tools:
+        args = typed_args(t.params, t.example_args)
+        plan[t.name] = {"args": args, "returns": [r.name for r in t.returns],
+                        "required": [p.name for p in t.params if p.required], "variants": input_variants(args)}
+    return {"tools": plan}
 
 
 def verify(skill_dir: Path, spec: CapabilitySpec, repo: Path, package_roots: set[str],
@@ -151,12 +191,28 @@ def verify(skill_dir: Path, spec: CapabilitySpec, repo: Path, package_roots: set
 
 def _differential_gate(skill_dir, spec, diff_tests, mounts, env_policy, package_roots, failing) -> Gate:
     """Tool output must equal the library computed directly (Tester-written reference, adapter unseen)."""
-    allowed = []
+    allowed, rejected = [], []
+    tools = {t.name: t for t in spec.tools}
     for c in diff_tests.cases:  # reference code obeys the same static policy as adapter code
-        probe = "\n".join(c.reference_imports + [f"_ = ({c.reference_expr})"])
-        if check_adapter(probe, package_roots).ok:
+        # a reference is a short program: setup statements (for example building a graph), then a last line that is
+        # the expression computing the value. Every line goes through the same policy as the adapter.
+        try:
+            body = ast.parse(c.reference_expr).body
+            last = body[-1] if body else None
+            if not isinstance(last, ast.Expr):
+                raise SyntaxError("the last line must be the expression that computes the value")
+            program = [ast.unparse(s) for s in body[:-1]] + [f"_ = ({ast.unparse(last.value)})"]
+        except SyntaxError as e:
+            rejected.append(f"{c.tool}: {e.msg if hasattr(e, 'msg') else e}")
+            continue
+        res = check_adapter("\n".join(c.reference_imports + program), package_roots)
+        if res.ok:
             allowed.append(c)
-    (skill_dir / "diff_tests.json").write_text(DiffTests(cases=allowed).model_dump_json(indent=1), encoding="utf-8")
+        else:
+            rejected.append(f"{c.tool}: {'; '.join(res.violations)[:110]}")
+    cases = [{**c.model_dump(), "args": typed_args(tools[c.tool].params, c.args) if c.tool in tools else c.args}
+             for c in allowed]
+    (skill_dir / "diff_tests.json").write_text(json.dumps({"cases": cases}, indent=1, ensure_ascii=False), encoding="utf-8")
     run_ = run(["python", "/opt/zyven/diff_check.py", "/skill/server.py", "/skill/diff_tests.json"], mounts,
                env_policy, workdir="/skill")
     line = next((ln for ln in run_.stdout.splitlines() if ln.startswith("ZYVEN_DIFF_REPORT=")), None)
@@ -172,7 +228,7 @@ def _differential_gate(skill_dir, spec, diff_tests, mounts, env_policy, package_
     untested = sorted({t.name for t in spec.tools} - {r["tool"] for r in valid})
     detail = (f"{len(valid) - len(bad)}/{len(valid)} cases match the library"
               + (f"; {len(results) - len(valid)} reference expressions invalid (ignored)" if len(results) > len(valid) else "")
-              + (f"; {len(diff_tests.cases) - len(allowed)} rejected by policy" if len(allowed) < len(diff_tests.cases) else "")
+              + (f"; {len(rejected)} rejected by policy (e.g. {rejected[0]})" if rejected else "")
               + (f"; no valid case for: {', '.join(untested)}" if untested else "")
               + ("; " + report["fatal"][:200] if report.get("fatal") else "")
               + (f"; first mismatch: {bad[0]['tool']}({json.dumps(bad[0]['args'])}).{bad[0]['field']} returned "

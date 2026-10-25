@@ -93,8 +93,9 @@ class DiffCase(BaseModel):
     args: dict[str, str | int | float | bool] = Field(description="arguments for the tool call")
     field: str = Field(description="one return field of the tool to check")
     reference_imports: list[str] = Field(description="import statements for the reference expression")
-    reference_expr: str = Field(description="ONE Python expression that calls the library directly and evaluates "
-                                            "to the value the tool must return in `field` (same JSON type/format). "
+    reference_expr: str = Field(description="a short Python program that calls the library directly: optional setup "
+                                            "statements on separate lines, then a LAST line that is one expression "
+                                            "evaluating to the value the tool must return in `field` (same JSON type/format). "
                                             "Refer to the case's arguments as {arg_name} placeholders, e.g. "
                                             "stdnum.luhn.checksum({number})")
 
