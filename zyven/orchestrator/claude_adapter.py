@@ -65,25 +65,31 @@ class ClaudeCodeAdapter(CLIAgentAdapter):
     project_config_dirs = (".claude",)
     sign_in_help = "Install Claude Code and log in with `claude`, then `/login`."
     open_weight = False
+    supports_full_access = True
     exposes = {"live_output": True, "tool_calls": True, "approvals": False, "file_changes": True, "tokens": True}
     note = ("Claude Code in headless mode with a restricted tool set (no shell), edits only in the task folder, "
             "and a spending cap. Proprietary model: experiments, not submission results.")
     DEFAULT_TOOLS = DEFAULT_TOOLS
 
-    def command(self, cwd: Path | None = None) -> list[str]:
+    def command(self, cwd: Path | None = None, full: bool = False) -> list[str]:
         exe = self._executable()
         assert exe, "claude is not installed"
         tools = os.environ.get("ZYVEN_CLAUDE_TOOLS", DEFAULT_TOOLS)
+        if full:  # a per-task choice: add the shell and stop asking about permissions
+            tools = ",".join(dict.fromkeys([*tools.split(","), "Bash"]))
         cap = os.environ.get("ZYVEN_CLAUDE_MAX_USD", "1.00")
         cmd = [*exe, "-p", "--output-format", "stream-json", "--verbose", "--tools", tools,
-               "--permission-mode", "acceptEdits", "--setting-sources", "user", "--no-session-persistence"]
+               "--permission-mode", "bypassPermissions" if full else "acceptEdits", "--setting-sources", "user",
+               "--no-session-persistence"]
         if self.model():
             cmd += ["--model", self.model()]
         return [*cmd, "--max-budget-usd", cap]
 
     def prepare(self, ctx) -> str:
-        cmd = self.command(ctx.cwd)
-        return f"claude -p (tools: {cmd[cmd.index('--tools') + 1]}; cap ${cmd[-1]}; runs on this machine)"
+        full = bool(ctx.run.get("full_access"))
+        cmd = self.command(ctx.cwd, full)
+        return (f"claude -p ({'NO RESTRICTIONS, ' if full else ''}tools: {cmd[cmd.index('--tools') + 1]}; "
+                f"cap ${cmd[-1]}; runs on this machine)")
 
     def parse(self, line: str, emit: Callable[[str, str], None], totals: dict[str, float]) -> bool:
         return parse_stream_line(line, emit)

@@ -102,6 +102,7 @@ class NewRun(BaseModel):
     repo_url: str = ""
     run_at: float | None = None
     repeat_secs: float | None = None
+    full_access: bool = False  # no sandbox, for runtimes that support it; needs ZYVEN_ALLOW_FULL_ACCESS=1
 
 
 class Board:

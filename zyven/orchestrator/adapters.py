@@ -45,6 +45,7 @@ class RuntimeAdapter:
     open_weight = True
     exposes: dict[str, bool] = {}
     note = ""
+    supports_full_access = False  # can this runtime be started without its sandbox, on the user's explicit request?
 
     def available(self) -> tuple[bool, str]:
         """(usable now, reason when not). The UI lists unavailable runtimes with the reason."""

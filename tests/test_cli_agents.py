@@ -71,7 +71,9 @@ def test_codex_real_events_become_run_events_and_totals():
     assert ("tool", "edit(add C:\\w\\inside.txt)") in events
     assert totals == {"in": 46086, "out": 256, "cost": 0.0}  # reasoning tokens are inside output_tokens
     assert parse_line('{"type":"turn.failed","error":{"message":"quota"}}', emit, totals) is True
-    assert parse_line('{"type":"error","message":"boom"}', emit, totals) is True
+    # a retry notice is not a failure: a real run printed this, then recovered and finished the task
+    assert parse_line('{"type":"error","message":"Reconnecting... 2/5 (workspace routing discovery failed)"}', emit, totals) is False
+    assert ("info", "warning: Reconnecting... 2/5 (workspace routing discovery failed)") in events
 
 
 def test_codex_runs_in_its_sandbox_with_the_task_folder_and_no_temp_or_network(tmp_path, monkeypatch):
@@ -84,7 +86,7 @@ def test_codex_runs_in_its_sandbox_with_the_task_folder_and_no_temp_or_network(t
     assert cmd[cmd.index("-C") + 1] == str(tmp_path / "task") and cmd[-1] == "-"  # prompt from stdin
     assert "danger" not in " ".join(cmd) and "--dangerously-bypass-approvals-and-sandbox" not in cmd
     monkeypatch.setenv("ZYVEN_CODEX_SANDBOX", "danger-full-access")
-    with pytest.raises(ValueError, match="must be one of"):
+    with pytest.raises(ValueError, match="never through ZYVEN_CODEX_SANDBOX"):
         a.command(tmp_path)
     monkeypatch.setenv("ZYVEN_CODEX_SANDBOX", "read-only")
     monkeypatch.setenv("ZYVEN_CODEX_MODEL", "x; rm -rf /")

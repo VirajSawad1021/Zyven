@@ -8,10 +8,11 @@ import { relTime, type Tone } from "../lib/labels";
 
 interface RuntimeStatus { installed: boolean; signed_in: boolean | null; detail: string }
 interface RuntimeInfo { label: string; open_weight: boolean; available: boolean; note: string; exposes: Record<string, boolean>; status?: RuntimeStatus;
-  settings?: { enabled: boolean; model: string }; env_enabled?: boolean }
+  settings?: { enabled: boolean; model: string }; env_enabled?: boolean;
+  full_access?: { supported: boolean; allowed: boolean } }
 interface Runtimes { runtimes: Record<string, RuntimeInfo>; planned: Record<string, string>; default_image: string }
 interface Run {
-  id: string; title: string; runtime: string; prompt: string; image: string; network: boolean; memory: string; cpus: string;
+  id: string; title: string; runtime: string; full_access?: boolean; prompt: string; image: string; network: boolean; memory: string; cpus: string;
   repo_url: string; run_at: number | null; status: string; created: number; updated: number; exit_code: number | null;
   files: { added: string[]; modified: string[] } | null; answer?: string; log?: { ts: number; kind: string; text: string }[];
 }
@@ -57,6 +58,8 @@ function NewTask({ rt, onCreated, onSettingsChanged }: { rt: Runtimes; onCreated
   const [repo, setRepo] = useState("");
   const [when, setWhen] = useState("");
   const [every, setEvery] = useState("0");
+  const [fullAccess, setFullAccess] = useState(false);
+  const [fullSure, setFullSure] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const info = rt.runtimes[runtime];
@@ -69,8 +72,9 @@ function NewTask({ rt, onCreated, onSettingsChanged }: { rt: Runtimes; onCreated
         runtime, title, prompt, image, network, memory, cpus, repo_url: repo,
         run_at: when ? new Date(when).getTime() / 1000 : null,
         repeat_secs: Number(every) || null,
+        full_access: fullAccess && fullSure,
       });
-      setPrompt(""); setTitle(""); onCreated(run.id);
+      setPrompt(""); setTitle(""); setFullAccess(false); setFullSure(false); onCreated(run.id);
     } catch (e) { setErr(e instanceof Error ? e.message : "failed"); } finally { setBusy(false); }
   }
 
@@ -120,8 +124,26 @@ function NewTask({ rt, onCreated, onSettingsChanged }: { rt: Runtimes; onCreated
         <label className="text-[11px] font-semibold text-ink">Repeat<select className={`${input} mt-1`} value={every} onChange={(e) => setEvery(e.target.value)}>
           <option value="0">Once</option><option value="3600">Every hour</option><option value="86400">Every day</option><option value="604800">Every week</option></select></label>
       </div>
+      {info.full_access?.supported && (
+        <div className={`mt-3 rounded-xl border px-3 py-2.5 text-[12.5px] ${fullAccess ? "border-bad/40 bg-bad-bg" : "border-line bg-panel"}`}>
+          <label className="flex items-center gap-2 font-medium">
+            <input type="checkbox" disabled={!info.full_access.allowed} checked={fullAccess}
+              onChange={(e) => { setFullAccess(e.target.checked); setFullSure(false); }} />
+            Full PC access (no sandbox)
+          </label>
+          {!info.full_access.allowed && (
+            <p className="mt-1 text-muted">Off. To allow it, set <code className="font-mono">ZYVEN_ALLOW_FULL_ACCESS=1</code> and restart Zyven. This is a deliberate step on the machine itself.</p>
+          )}
+          {fullAccess && (
+            <>
+              <p className="mt-1.5 text-bad">This task will not be sandboxed. It can read, change and delete any file your account can and run any program. A wrong or manipulated model can do real damage. It cannot repeat on a schedule.</p>
+              <label className="mt-1.5 flex items-center gap-2"><input type="checkbox" checked={fullSure} onChange={(e) => setFullSure(e.target.checked)} /> I understand and want this task to run with full access.</label>
+            </>
+          )}
+        </div>
+      )}
       <div className="mt-3 flex items-center gap-3">
-        <Button onClick={submit} loading={busy} disabled={!prompt.trim() || !info.available}>{when || Number(every) ? <Calendar className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}{when || Number(every) ? "Schedule task" : "Create task"}</Button>
+        <Button onClick={submit} loading={busy} disabled={!prompt.trim() || !info.available || (fullAccess && (!fullSure || Number(every) > 0))}>{when || Number(every) ? <Calendar className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}{when || Number(every) ? "Schedule task" : "Create task"}</Button>
         {!info.available && <span className="text-[12.5px] text-warn">This runtime is off. See the note above for how to turn it on.</span>}
         {err && <span className="text-[12.5px] text-bad">{err}</span>}
       </div>
@@ -189,7 +211,7 @@ function Detail({ id, onClose, runtimes }: { id: string; onClose: () => void; ru
           <p className="mt-0.5 font-mono text-[11px] text-muted">#{run.id} · {run.runtime}{run.runtime === "docker" ? ` · ${run.image} · network ${run.network ? "on" : "off"} · ${run.memory}/${run.cpus} cpu` : ""}</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Badge tone={TONE[run.status]}>{run.status === "RUNNING" && <LiveDot />}{LABEL[run.status]}</Badge>
+          {run.full_access && <Badge tone="bad">full PC access</Badge>}<Badge tone={TONE[run.status]}>{run.status === "RUNNING" && <LiveDot />}{LABEL[run.status]}</Badge>
           {run.runtime !== "zyven" && active && <Button size="sm" variant="danger" onClick={() => post(`/api/runs/${id}/cancel`)}><Square className="h-3 w-3" /> Cancel</Button>}
           <button onClick={onClose} className="rounded-lg p-1.5 text-muted hover:bg-panel-2" aria-label="Close"><X className="h-4 w-4" /></button>
         </div>
@@ -314,7 +336,7 @@ export function Control() {
                   <button key={r.id} onClick={() => setSel(r.id)} className={`w-full rounded-xl border bg-white p-3 text-left transition-colors hover:border-ink/40 ${sel === r.id ? "border-ink" : "border-line"}`}>
                     <p className="line-clamp-2 text-[13px] font-medium">{r.title}</p>
                     <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted">
-                      <Badge tone={TONE[r.status]}>{LABEL[r.status]}</Badge>{r.runtime === "docker" ? "Docker" : r.runtime === "zyven" ? "Zyven agent" : r.runtime} · {r.status === "SCHEDULED" && r.run_at ? new Date(r.run_at * 1000).toLocaleTimeString() : relTime(r.created)}
+                      <Badge tone={TONE[r.status]}>{LABEL[r.status]}</Badge>{r.full_access && <Badge tone="bad">full PC access</Badge>}{r.runtime === "docker" ? "Docker" : r.runtime === "zyven" ? "Zyven agent" : r.runtime} · {r.status === "SCHEDULED" && r.run_at ? new Date(r.run_at * 1000).toLocaleTimeString() : relTime(r.created)}
                     </p>
                   </button>
                 ))}

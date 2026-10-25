@@ -61,7 +61,7 @@ class CLIAgentAdapter(RuntimeAdapter):
         self._refreshing = threading.Event()
 
     # --- what a subclass provides ---------------------------------------------------------------------
-    def command(self, cwd: Path | None = None) -> list[str]:
+    def command(self, cwd: Path | None = None, full: bool = False) -> list[str]:
         raise NotImplementedError
 
     def prepare(self, ctx: RunContext) -> str:
@@ -142,8 +142,12 @@ class CLIAgentAdapter(RuntimeAdapter):
                 ctx.emit("error", f"this repository ships its own {self.label} settings ({name}); "
                                   "refusing to run it with them")
                 return 2
+        full = bool(ctx.run.get("full_access")) and self.supports_full_access
         note = self.prepare(ctx)
-        cmd = self.command(ctx.cwd)
+        cmd = self.command(ctx.cwd, full)
+        if full:
+            ctx.emit("error", "FULL PC ACCESS: this run is NOT sandboxed. It can read, change and delete any file your "
+                              "account can, and run any program.")
         # npm installs programs on Windows as .cmd shims, which cmd.exe parses: keep its metacharacters out of every
         # argument we choose (the prompt is exempt: it goes on stdin, or to a native program).
         if os.name == "nt" and cmd[0].lower().endswith((".cmd", ".bat")) and any(re.search(r'[&|<>^%!"]', a) for a in cmd[1:]):

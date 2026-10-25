@@ -88,7 +88,7 @@ class AgyAdapter(CLIAgentAdapter):
     note = ("Antigravity's CLI in print mode. Experimental: on the development machine its headless mode printed its "
             "start line and then waited for ever, so runs are stopped after 2 minutes of silence.")
 
-    def command(self, cwd: Path | None = None) -> list[str]:
+    def command(self, cwd: Path | None = None, full: bool = False) -> list[str]:
         exe = self._executable()
         assert exe, "agy is not installed"
         cmd = [*exe, "--output-format", "stream-json", "--mode", "accept-edits", "--sandbox"]

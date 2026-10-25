@@ -68,7 +68,11 @@ def parse_line(line: str, emit: Callable[[str, str], None], totals: dict[str, fl
         totals["out"] += usage.get("output_tokens", 0) or 0  # reasoning tokens are already inside output_tokens
     elif kind in ("turn.failed", "error"):
         err = ev.get("error") or ev.get("message") or ev
-        emit("error", _short(err.get("message", err) if isinstance(err, dict) else err, 400))
+        text = _short(err.get("message", err) if isinstance(err, dict) else err, 400)
+        if kind == "error":  # a notice such as "Reconnecting... 2/5": Codex retries and usually recovers, so it is
+            emit("info", f"warning: {text}")  # shown, but only a failed turn (or a non-zero exit) fails the run
+            return False
+        emit("error", text)
         return True
     return False
 
@@ -82,26 +86,30 @@ class CodexAdapter(CLIAgentAdapter):
     project_config_dirs = (".codex",)
     sign_in_help = "Install Codex (`npm i -g @openai/codex`) and run `codex login`."
     open_weight = False
+    supports_full_access = True
     exposes = {"live_output": True, "tool_calls": True, "approvals": False, "file_changes": True, "tokens": True}
     note = ("Codex in headless mode inside its own sandbox: it can change files only in the task folder, "
             "with no network and no access to the temp folders. Proprietary model by default.")
 
-    def command(self, cwd: Path | None = None) -> list[str]:
+    def command(self, cwd: Path | None = None, full: bool = False) -> list[str]:
         exe = self._executable()
         assert exe, "codex is not installed"
-        sandbox = os.environ.get("ZYVEN_CODEX_SANDBOX", "workspace-write").strip()
-        if sandbox not in SANDBOXES:
+        sandbox = "danger-full-access" if full else os.environ.get("ZYVEN_CODEX_SANDBOX", "workspace-write").strip()
+        if sandbox not in (*SANDBOXES, "danger-full-access"):
             raise ValueError(f"ZYVEN_CODEX_SANDBOX must be one of {', '.join(SANDBOXES)}")
-        cmd = [*exe, "exec", "--json", "-s", sandbox,
-               "-c", "sandbox_workspace_write.exclude_tmpdir_env_var=true",
-               "-c", "sandbox_workspace_write.exclude_slash_tmp=true",
-               "-c", "sandbox_workspace_write.network_access=false",
-               "--skip-git-repo-check", "--ephemeral",
-               # The sandbox limits shell commands only. A user's own config can switch on plugins and MCP servers
-               # (computer control, a browser, a JavaScript REPL) that act outside it, so none of that is loaded.
-               "--ignore-user-config", "--ignore-rules",
-               "--disable", "computer_use", "--disable", "browser_use", "--disable", "apps"]
-        if os.name == "nt":  # this setting lives in the user's config file, which is ignored above; without it Codex
+        if sandbox == "danger-full-access" and not full:
+            raise ValueError("full access can only be requested per task, never through ZYVEN_CODEX_SANDBOX")
+        cmd = [*exe, "exec", "--json", "-s", sandbox]
+        if not full:
+            cmd += ["-c", "sandbox_workspace_write.exclude_tmpdir_env_var=true",
+                    "-c", "sandbox_workspace_write.exclude_slash_tmp=true",
+                    "-c", "sandbox_workspace_write.network_access=false"]
+        cmd += ["--skip-git-repo-check", "--ephemeral",
+                # Even with full file and shell access, the user's plugins and MCP tools (computer control, a browser,
+                # a JavaScript REPL) are not loaded: they are a different, larger power than this switch grants.
+                "--ignore-user-config", "--ignore-rules",
+                "--disable", "computer_use", "--disable", "browser_use", "--disable", "apps"]
+        if os.name == "nt" and not full:  # this setting lives in the user's config file, which is ignored above; without it Codex
             cmd += ["-c", "windows.sandbox=unelevated"]  # has no Windows sandbox and treats the disk as read-only
         if cwd is not None:
             cmd += ["-C", str(cwd)]
@@ -111,6 +119,8 @@ class CodexAdapter(CLIAgentAdapter):
         return [*cmd, "-"]  # "-" reads the prompt from stdin
 
     def prepare(self, ctx) -> str:
+        if ctx.run.get("full_access"):
+            return f"codex exec (NO SANDBOX: whole disk and network; model: {self.model() or 'Codex default'})"
         return (f"codex exec ({os.environ.get('ZYVEN_CODEX_SANDBOX', 'workspace-write')} sandbox: task folder only, no network; "
                 f"model: {self.model() or 'Codex default'})")
 

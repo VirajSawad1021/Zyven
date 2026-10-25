@@ -29,14 +29,16 @@ from zyven.orchestrator.cli_agent import CLIAgentAdapter, run_quiet
 MODEL = re.compile(r"[\w./:#\-]{1,100}")
 
 
-def permission_config(allow_shell: bool = False) -> dict[str, Any]:
+def permission_config(allow_shell: bool = False, full: bool = False) -> dict[str, Any]:
     """What OpenCode may do in the task folder. Anything not listed keeps OpenCode's default."""
     return {
         "$schema": "https://opencode.ai/config.json",
         "permission": {
             "read": "allow", "edit": "allow", "glob": "allow", "grep": "allow", "list": "allow",
-            "bash": "allow" if allow_shell else "deny",
-            "external_directory": "deny", "webfetch": "deny", "websearch": "deny",
+            "bash": "allow" if (allow_shell or full) else "deny",
+            # full access (a per-task choice) also lifts the folder and web limits
+            "external_directory": "allow" if full else "deny",
+            "webfetch": "allow" if full else "deny", "websearch": "allow" if full else "deny",
         },
     }
 
@@ -84,11 +86,12 @@ class OpenCodeAdapter(CLIAgentAdapter):
     scaffold_files = ("opencode.json",)  # the permission file Zyven writes; not part of the user's results
     sign_in_help = "Install it from opencode.ai; `opencode auth login` adds your own provider."
     open_weight = False  # depends on the model the user picks; not verified here
+    supports_full_access = True
     exposes = {"live_output": True, "tool_calls": True, "approvals": False, "file_changes": True, "tokens": True}
     note = ("OpenCode in headless mode, locked to its task folder (no shell, no web). "
             "You choose the model; Zyven does not verify that it is open-weight.")
 
-    def command(self, cwd: Path | None = None) -> list[str]:
+    def command(self, cwd: Path | None = None, full: bool = False) -> list[str]:
         exe = self._executable()
         assert exe, "opencode is not installed"
         cmd = [*exe, "run", "--standalone", "--format", "json"]
@@ -99,8 +102,11 @@ class OpenCodeAdapter(CLIAgentAdapter):
 
     def prepare(self, ctx: RunContext) -> str:
         allow_shell = os.environ.get("ZYVEN_OPENCODE_ALLOW_SHELL") == "1"
-        (ctx.cwd / "opencode.json").write_text(json.dumps(permission_config(allow_shell), indent=2), encoding="utf-8")
-        return (f"opencode run ({'shell ALLOWED on this machine' if allow_shell else 'no shell, no web, folder only'}; "
+        full = bool(ctx.run.get("full_access"))
+        (ctx.cwd / "opencode.json").write_text(json.dumps(permission_config(allow_shell, full), indent=2), encoding="utf-8")
+        mode = "NO RESTRICTIONS: whole disk, shell and web" if full else (
+            "shell ALLOWED on this machine" if allow_shell else "no shell, no web, folder only")
+        return (f"opencode run ({mode}; "
                 f"model: {self.model() or 'OpenCode default'})")
 
     def parse(self, line: str, emit: Callable[[str, str], None], totals: dict[str, float]) -> bool:
