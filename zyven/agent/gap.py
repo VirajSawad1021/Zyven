@@ -48,6 +48,10 @@ GAP_SYSTEM = (
     "and other facts you cannot verify are NOT reliable from memory: if the task needs one of these and no "
     "current tool provides it, report it as a missing capability. Describe each missing capability "
     "generically (e.g. 'convert Bikram Sambat dates to Gregorian'), not with the task's specific values. "
+    "A tool that runs code the agent writes itself (a shell, a sandbox, a script runner) is NOT a verified "
+    "implementation: if the task needs the exact behaviour of an established library (calendars, graph algorithms, "
+    "ID or checksum rules, version comparison, parsing standards), report it as a missing capability even when such "
+    "a tool exists, because rewriting the algorithm from memory is the unreliable part. "
     "If the current tools are enough, return an empty missing_capabilities list."
 )
 

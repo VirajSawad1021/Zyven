@@ -58,3 +58,9 @@ def test_a_failure_says_what_tool_is_missing(monkeypatch):
 def test_a_provider_error_is_reported_in_the_answer(monkeypatch):
     res, _ = _run(monkeypatch, GapCheck(plan=[], can_complete_with_current_tools=True), "", error="HTTP 429 quota")
     assert res.status == "FAILED" and "HTTP 429 quota" in res.answer.final_text
+
+
+def test_the_gap_prompt_does_not_treat_a_code_sandbox_as_a_verified_library():
+    from zyven.agent.gap import GAP_SYSTEM
+
+    assert "NOT a verified" in GAP_SYSTEM and "graph algorithms" in GAP_SYSTEM
