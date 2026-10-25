@@ -197,6 +197,24 @@ class OAuthCoordinator:
         self.store.update(cid, enabled=False, tools=None, error=None)
 
 
+def leaf_error(e: BaseException) -> BaseException:
+    """The first real error inside nested ExceptionGroups (the MCP client raises 'unhandled errors in a TaskGroup')."""
+    while isinstance(e, BaseExceptionGroup) and e.exceptions:
+        e = e.exceptions[0]
+    return e
+
+
+def expire_sign_in(store: ConnectionStore, cid: str) -> str:
+    """The service no longer accepts the stored login and it cannot be renewed silently: forget it, so the connection
+    shows 'Not signed in' with a Sign in button instead of failing in the dark. Returns the message for the user."""
+    for key in ("_oauth_tokens", "_oauth_expires_at"):
+        store.delete_secret(cid, key)
+    name = store.get(cid)["name"]
+    msg = f"{name}: the sign-in expired. Sign in again on the Connections page."
+    store.update(cid, enabled=False, tools=None, error=msg)
+    return msg
+
+
 def _message(e: BaseException) -> str:
     inner = e.exceptions[0] if isinstance(e, BaseExceptionGroup) and e.exceptions else e
     return f"{type(inner).__name__}: {inner}"[:400]

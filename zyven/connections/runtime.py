@@ -47,7 +47,11 @@ async def load_enabled(tb: ToolBox, store: ConnectionStore, emit: Emit, ask: Ask
             names = await tb.add_transport(f"connection:{c['id']}", server_for(store, c["id"], c),
                                            prefix=prefix, gate=make_gate(c["name"], emit, ask))
         except Exception as e:  # noqa: BLE001 - a broken connection must not break the agent
-            emit("CONNECTION_FAILED", detail=f"{c['name']}: {type(e).__name__}: {str(e)[:160]}")
+            from zyven.connections.oauth import SignInNeeded, expire_sign_in, leaf_error
+
+            leaf = leaf_error(e)
+            detail = expire_sign_in(store, c["id"]) if isinstance(leaf, SignInNeeded) else f"{c['name']}: {type(leaf).__name__}: {str(leaf)[:160]}"
+            emit("CONNECTION_FAILED", detail=detail)
             continue
         loaded += names
         emit("CONNECTION_LOADED", detail=f"{c['name']}: {len(names)} tools")

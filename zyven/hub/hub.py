@@ -28,6 +28,7 @@ from mcp import types
 from mcp.server.lowlevel import Server
 
 from zyven.agent.mcp_tools import MCPServerSpec, ToolBox
+from zyven.connections.oauth import SignInNeeded, expire_sign_in, leaf_error
 from zyven.connections.probe import server_for
 from zyven.connections.runtime import tool_prefix
 from zyven.connections.store import ConnectionStore
@@ -36,14 +37,21 @@ log = logging.getLogger("zyven.hub")
 
 # approve(run_id, kind, summary, detail) -> bool: blocks until the user decides (Control.request_approval)
 Approve = Callable[[str, str, str, str], bool]
+STATUS_TOOL = {"type": "function", "function": {
+    "name": "zyven_status",
+    "description": "Report which of Zyven's tools are available and why a service is missing (for example an expired "
+                   "sign-in). Call this if a tool you expected, such as a Notion tool, is not in your list.",
+    "parameters": {"type": "object", "properties": {}}}}
 DENIED = "Denied: the user did not approve this action, so it was not run. Do not retry it."
 
 
 class _Source:
     """One connection or skill: its own ToolBox, opened and closed by one task, loaded in parallel with the others."""
 
-    def __init__(self, label: str, load: Callable[[ToolBox], Awaitable[list[str]]]) -> None:
+    def __init__(self, label: str, load: Callable[[ToolBox], Awaitable[list[str]]],
+                 on_sign_in_expired: Callable[[], str] | None = None) -> None:
         self.label, self._load = label, load
+        self.on_sign_in_expired = on_sign_in_expired
         self.toolbox: ToolBox | None = None
         self.error: str | None = None
         self._ready: asyncio.Future = asyncio.get_running_loop().create_future()
@@ -59,7 +67,10 @@ class _Source:
                     self._ready.set_result(None)
                 await self._close.wait()
         except Exception as e:  # noqa: BLE001 - a broken source must not hide the others
-            self.error = f"{type(e).__name__}: {str(e)[:120]}"
+            e = leaf_error(e)
+            self.error = e.args[0] if isinstance(e, SignInNeeded) and e.args else f"{type(e).__name__}: {str(e)[:120]}"
+            if isinstance(e, SignInNeeded) and self.on_sign_in_expired:
+                self.error = self.on_sign_in_expired()
             log.warning("hub: %s unavailable: %s", self.label, e)
             if not self._ready.done():
                 self._ready.set_result(None)
@@ -81,8 +92,9 @@ class _Source:
 class HubSession:
     """One run's tools: every enabled connection and every verified skill, started in parallel and kept until the run ends."""
 
-    def __init__(self, run_id: str, store: ConnectionStore, skills: list[MCPServerSpec], approve: Approve) -> None:
-        self.run_id, self._approve = run_id, approve
+    def __init__(self, run_id: str, store: ConnectionStore, skills: list[MCPServerSpec], approve: Approve,
+                 notify: Callable[[str, str], None] | None = None) -> None:
+        self.run_id, self._approve, self._notify = run_id, approve, notify
         self.sources: list[_Source] = []
         prefixes: set[str] = set()
         for c in store.list():
@@ -95,7 +107,8 @@ class HubSession:
                 return await tb.add_transport(f"connection:{c['id']}", server_for(store, c["id"], c), prefix=prefix,
                                               gate=self._gate_for(c["name"]))
 
-            self.sources.append(_Source(c["name"], load_connection))
+            self.sources.append(_Source(c["name"], load_connection,
+                                        lambda cid=c["id"]: expire_sign_in(store, cid)))
         for spec in skills:
             self.sources.append(_Source(f"skill {spec.name}", lambda tb, spec=spec: tb.add_server(spec)))
         self._route: dict[str, ToolBox] = {}
@@ -123,12 +136,18 @@ class HubSession:
                     if t["function"]["name"] not in self._route:
                         self._route[t["function"]["name"]] = s.toolbox
                         self._tools.append(t)
+            for s in self.sources:  # tell the user in the run's log what could not be offered, and why
+                if s.error and self._notify:
+                    self._notify(self.run_id, f"Zyven hub: {s.label} unavailable. {s.error}")
+            self._tools.append(STATUS_TOOL)
             self._built.set_result(None)
         await self._built
         return self._tools
 
     async def call(self, name: str, arguments: dict[str, Any]) -> tuple[bool, str]:
         await self.tools()
+        if name == STATUS_TOOL["function"]["name"]:
+            return True, "\n".join(self.notes) or "No connections or skills are set up."
         tb = self._route.get(name)
         if tb is None:
             return False, f"Unknown tool {name!r}."
@@ -140,8 +159,8 @@ class HubSession:
 
 class ZyvenHub:
     def __init__(self, store: Callable[[], ConnectionStore], skills: Callable[[], list[MCPServerSpec]],
-                 approve: Approve) -> None:
-        self._store, self._skills, self._approve = store, skills, approve
+                 approve: Approve, notify: Callable[[str, str], None] | None = None) -> None:
+        self._store, self._skills, self._approve, self._notify = store, skills, approve, notify
         self._tokens: dict[str, str] = {}      # token -> run id
         self._sessions: dict[str, HubSession] = {}
         self._lock: asyncio.Lock | None = None
@@ -205,7 +224,7 @@ class ZyvenHub:
         async with self._lock:
             session = self._sessions.get(run_id)
             if session is None:
-                session = self._sessions[run_id] = HubSession(run_id, self._store(), self._skills(), self._approve)
+                session = self._sessions[run_id] = HubSession(run_id, self._store(), self._skills(), self._approve, self._notify)
         return session
 
     def _run_of(self, ctx) -> str:

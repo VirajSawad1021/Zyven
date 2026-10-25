@@ -305,7 +305,8 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
 
     hub = ZyvenHub(lambda: state["connections"],
                    lambda: [sk.server_spec() for sk in state["board"].library.list()],
-                   lambda *a: state["control"].request_approval(*a))
+                   lambda *a: state["control"].request_approval(*a),
+                   lambda run_id, text: state["control"]._emit(run_id, "error", text))
 
     app = FastAPI(title="Zyven board", lifespan=lifespan)
     app.mount("/hub", hub.asgi())  # MCP over HTTP at /hub/mcp, only with a live per-run token

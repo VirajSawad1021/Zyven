@@ -63,7 +63,12 @@ async def probe(store: ConnectionStore, cid: str) -> dict[str, Any]:
         tools = await asyncio.wait_for(_list_tools(store, cid, conn), PROBE_TIMEOUT_S)
         return store.update(cid, tools=describe_tools(tools), error=None, checked=time.time())
     except Exception as e:  # noqa: BLE001 - any transport, auth or launch failure is shown to the user
-        inner = e.exceptions[0] if isinstance(e, BaseExceptionGroup) and e.exceptions else e
+        from zyven.connections.oauth import SignInNeeded, expire_sign_in, leaf_error
+
+        inner = leaf_error(e)
+        if isinstance(inner, SignInNeeded):
+            msg = expire_sign_in(store, cid)
+            return store.update(cid, tools=None, enabled=False, error=msg, checked=time.time())
         msg = f"{type(inner).__name__}: {inner}"
         for v in store.secrets_for(cid).values():  # a server error must not echo a secret back
             msg = msg.replace(v, "***")
