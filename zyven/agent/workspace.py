@@ -11,6 +11,7 @@ Packages installed with `pip install --target /work/.pkgs <name>` are importable
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any, Callable
 
@@ -31,7 +32,8 @@ def safe_path(root: Path, rel: str) -> Path:
     if not isinstance(rel, str) or not rel.strip():
         raise ValueError("give a file path relative to the workspace, for example src/main.py")
     p = Path(rel.replace("\\", "/"))
-    if p.is_absolute() or p.drive or ".." in p.parts or rel.startswith(("/", "~")):
+    # a Windows drive path (C:\x) is refused on every system, not only where it would be absolute
+    if p.is_absolute() or p.drive or ".." in p.parts or rel.startswith(("/", "~")) or re.match(r"^[A-Za-z]:", rel.strip()):
         raise ValueError(f"{rel!r} is outside the workspace. Use a relative path such as src/main.py")
     target = (root / p).resolve()
     if not target.is_relative_to(root.resolve()):
