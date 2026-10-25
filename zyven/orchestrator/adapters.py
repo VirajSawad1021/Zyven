@@ -121,5 +121,6 @@ def default_adapters() -> dict[str, RuntimeAdapter]:
     from zyven.orchestrator.codex_adapter import CodexAdapter
     from zyven.orchestrator.github_adapter import GitHubAdapter
     from zyven.orchestrator.opencode_adapter import OpenCodeAdapter
-    return {a.name: a for a in (DockerAdapter(), ClaudeCodeAdapter(), CodexAdapter(), OpenCodeAdapter(), AgyAdapter(),
-                                GitHubAdapter())}
+    from zyven.orchestrator.qoder_adapter import QoderAdapter
+    return {a.name: a for a in (DockerAdapter(), ClaudeCodeAdapter(), CodexAdapter(), OpenCodeAdapter(), QoderAdapter(),
+                                AgyAdapter(), GitHubAdapter())}
