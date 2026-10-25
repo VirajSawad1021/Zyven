@@ -1,1 +1,1 @@
-Connections work like connectors in a chat app. Notion signs in with OAuth. Every tool is marked: reads are free, and anything that changes your data says asks, and waits for approval. Google Docs works the same way.
+Connections work like connectors in a chat app. Notion signs in with OAuth. Every tool is marked: reads are free, and anything that changes your data says asks, and waits for approval. There are ready templates for Google Docs, GitHub, Slack and Gmail, and any M C P server can be added by its address.

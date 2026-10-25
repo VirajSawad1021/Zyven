@@ -1,0 +1,1 @@
+Zyven has three parts. First, a compiler that turns an open-source repository into verified tools. Second, an agent dashboard, where you give work, approve actions, and watch the results. Third, a hub, so other coding agents and your connected services can use those same tools. The compiler and the agent run on open-weight models, on your own computer.

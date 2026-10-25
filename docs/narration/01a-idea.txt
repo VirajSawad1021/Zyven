@@ -1,0 +1,1 @@
+Here is the idea. Take any open-source Python repository. Zyven reads it, designs a small set of tools, writes the code, and tests it in a sandbox against the library's own tests. What passes becomes an M C P tool, the standard way agents call tools. Networkx is only our example, and the catalog is not fixed. It is one file, and you add a repository by adding an entry.

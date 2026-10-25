@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zyven demo slides</title>
+<style>
+  :root { --bg:#faf8f4; --ink:#1d1b18; --mute:#6f6a62; --line:#e3ddd2; --card:#fff; --acc:#de4e2b; --ok:#1f7a4d; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; width:1920px; height:1080px; overflow:hidden; background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI", system-ui, sans-serif; }
+  .kick { position:absolute; left:160px; top:62px; font-size:44px; font-weight:700; color:var(--acc); }
+  h1 { position:absolute; left:160px; top:128px; margin:0; font-size:76px; letter-spacing:-.02em; }
+  .slide { display:none; position:absolute; inset:0; }
+  .slide.active { display:block; }
+  .a { opacity:0; transform:translateY(18px); transition:opacity .7s ease, transform .7s ease; }
+  .a.show { opacity:1; transform:none; }
+  .box { position:absolute; background:var(--card); border:4px solid var(--ink); border-radius:22px; padding:26px 30px;
+    transition:opacity .7s ease, transform .7s ease, box-shadow .5s ease, border-color .5s ease; }
+  .box.hot { border-color:var(--acc); box-shadow:0 0 0 10px rgba(222,78,43,.14); }
+  .box h2 { margin:0 0 14px; font-size:46px; }
+  .box p { margin:0; font-size:32px; line-height:1.4; color:var(--mute); }
+  .t { position:absolute; left:160px; font-size:38px; color:var(--mute); }
+  /* idea flow */
+  .step { position:absolute; top:330px; width:205px; height:150px; background:var(--card); border:4px solid var(--mute);
+    border-radius:20px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:32px;
+    font-weight:700; line-height:1.3; color:var(--mute); transition:opacity .6s, transform .6s, box-shadow .5s; }
+  .step.k { border-color:var(--ink); color:var(--ink); }
+  .step.g { border-color:var(--acc); color:var(--acc); }
+  .step.hot { box-shadow:0 0 0 10px rgba(222,78,43,.16); }
+  .arr { position:absolute; top:372px; font-size:64px; font-weight:700; color:var(--mute); }
+  .chips { position:absolute; left:160px; top:690px; right:160px; display:flex; flex-wrap:wrap; gap:14px; }
+  .chip { padding:12px 22px; border:3px solid var(--line); border-radius:999px; background:#fff; font-size:32px; }
+  .chip.new { border-color:var(--acc); color:var(--acc); font-weight:700; }
+  /* difference table */
+  .col { position:absolute; top:260px; width:760px; }
+  .col h2 { margin:0 0 6px; font-size:48px; }
+  .col small { font-size:28px; color:var(--mute); }
+  .row { position:absolute; width:1600px; left:160px; display:flex; gap:40px; align-items:flex-start; }
+  .cell { width:760px; padding:12px 22px; border-radius:16px; font-size:30px; line-height:1.3; }
+  .cell.l { background:#fff; border:3px solid var(--line); color:var(--mute); }
+  .cell.r { background:#fff; border:3px solid var(--acc); color:var(--ink); }
+  .cell b { color:var(--ink); }
+  /* roles */
+  .lst { position:absolute; top:290px; }
+  .lst h2 { margin:0 0 20px; font-size:46px; color:var(--acc); }
+  .item { margin:0 0 20px; font-size:34px; }
+  .item b { display:inline-block; width:220px; }
+  .item span { color:var(--mute); font-size:30px; }
+</style>
+</head>
+<body>
+<div class="kick">zyven</div>
+
+<!-- 1. overview -->
+<section class="slide" id="overview">
+  <h1 class="a" data-at="0.3">What Zyven is</h1>
+  <div class="box a" data-at="3" data-hot="3,9" style="left:160px;top:290px;width:520px;height:400px"><h2 style="color:var(--acc)">1  Compiler</h2><p>Open-source repo becomes verified MCP tools, checked by six sandbox gates.</p></div>
+  <div class="box a" data-at="9" data-hot="9,15" style="left:700px;top:290px;width:520px;height:400px"><h2>2  Agent dashboard</h2><p>Give work, approve actions, watch runs, see what was learned.</p></div>
+  <div class="box a" data-at="15" data-hot="15,21" style="left:1240px;top:290px;width:520px;height:400px"><h2>3  Hub + connections</h2><p>Other agents and your services use the same tools, with approval on anything risky.</p></div>
+  <div class="t a" data-at="21" style="top:760px">Runs on your computer. The compiler and the agent use open-weight models.</div>
+</section>
+
+<!-- 2. idea -->
+<section class="slide" id="idea">
+  <h1 class="a" data-at="0.3" style="font-size:70px">Any open-source repo becomes a verified tool.</h1>
+  <div class="step k a" data-at="4" data-hot="4,7" style="left:110px;font-size:27px">Open-source<br>repo</div>
+  <div class="arr a" data-at="7" style="left:324px">›</div>
+  <div class="step a" data-at="7" data-hot="7,9" style="left:367px">Read</div>
+  <div class="arr a" data-at="9" style="left:581px">›</div>
+  <div class="step a" data-at="9" data-hot="9,11" style="left:624px">Design</div>
+  <div class="arr a" data-at="11" style="left:838px">›</div>
+  <div class="step a" data-at="11" data-hot="11,13" style="left:881px">Write</div>
+  <div class="arr a" data-at="13" style="left:1095px">›</div>
+  <div class="step a" data-at="13" data-hot="13,15" style="left:1138px">Test</div>
+  <div class="arr a" data-at="15" style="left:1352px">›</div>
+  <div class="step g a" data-at="15" data-hot="15,18" style="left:1395px">6 sandbox<br>gates</div>
+  <div class="arr a" data-at="18" style="left:1609px">›</div>
+  <div class="step k a" data-at="18" data-hot="18,22" style="left:1652px;width:190px">Verified<br>MCP tool</div>
+  <div class="t a" data-at="20" style="top:540px;color:var(--ink)">Then any agent can call it: the Zyven agent, Qoder CLI, OpenCode, or any MCP client.</div>
+  <div class="t a" data-at="22.5" style="top:630px;font-size:34px;color:var(--acc)">networkx is one example. The catalog is a file: add an entry, sync, and Zyven builds the next tool.</div>
+  <div class="chips">
+    <span class="chip a" data-at="23">py-nepali</span><span class="chip a" data-at="23.3">python-stdnum</span>
+    <span class="chip a" data-at="23.6">hijridate</span><span class="chip a" data-at="23.9">pyluach</span>
+    <span class="chip a" data-at="24.2">phonenumbers</span><span class="chip a" data-at="24.5">sympy</span>
+    <span class="chip a" data-at="24.8">packaging</span><span class="chip a" data-at="25.1">networkx</span>
+    <span class="chip new a" data-at="26">+ your repository</span>
+  </div>
+</section>
+
+<!-- 3. difference -->
+<section class="slide" id="diff">
+  <h1 class="a" data-at="0.3" style="font-size:66px">Why not just ask a coding agent?</h1>
+  <div class="t a" data-at="1.5" style="top:232px;font-size:34px">Give the same task to Claude Code, Codex or Antigravity: turn this repository into MCP tools.</div>
+  <div class="row a" data-at="6" style="top:285px"><div class="cell l"><b>A general coding agent</b><br>writes a wrapper once</div><div class="cell r"><b>Zyven</b><br>compiles, then proves it</div></div>
+  <div class="row a" data-at="11" style="top:392px"><div class="cell l">You review the code yourself.</div><div class="cell r">Six automated gates: the library's own tests, and a differential check against the real library.</div></div>
+  <div class="row a" data-at="17" style="top:508px"><div class="cell l">What you keep is a chat and some files.</div><div class="cell r">Source repo, pinned commit, license and gate results saved with the tool.</div></div>
+  <div class="row a" data-at="23" style="top:624px"><div class="cell l">It lives in one project or one chat.</div><div class="cell r">Saved in a skill library. Any agent calls it through the hub, even a small open model.</div></div>
+  <div class="row a" data-at="29" style="top:740px"><div class="cell l">Depends on the agent's settings.</div><div class="cell r">Policy-checked code, a container with no network, approval on risky actions.</div></div>
+  <div class="t a" data-at="36" style="top:852px;font-size:38px;color:var(--acc);left:160px;font-weight:700">Zyven does not compete with those agents. It gives them tools they can trust.</div>
+</section>
+
+<!-- 4. roles and gates -->
+<section class="slide" id="roles">
+  <h1 class="a" data-at="0.3">What compiling does</h1>
+  <div class="lst" style="left:160px;width:780px"><h2 class="a" data-at="3">Five roles</h2>
+    <div class="item a" data-at="4.5"><b>Scout</b><span>finds capabilities worth wrapping</span></div>
+    <div class="item a" data-at="8"><b>Architect</b><span>designs the tools</span></div>
+    <div class="item a" data-at="11"><b>Compiler</b><span>writes the code</span></div>
+    <div class="item a" data-at="14"><b>Tester</b><span>writes checks from the library, blind to the code</span></div>
+    <div class="item a" data-at="20"><b>Repair</b><span>fixes what fails</span></div>
+  </div>
+  <div class="lst" style="left:1040px;width:760px"><h2 class="a" data-at="23">Six gates</h2>
+    <div class="item a" data-at="24"><b style="width:300px">Policy</b><span>only allowed code</span></div>
+    <div class="item a" data-at="28"><b style="width:300px">Import</b><span>loads cleanly</span></div>
+    <div class="item a" data-at="31"><b style="width:300px">Upstream tests</b><span>the library's own suite</span></div>
+    <div class="item a" data-at="35"><b style="width:300px">Input robustness</b><span>equal inputs, equal answers</span></div>
+    <div class="item a" data-at="39"><b style="width:300px">MCP smoke</b><span>every tool, called like an agent</span></div>
+    <div class="item a" data-at="43"><b style="width:300px">Differential</b><span>matches the real library</span></div>
+  </div>
+</section>
+
+<script>
+  const slide = new URLSearchParams(location.search).get("slide") || "overview";
+  const root = document.getElementById(slide);
+  root.classList.add("active");
+  const t0 = performance.now();
+  root.querySelectorAll("[data-at]").forEach(el => {
+    setTimeout(() => el.classList.add("show"), parseFloat(el.dataset.at) * 1000);
+    if (el.dataset.hot) {
+      const [a, b] = el.dataset.hot.split(",").map(Number);
+      setTimeout(() => el.classList.add("hot"), a * 1000);
+      setTimeout(() => el.classList.remove("hot"), b * 1000);
+    }
+  });
+</script>
+</body>
+</html>
