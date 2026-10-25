@@ -1,0 +1,1 @@
+And it all lives in one dashboard, whatever repository the tools came from. Tasks, to give the agent work. The Control center, to run coding agents. Connections, for your services. Skills, for every verified tool, from any repository. Insights, to measure what it learned. The Explorer, to look inside a repository. And the Catalog, which grows as you add repositories.

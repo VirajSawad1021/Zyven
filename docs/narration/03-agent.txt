@@ -1,1 +1,0 @@
-Now the agent. I give it a task it cannot do. It notices the gap, finds the matching repository in the catalog, asks for approval, compiles the tool, and then answers the question using the library, not memory.

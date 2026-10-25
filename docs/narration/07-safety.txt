@@ -1,1 +1,1 @@
-Safety is built in. The app only answers on this computer. Every run gets its own token. Full computer access needs two separate switches, and is off by default.
+Safety is built in. The app only answers on this computer. Every run gets its own token, and the token dies when the run ends. Tools that change your data wait for your approval. Compiled code runs in a container with no network. Full computer access is off, and needs two separate switches.

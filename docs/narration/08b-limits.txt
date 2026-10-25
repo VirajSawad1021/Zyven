@@ -1,0 +1,1 @@
+We are honest about the limits. It targets Python libraries. Compiled code runs without internet, so libraries that need the network are rejected. Whether the agent goes to the catalog is the model's judgement, and a small model is not always consistent. And a verified tool does not mean the library is bug free. It means these checks passed.

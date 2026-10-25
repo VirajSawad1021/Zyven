@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 MODEL = re.compile(r"[\w./:#\-]{1,100}")
-NAMES = ("claude", "codex", "opencode", "agy", "github")  # runtimes that start off
+NAMES = ("claude", "codex", "opencode", "qoder", "agy", "github")  # runtimes that start off
 KEYS = {"enabled", "model"}
 
 
