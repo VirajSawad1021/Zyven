@@ -32,7 +32,7 @@ from zyven.analysis.analyzer import analyze
 from zyven.analysis.explorer import explore
 from zyven.catalog.catalog import Catalog
 from zyven.connections.probe import probe as probe_connection
-from zyven.connections.oauth import OAuthCoordinator
+from zyven.connections.oauth import OAuthCoordinator, friendly_error
 from zyven.connections.runtime import load_enabled
 from zyven.connections.store import ConnectionError_, ConnectionStore, stdio_allowed
 from zyven.connections.templates import TEMPLATES
@@ -525,7 +525,7 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
         except ValueError as e:
             raise HTTPException(400, str(e)) from None
         except Exception as e:  # noqa: BLE001 - the service refused or is unreachable: tell the user why
-            raise HTTPException(502, f"could not start the sign-in: {e}"[:300]) from None
+            raise HTTPException(502, f"could not start the sign-in. {friendly_error(e)}"[:400]) from None
         return {"url": url, "signed_in": url is None}
 
     @app.post("/api/connections/{cid}/signout")
