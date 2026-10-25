@@ -7,6 +7,8 @@
 Zyven turns open-source code into verified MCP tools that an AI agent learns when it needs them, and keeps
 only after they pass a locked-down sandbox.
 
+**Demo video:** [watch it on Google Drive](https://drive.google.com/drive/folders/17Z5dbSa2UQmzx8eyQ6716iMhUfkipIRD)
+
 [![CI](https://github.com/VirajSawad1021/Zyven/actions/workflows/ci.yml/badge.svg)](https://github.com/VirajSawad1021/Zyven/actions/workflows/ci.yml)
 ![Open-weight models only](https://img.shields.io/badge/models-open--weight%20only-4a5a3f)
 ![MCP](https://img.shields.io/badge/tools-MCP-e8895a)
