@@ -412,9 +412,11 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
     so its reference expressions are an independent check that the tools compute what the library computes."""
     system = ("You are the Tester role of a capability compiler. For each tool in the spec, write "
               f"{per_tool} differential test cases: realistic arguments (include at least one valid and, where it "
-              "makes sense, one edge case), the return field to check, and ONE Python expression (using {arg_name} "
+              "makes sense, one edge case), the return field to check, and a short Python program (using {arg_name} "
               "placeholders for the case's arguments, never re-typed literal values) that calls the "
-              "library DIRECTLY to compute the exact value that field must contain, converted to the same JSON "
+              "library DIRECTLY to compute the exact value that field must contain. If the library needs an object "
+              "built first (a graph, a table), write those setup statements on their own lines, each a separate "
+              "statement, and make the LAST line one expression that evaluates to the value, with no semicolons, converted to the same JSON "
               "type and format the spec describes (e.g. wrap in str(...), format dates as 'YYYY-MM-DD'). "
               "Prefer fields with a deterministic, library-computed value. Only import the library and pure stdlib. "
               f"{UNTRUSTED_NOTE}")

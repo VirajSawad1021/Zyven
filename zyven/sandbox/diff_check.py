@@ -5,6 +5,7 @@ For each case: evaluate the Tester's library reference expression, call the tool
 the case args, and compare the tool's output field to the reference value. Prints one JSON report.
 """
 
+import ast
 import json
 import runpy
 import sys
@@ -27,6 +28,15 @@ def _norm(v):
         return s
 
 
+def evaluate(source: str, env: dict):
+    """The reference is a short program: run its setup statements, then evaluate its last line (an expression)."""
+    body = ast.parse(source).body
+    if not body or not isinstance(body[-1], ast.Expr):
+        raise ValueError("the reference must end with an expression")
+    exec(compile(ast.Module(body=body[:-1], type_ignores=[]), "<reference>", "exec"), env)  # noqa: S102 - policy-checked
+    return eval(compile(ast.Expression(body[-1].value), "<reference>", "eval"), env)  # noqa: S307 - policy-checked
+
+
 def main(server_path: str, tests_path: str) -> dict:
     cases = json.load(open(tests_path, encoding="utf-8"))["cases"]
     ns = runpy.run_path(server_path, run_name="zyven_diff")
@@ -43,7 +53,7 @@ def main(server_path: str, tests_path: str) -> dict:
                     expr = expr.replace(quoted, repr(v))
                 expr = expr.replace("{" + k + "}", repr(v))
             r["expr"] = expr
-            expected = eval(expr, env)  # noqa: S307 - policy-checked, sandboxed
+            expected = evaluate(expr, env)  # policy-checked by the harness, run sandboxed
         except Exception as e:  # noqa: BLE001
             r.update(status="invalid_reference", detail=repr(e)[:300])
             results.append(r)
