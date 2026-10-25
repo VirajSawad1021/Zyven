@@ -73,6 +73,17 @@ truth is computed by the source library itself, and the raw records are in `eval
 | Model + hand-written skill | 10/10 each | **40/40** |
 | Model + compiled skills | 10/10 each | **40/40** |
 
+**networkx** (graph algorithms, `gemma-4-26b-a4b-it`, skill compiled by `gemma-4-31b-it`)
+
+| Condition | Shortest path · components · MST · max flow · betweenness · triangles | Total |
+|---|---|---|
+| Model alone | 0/4 · 0/4 · 0/4 · 1/4 · 0/4 · 0/4 | **1/24** |
+| Model + compiled skill | 3/4 · 3/4 · 3/4 · 3/4 · 4/4 · 3/4 | **19/24** |
+
+In 23 of the 24 runs without the skill, the model used up its 4096-token output cap working the answer out by hand and
+gave none. All 5 misses with the skill were the same cap, not wrong tool results. Details are in
+`eval/results/run-20261025-150806.md`.
+
 </details>
 
 \*There was no Jewish-holiday skill in this run: the hosted endpoint timed out on that compile, so that category ran
