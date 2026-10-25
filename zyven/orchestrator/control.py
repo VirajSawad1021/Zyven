@@ -1,11 +1,10 @@
 """Agent Control Center backend: assign a task to a runtime, run it in an isolated environment, observe it.
 
 Runtimes declare what they actually expose; the UI shows "not exposed" for the rest and never invents
-numbers. Two runtimes exist today:
-
-  zyven   the built-in self-extending agent (open-weight model); runs as a normal board card
-  docker  any command in a locked-down container: live stdout, resource limits, network off by default,
-          before/after file diff, optional repo checkout and scheduling
+numbers. The built-in Zyven agent runs as a board card; every other runtime is an adapter
+(zyven/orchestrator/adapters.py): docker (a command in a locked-down container) and claude (Claude Code,
+headless, off by default). The Control center owns queueing, scheduling, repeats, repo checkout and the
+before/after file diff, so an adapter only implements `run` and `cancel`.
 
 Host paths are never taken from the client: every run gets a directory under `<data>/control/`.
 """
@@ -13,6 +12,7 @@ Host paths are never taken from the client: every run gets a directory under `<d
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import sqlite3
@@ -22,27 +22,40 @@ import time
 import uuid
 from pathlib import Path
 
+from zyven.orchestrator.adapters import RunContext, RuntimeAdapter, default_adapters
+
 DEFAULT_IMAGE = "python:3.12-slim"
 MAX_LOG_LINES = 4000
-RUN_TIMEOUT_S = 900
 
-RUNTIMES = {
-    "zyven": {
-        "label": "Zyven agent", "open_weight": True, "available": True,
-        "exposes": {"live_output": True, "tool_calls": True, "approvals": True, "file_changes": False, "tokens": False},
-        "note": "Built-in self-extending agent. Grows its own MCP tools; asks before compiling.",
-    },
-    "docker": {
-        "label": "Docker command", "open_weight": True, "available": True,
-        "exposes": {"live_output": True, "tool_calls": False, "approvals": False, "file_changes": True, "tokens": False},
-        "note": "Runs any shell command in a container with limits and a before/after file diff.",
-    },
+ZYVEN_RUNTIME = {
+    "label": "Zyven agent", "open_weight": True, "available": True,
+    "exposes": {"live_output": True, "tool_calls": True, "approvals": True, "file_changes": False, "tokens": False},
+    "note": "Built-in self-extending agent. Grows its own MCP tools; asks before compiling.",
 }
 # Detected on the host but without an adapter yet: listed so the UI is honest about it.
 PLANNED = {
     "hermes": "Headless mode verified (-z, --usage-file); needs a working provider via `hermes model`; adapter not built.",
-    "claude": "Headless stream-json verified; login expired, needs `claude` then /login; proprietary, off by default.",
 }
+
+
+def runtime_info(adapters: dict[str, RuntimeAdapter]) -> dict[str, dict]:
+    """Every runtime's description. Command-line agents also report installed / signed in, which runs each program,
+    so the checks go in parallel (and each adapter caches its answer for a minute)."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    with ThreadPoolExecutor(max_workers=max(1, len(adapters))) as pool:
+        infos = dict(zip(adapters, pool.map(lambda a: a.info(), adapters.values())))
+    from zyven.orchestrator import settings as rs
+
+    for name, info in infos.items():
+        if name in rs.NAMES:  # the user can switch these on and pick a model from the page
+            info["settings"] = {**{"enabled": False, "model": ""}, **rs.current().get(name)}
+            info["env_enabled"] = os.environ.get(f"ZYVEN_ENABLE_{name.upper()}") == "1"
+    for name, a in adapters.items():
+        infos[name]["supports_hub"] = bool(getattr(a, "supports_hub", False))
+        if getattr(a, "supports_full_access", False):
+            infos[name]["full_access"] = {"supported": True, "allowed": os.environ.get("ZYVEN_ALLOW_FULL_ACCESS") == "1"}
+    return {"zyven": ZYVEN_RUNTIME, **infos}
 
 
 def _snapshot(root: Path) -> dict[str, tuple[int, int]]:
@@ -55,27 +68,41 @@ def _snapshot(root: Path) -> dict[str, tuple[int, int]]:
 
 
 MIN_REPEAT_SECS, MAX_REPEAT_SECS = 60, 30 * 86400
+APPROVAL_TTL_S = 3600  # an unanswered request is denied after this long
 
 
 class Control:
-    def __init__(self, db_path: Path, data_dir: Path, board) -> None:
+    def __init__(self, db_path: Path, data_dir: Path, board, adapters: dict[str, RuntimeAdapter] | None = None,
+                 autostart: bool = True) -> None:
+        self.adapters = adapters if adapters is not None else default_adapters()
         self.db = sqlite3.connect(db_path, check_same_thread=False)
         self.db.executescript(
             "CREATE TABLE IF NOT EXISTS runs (id TEXT PRIMARY KEY, title TEXT, runtime TEXT, prompt TEXT, image TEXT,"
             " network INTEGER, memory TEXT, cpus TEXT, repo_url TEXT, run_at REAL, status TEXT, created REAL,"
             " updated REAL, card_id TEXT, exit_code INTEGER, files TEXT, workdir TEXT);"
-            "CREATE TABLE IF NOT EXISTS run_events (run TEXT, seq INTEGER, ts REAL, kind TEXT, text TEXT);")
-        if "repeat_secs" not in {r[1] for r in self.db.execute("PRAGMA table_info(runs)")}:  # older databases
+            "CREATE TABLE IF NOT EXISTS run_events (run TEXT, seq INTEGER, ts REAL, kind TEXT, text TEXT);"
+            "CREATE TABLE IF NOT EXISTS approvals (id TEXT PRIMARY KEY, run TEXT, kind TEXT, summary TEXT, detail TEXT,"
+            " status TEXT, created REAL, decided REAL);")
+        cols = {r[1] for r in self.db.execute("PRAGMA table_info(runs)")}
+        if "repeat_secs" not in cols:  # older databases
             self.db.execute("ALTER TABLE runs ADD COLUMN repeat_secs REAL")
-        self.root = Path(data_dir) / "control"
+        if "full_access" not in cols:
+            self.db.execute("ALTER TABLE runs ADD COLUMN full_access INTEGER DEFAULT 0")
+        if "zyven_tools" not in cols:
+            self.db.execute("ALTER TABLE runs ADD COLUMN zyven_tools INTEGER DEFAULT 0")
+        self.hub = None  # the Zyven hub, set by the server when it starts
+        self.hub_url = lambda: ""
+        self.root = Path(data_dir).resolve() / "control"  # absolute: programs started in a task folder resolve paths from inside it
         self.root.mkdir(parents=True, exist_ok=True)
         self.board = board
         self._lock = threading.Lock()
-        self._procs: dict[str, subprocess.Popen] = {}
         self._cancel: set[str] = set()
-        self.db.execute("UPDATE runs SET status='FAILED' WHERE status='RUNNING'")  # interrupted by a restart
+        self.db.execute("UPDATE runs SET status='FAILED' WHERE status IN ('RUNNING','NEEDS_APPROVAL') "
+                        "AND runtime != 'zyven'")  # interrupted by a restart
+        self.db.execute("UPDATE approvals SET status='EXPIRED' WHERE status='PENDING'")
         self.db.commit()
-        threading.Thread(target=self._loop, daemon=True).start()
+        if autostart:  # tests drive the worker by hand
+            threading.Thread(target=self._loop, daemon=True).start()
 
     # --- data ---------------------------------------------------------------------------------------
     def _emit(self, run: str, kind: str, text: str) -> None:
@@ -93,8 +120,10 @@ class Control:
 
     def _row(self, r) -> dict:
         keys = ["id", "title", "runtime", "prompt", "image", "network", "memory", "cpus", "repo_url", "run_at", "status",
-                "created", "updated", "card_id", "exit_code", "files"]
+                "created", "updated", "card_id", "exit_code", "files", "full_access", "zyven_tools"]
         d = dict(zip(keys, r))
+        d["full_access"] = bool(d["full_access"])
+        d["zyven_tools"] = bool(d["zyven_tools"])
         d["network"] = bool(d["network"])
         d["files"] = json.loads(d["files"]) if d["files"] else None
         if d["runtime"] == "zyven" and d["card_id"]:  # status mirrors the board card
@@ -107,12 +136,12 @@ class Control:
 
     def list(self) -> list[dict]:
         rows = self.db.execute("SELECT id,title,runtime,prompt,image,network,memory,cpus,repo_url,run_at,status,created,"
-                               "updated,card_id,exit_code,files FROM runs ORDER BY created DESC").fetchall()
+                               "updated,card_id,exit_code,files,full_access,zyven_tools FROM runs ORDER BY created DESC").fetchall()
         return [self._row(r) for r in rows]
 
     def get(self, run_id: str) -> dict:
         r = self.db.execute("SELECT id,title,runtime,prompt,image,network,memory,cpus,repo_url,run_at,status,created,"
-                            "updated,card_id,exit_code,files FROM runs WHERE id=?", (run_id,)).fetchone()
+                            "updated,card_id,exit_code,files,full_access,zyven_tools FROM runs WHERE id=?", (run_id,)).fetchone()
         if not r:
             raise KeyError(run_id)
         d = self._row(r)
@@ -120,12 +149,69 @@ class Control:
             "SELECT ts,kind,text FROM run_events WHERE run=? ORDER BY seq", (run_id,))]
         return d
 
+    # --- approvals ----------------------------------------------------------------------------------
+    def request_approval(self, rid: str, kind: str, summary: str, detail: str = "", ttl: float = APPROVAL_TTL_S,
+                         poll: float = 0.5) -> bool:
+        """Ask the user before an outward action. Blocks the run's worker until they decide.
+
+        Nothing is approved by default: a timeout, a restart or a cancel all mean "no".
+        """
+        aid = uuid.uuid4().hex[:8]
+        with self._lock:
+            self.db.execute("INSERT INTO approvals VALUES (?,?,?,?,?,?,?,?)",
+                            (aid, rid, kind[:40], summary[:300], detail[:4000], "PENDING", time.time(), None))
+            self.db.commit()
+        self._set(rid, status="NEEDS_APPROVAL")
+        self._emit(rid, "info", f"waiting for approval: {summary[:200]}")
+        deadline = time.monotonic() + ttl
+        status = "PENDING"
+        while status == "PENDING":
+            if rid in self._cancel or time.monotonic() > deadline:
+                with self._lock:
+                    self.db.execute("UPDATE approvals SET status='EXPIRED', decided=? WHERE id=? AND status='PENDING'",
+                                    (time.time(), aid))
+                    self.db.commit()
+            status = self.db.execute("SELECT status FROM approvals WHERE id=?", (aid,)).fetchone()[0]
+            if status == "PENDING":
+                time.sleep(poll)
+        if rid not in self._cancel:
+            self._set(rid, status="RUNNING")
+        self._emit(rid, "info", f"approval {status.lower()}: {summary[:120]}")
+        return status == "APPROVED"
+
+    def decide(self, approval_id: str, approve: bool) -> dict:
+        with self._lock:
+            row = self.db.execute("SELECT status FROM approvals WHERE id=?", (approval_id,)).fetchone()
+            if not row:
+                raise KeyError(approval_id)
+            if row[0] != "PENDING":
+                raise ValueError(f"already {row[0].lower()}")
+            self.db.execute("UPDATE approvals SET status=?, decided=? WHERE id=?",
+                            ("APPROVED" if approve else "DENIED", time.time(), approval_id))
+            self.db.commit()
+        return self.approvals_for(approval_id=approval_id)[0]
+
+    def approvals_for(self, run: str | None = None, pending_only: bool = False, approval_id: str | None = None) -> list[dict]:
+        q, args = "SELECT id,run,kind,summary,detail,status,created,decided FROM approvals WHERE 1=1", []
+        for col, val in (("run", run), ("id", approval_id)):
+            if val:
+                q += f" AND {col}=?"
+                args.append(val)
+        if pending_only:
+            q += " AND status='PENDING'"
+        keys = ["id", "run", "kind", "summary", "detail", "status", "created", "decided"]
+        return [dict(zip(keys, r)) for r in self.db.execute(q + " ORDER BY created DESC", args).fetchall()]
+
     # --- lifecycle ----------------------------------------------------------------------------------
     def create(self, *, title: str, runtime: str, prompt: str, image: str = DEFAULT_IMAGE, network: bool = False,
                memory: str = "1g", cpus: str = "1", repo_url: str = "", run_at: float | None = None,
-               repeat_secs: float | None = None) -> dict:
-        if runtime not in RUNTIMES:
-            raise ValueError(f"unknown runtime {runtime!r}")
+               repeat_secs: float | None = None, full_access: bool = False, zyven_tools: bool = False) -> dict:
+        if runtime != "zyven":
+            if runtime not in self.adapters:
+                raise ValueError(f"unknown runtime {runtime!r}")
+            ok, why = self.adapters[runtime].available()
+            if not ok:
+                raise ValueError(f"runtime {runtime!r} is not available: {why}")
         if not prompt.strip():
             raise ValueError("task is empty")
         if not re.fullmatch(r"\d+(\.\d+)?[mg]", memory) or not re.fullmatch(r"\d+(\.\d+)?", cpus):
@@ -134,6 +220,15 @@ class Control:
             raise ValueError("repo_url must be an https URL")
         if not re.fullmatch(r"[\w./:\-]+", image):
             raise ValueError("bad image name")
+        if full_access:
+            if os.environ.get("ZYVEN_ALLOW_FULL_ACCESS") != "1":
+                raise ValueError("full PC access is off. To allow it, set ZYVEN_ALLOW_FULL_ACCESS=1 and restart Zyven.")
+            if not getattr(self.adapters.get(runtime), "supports_full_access", False):
+                raise ValueError(f"{runtime} cannot run with full PC access")
+            if repeat_secs:
+                raise ValueError("a repeating task cannot have full PC access: start each run by hand")
+        if zyven_tools and not getattr(self.adapters.get(runtime), "supports_hub", False):
+            raise ValueError(f"{runtime} cannot use Zyven's tools")
         if repeat_secs is not None and not MIN_REPEAT_SECS <= repeat_secs <= MAX_REPEAT_SECS:
             raise ValueError("repeat interval must be between 1 minute and 30 days")
         rid = uuid.uuid4().hex[:8]
@@ -147,7 +242,8 @@ class Control:
                         "created,updated,card_id,exit_code,files,workdir) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                         (rid, title.strip() or prompt.strip()[:60], runtime, prompt.strip(), image, int(network), memory,
                          cpus, repo_url, run_at, status, now, now, card_id, None, None, str(self.root / rid)))
-        self.db.execute("UPDATE runs SET repeat_secs=? WHERE id=?", (repeat_secs, rid))
+        self.db.execute("UPDATE runs SET repeat_secs=?, full_access=?, zyven_tools=? WHERE id=?",
+                        (repeat_secs, int(full_access), int(zyven_tools), rid))
         self.db.commit()
         if repeat_secs and status == "RUNNING":
             self._schedule_next(rid)
@@ -155,8 +251,9 @@ class Control:
 
     def cancel(self, run_id: str) -> None:
         self._cancel.add(run_id)
-        subprocess.run(["docker", "kill", f"zyven-run-{run_id}"], capture_output=True)
-        row = self.db.execute("SELECT status FROM runs WHERE id=?", (run_id,)).fetchone()
+        row = self.db.execute("SELECT status, runtime FROM runs WHERE id=?", (run_id,)).fetchone()
+        if row and row[1] in self.adapters:
+            self.adapters[row[1]].cancel(run_id)
         if row and row[0] in ("QUEUED", "SCHEDULED"):
             self._set(run_id, status="CANCELLED")
 
@@ -181,18 +278,21 @@ class Control:
         while True:
             try:
                 self._start_due_agent_runs()
+                marks = ",".join("?" * len(self.adapters))
                 due = self.db.execute(
-                    "SELECT id FROM runs WHERE runtime='docker' AND status IN ('QUEUED','SCHEDULED') "
-                    "AND (run_at IS NULL OR run_at<=?) ORDER BY created LIMIT 1", (time.time(),)).fetchone()
+                    f"SELECT id FROM runs WHERE runtime IN ({marks}) AND status IN ('QUEUED','SCHEDULED') "
+                    "AND (run_at IS NULL OR run_at<=?) ORDER BY created LIMIT 1",
+                    (*self.adapters, time.time())).fetchone() if self.adapters else None
                 if due:
-                    self._run_docker(due[0])
+                    self._run_worker(due[0])
                     continue
             except Exception as e:  # keep the worker alive
                 print("control loop error:", e)
             time.sleep(1.0)
 
-    def _run_docker(self, rid: str) -> None:
+    def _run_worker(self, rid: str) -> None:
         r = self.get(rid)
+        adapter = self.adapters[r["runtime"]]
         work = self.root / rid
         work.mkdir(parents=True, exist_ok=True)
         self._set(rid, status="RUNNING")
@@ -205,26 +305,19 @@ class Control:
                 if c.returncode:
                     raise RuntimeError("git clone failed: " + c.stderr.strip()[-300:])
             before = _snapshot(work)
-            cmd = ["docker", "run", "--rm", "--name", f"zyven-run-{rid}", "--memory", r["memory"], "--cpus", r["cpus"],
-                   "--pids-limit", "256", "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
-                   "-v", f"{work}:/work", "-w", "/work/repo" if r["repo_url"] else "/work"]
-            if not r["network"]:
-                cmd += ["--network", "none"]
-            cmd += [r["image"], "sh", "-c", r["prompt"]]
-            self._emit(rid, "info", f"docker run {r['image']} (network {'on' if r['network'] else 'off'}, "
-                                    f"{r['memory']} / {r['cpus']} cpu)")
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                                 encoding="utf-8", errors="replace")
-            self._procs[rid] = p
-            killer = threading.Timer(RUN_TIMEOUT_S, lambda: subprocess.run(["docker", "kill", f"zyven-run-{rid}"], capture_output=True))
-            killer.start()
-            for line in p.stdout:  # type: ignore[union-attr]
-                self._emit(rid, "out", line.rstrip("\n"))
-            code = p.wait()
-            killer.cancel()
+            grant = None
+            if r["zyven_tools"] and self.hub is not None and self.hub_url():
+                grant = {"url": self.hub_url(), "token": self.hub.issue(rid)}  # valid for this run only
+            ctx = RunContext(run=r, workdir=work, cwd=work / "repo" if r["repo_url"] else work, hub=grant,
+                             pending_approval=lambda: bool(self.approvals_for(run=rid, pending_only=True)),
+                             emit=lambda kind, text: self._emit(rid, kind, text),
+                             cancelled=lambda: rid in self._cancel,
+                             approve=lambda kind, summary, detail="": self.request_approval(rid, kind, summary, detail))
+            code = adapter.run(ctx)
             after = _snapshot(work)
-            files = {"added": sorted(set(after) - set(before)),
-                     "modified": sorted(k for k in after if k in before and after[k] != before[k])}
+            own = set(getattr(adapter, "scaffold_files", ()))  # files Zyven wrote for the agent, not work the agent did
+            files = {"added": sorted(set(after) - set(before) - own),
+                     "modified": sorted(k for k in after if k in before and after[k] != before[k] and k not in own)}
             status = "CANCELLED" if rid in self._cancel else "COMPLETED" if code == 0 else "FAILED"
             self._emit(rid, "info", f"exited with code {code}")
             self._set(rid, status=status, exit_code=code, files=json.dumps(files))
@@ -232,7 +325,8 @@ class Control:
             self._emit(rid, "error", f"{type(e).__name__}: {e}")
             self._set(rid, status="FAILED")
         finally:
-            self._procs.pop(rid, None)
+            if self.hub is not None:
+                self.hub.revoke_from_thread(rid)  # the token and the run's tool servers end with the run
 
     def workdir(self, rid: str) -> Path:
         return self.root / rid

@@ -11,6 +11,9 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import subprocess
+import sys
 import sqlite3
 import threading
 import time
@@ -18,8 +21,8 @@ import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import FileResponse, HTMLResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -28,7 +31,16 @@ from zyven.ai.provider import ModelProvider
 from zyven.analysis.analyzer import analyze
 from zyven.analysis.explorer import explore
 from zyven.catalog.catalog import Catalog
-from zyven.orchestrator.control import DEFAULT_IMAGE, PLANNED, RUNTIMES, Control
+from zyven.connections.probe import probe as probe_connection
+from zyven.connections.oauth import OAuthCoordinator
+from zyven.connections.runtime import load_enabled
+from zyven.connections.store import ConnectionError_, ConnectionStore, stdio_allowed
+from zyven.connections.templates import TEMPLATES
+from zyven.agent.workspace import safe_path
+from zyven.hub.hub import ZyvenHub
+from zyven.orchestrator import settings as runtime_settings
+from zyven.orchestrator.guard import install as install_guard
+from zyven.orchestrator.control import DEFAULT_IMAGE, PLANNED, Control, runtime_info
 from zyven.memory.skills import SkillLibrary
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -38,7 +50,12 @@ ART = ROOT / "web" / "public" / "art"
 
 AGENT_SYSTEM = (
     "You are a helpful assistant that completes the user's task using your tools when they apply. "
-    "Report tool results faithfully; do not recompute what a tool already returned. Be concise."
+    "Report tool results faithfully; do not recompute what a tool already returned. Be concise. "
+    "You also have a working folder: write_file creates files, run_command runs them in a sandbox with no "
+    "internet, read_file and list_files look around. Test what you write before saying it works. If a package is "
+    "needed, run_command_with_network (the user is asked first) can install it with "
+    "`pip install --target /work/.pkgs <name>`. To publish, send or post something, use a connected service's tools "
+    "if you have them. If you do not have a tool for it, say plainly what is missing; never pretend it was done."
 )
 
 
@@ -48,6 +65,31 @@ class NewCard(BaseModel):
 
 class Decision(BaseModel):
     approved: bool
+
+
+class NewConnection(BaseModel):
+    name: str
+    kind: str
+    url: str = ""
+    command: str = ""
+    args: list[str] = []
+    secrets: dict[str, str] = {}
+    oauth: bool = False
+    oauth_client_id: str = ""
+    oauth_client_secret: str = ""
+
+
+class ExportFolder(BaseModel):
+    export_dir: str
+
+
+class RuntimeChange(BaseModel):
+    enabled: bool | None = None
+    model: str | None = None
+
+
+class Toggle(BaseModel):
+    enabled: bool
 
 
 class NewRun(BaseModel):
@@ -61,6 +103,8 @@ class NewRun(BaseModel):
     repo_url: str = ""
     run_at: float | None = None
     repeat_secs: float | None = None
+    full_access: bool = False  # no sandbox, for runtimes that support it; needs ZYVEN_ALLOW_FULL_ACCESS=1
+    zyven_tools: bool = False  # give the agent Zyven's tools (connected services, verified skills) through the hub
 
 
 class Board:
@@ -71,6 +115,8 @@ class Board:
             " updated REAL, answer TEXT, learned TEXT, reused TEXT);"
             "CREATE TABLE IF NOT EXISTS events (card TEXT, seq INTEGER, ts REAL, kind TEXT, data TEXT);")
         self.library, self.catalog, self.provider = library, catalog, provider
+        self.connections: ConnectionStore | None = None  # services the user connected (set when the app starts)
+        self.workspaces: Path | None = None  # one working folder per task lives under here
         self.queue: asyncio.Queue[str] = asyncio.Queue()
         self.listeners: set[asyncio.Queue] = set()
         self.approvals: dict[str, asyncio.Future] = {}
@@ -149,9 +195,17 @@ class Board:
                     self.approvals.pop(cid, None)
 
             try:
+                connect = None
+                if self.connections is not None:
+                    store = self.connections
+
+                    async def connect(tb, emit, ask, store=store):
+                        return await load_enabled(tb, store, emit, ask)
+
                 res = await run_self_extending(self.provider, task, self.library, self.catalog, approve,
                                                on_event=lambda k, d, cid=cid: self.emit(cid, k, d),
-                                               system=AGENT_SYSTEM)
+                                               system=AGENT_SYSTEM, connect=connect,
+                                               workspace_dir=self.workspaces / cid if self.workspaces else None)
                 answer = res.answer.final_text if res.answer else ""
                 with self._lock:
                     self.db.execute("UPDATE cards SET answer=?, learned=?, reused=?, status=? WHERE id=?",
@@ -238,11 +292,25 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
                       Catalog(ROOT / "catalog" / "repos.json", data_dir), ModelProvider.from_env(env_path))
         state["board"] = board
         state["control"] = Control(board_dir / "board.sqlite", board_dir, board)
+        runtime_settings.install(runtime_settings.RuntimeSettings(board_dir))
+        state["connections"] = board.connections = ConnectionStore(board_dir)
+        board.workspaces = board_dir / "workspaces"
+        state["oauth"] = OAuthCoordinator(state["connections"])
+        hub.loop = asyncio.get_running_loop()
+        state["control"].hub, state["control"].hub_url = hub, lambda: f"http://127.0.0.1:{BOARD_PORT}/hub/mcp"
         worker = asyncio.create_task(board.worker())
-        yield
+        async with hub.server.session_manager.run():  # a mounted app's own lifespan does not run, so start it here
+            yield
         worker.cancel()
 
+    hub = ZyvenHub(lambda: state["connections"],
+                   lambda: [sk.server_spec() for sk in state["board"].library.list()],
+                   lambda *a: state["control"].request_approval(*a),
+                   lambda run_id, text: state["control"]._emit(run_id, "error", text))
+
     app = FastAPI(title="Zyven board", lifespan=lifespan)
+    app.mount("/hub", hub.asgi())  # MCP over HTTP at /hub/mcp, only with a live per-run token
+    install_guard(app)  # refuse other websites and foreign host names: the board can run programs
 
     # The Next.js site (web/out) is mounted last, after every API route. The single-file page is a
     # no-build fallback: it is served at / when the site is not built, and always at /legacy.
@@ -299,7 +367,16 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
 
     @app.get("/api/runtimes")
     def runtimes():
-        return {"runtimes": RUNTIMES, "planned": PLANNED, "default_image": DEFAULT_IMAGE}
+        return {"runtimes": runtime_info(state["control"].adapters), "planned": PLANNED, "default_image": DEFAULT_IMAGE}
+
+    @app.post("/api/runtime-settings/{name}")
+    def runtime_setting(name: str, body: RuntimeChange):
+        try:
+            return runtime_settings.current().update(name, body.enabled, body.model)
+        except KeyError:
+            raise HTTPException(404, "unknown runtime") from None
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from None
 
     @app.get("/api/runs")
     def runs():
@@ -319,10 +396,193 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
         except KeyError:
             raise HTTPException(404, "unknown run") from None
 
+    def _run_file(run_id: str, rel: str):
+        """A file a run created or changed, resolved inside that run's own folder (never a client-supplied host path)."""
+        try:
+            run = state["control"].get(run_id)
+        except KeyError:
+            raise HTTPException(404, "unknown run") from None
+        changed = set((run.get("files") or {}).get("added", [])) | set((run.get("files") or {}).get("modified", []))
+        if rel not in changed:
+            raise HTTPException(404, "that file was not created or changed by this run")
+        try:
+            path = safe_path(state["control"].workdir(run_id), rel)
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from None
+        if not path.is_file():
+            raise HTTPException(404, "the file is gone")
+        return path
+
+    @app.get("/api/runs/{run_id}/files/{rel:path}")
+    def run_file(run_id: str, rel: str):
+        path = _run_file(run_id, rel)
+        # Always a download, never shown by the board: a file a model wrote (an HTML page, say) must not run on this origin.
+        return FileResponse(path, filename=path.name, media_type="application/octet-stream",
+                            headers={"X-Content-Type-Options": "nosniff"})
+
+    @app.get("/api/runs/{run_id}/archive")
+    def run_archive(run_id: str):
+        import io
+        import zipfile
+
+        try:
+            run = state["control"].get(run_id)
+        except KeyError:
+            raise HTTPException(404, "unknown run") from None
+        names = sorted(set((run.get("files") or {}).get("added", [])) | set((run.get("files") or {}).get("modified", [])))
+        buf, total = io.BytesIO(), 0
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+            for rel in names:
+                path = _run_file(run_id, rel)
+                total += path.stat().st_size
+                if total > 50 * 1024 * 1024:
+                    raise HTTPException(413, "the changed files are over 50 MB; open the folder instead")
+                z.write(path, rel)
+        return Response(buf.getvalue(), media_type="application/zip",
+                        headers={"Content-Disposition": f'attachment; filename="run-{run_id}.zip"'})
+
+    @app.get("/api/export-settings")
+    def export_settings():
+        return {"export_dir": runtime_settings.current().export_dir(), "suggested": str(Path.home() / "Desktop")}
+
+    @app.post("/api/export-settings")
+    def export_settings_set(body: ExportFolder):
+        try:
+            return {"export_dir": runtime_settings.current().set_export_dir(body.export_dir)}
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from None
+
+    @app.post("/api/runs/{run_id}/export")
+    def run_export(run_id: str):
+        """Copy the files this run created or changed into the user's chosen export folder, in a new subfolder.
+        The click is the permission; nothing already there is overwritten."""
+        import re
+        import shutil
+
+        target = runtime_settings.current().export_dir()
+        if not target or not Path(target).is_dir():
+            raise HTTPException(400, "choose an export folder first")
+        run = state["control"].get(run_id)
+        names = sorted(set((run.get("files") or {}).get("added", [])) | set((run.get("files") or {}).get("modified", [])))
+        if not names:
+            raise HTTPException(400, "this run changed no files")
+        slug = re.sub(r"[^A-Za-z0-9._-]+", "-", run["title"]).strip("-.")[:40] or "run"
+        dest, n = Path(target) / slug, 2
+        while dest.exists():
+            dest = Path(target) / f"{slug}-{n}"
+            n += 1
+        for rel in names:
+            src = _run_file(run_id, rel)
+            out = dest / rel
+            out.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, out)
+        return {"copied": len(names), "to": str(dest)}
+
+    @app.post("/api/runs/{run_id}/reveal")
+    def run_reveal(run_id: str):
+        """Open this run's folder in the file manager of the machine the board runs on."""
+        folder = state["control"].workdir(run_id)
+        if not folder.is_dir():
+            raise HTTPException(404, "the run has no folder")
+        if os.name == "nt":
+            os.startfile(folder)  # noqa: S606 - a folder the board created itself, not a client-supplied path
+        else:
+            subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", str(folder)])
+        return {"opened": str(folder)}
+
     @app.post("/api/runs/{run_id}/cancel")
     def run_cancel(run_id: str):
         state["control"].cancel(run_id)
         return {"ok": True}
+
+    # --- connections: MCP servers the user connects (secrets stay on this machine) ---
+    @app.get("/api/connections")
+    def connections():
+        rows = [{**c, "signing_in": state["oauth"].active(c["id"])} for c in state["connections"].list()]
+        return {"connections": rows, "templates": TEMPLATES, "stdio_allowed": stdio_allowed()}
+
+    @app.post("/api/connections")
+    def connection_add(body: NewConnection):
+        try:
+            return state["connections"].add(**body.model_dump())
+        except ConnectionError_ as e:
+            raise HTTPException(400, str(e)) from None
+
+    @app.post("/api/connections/{cid}/test")
+    async def connection_test(cid: str):
+        try:
+            return await probe_connection(state["connections"], cid)
+        except KeyError:
+            raise HTTPException(404, "unknown connection") from None
+
+    @app.post("/api/connections/{cid}/signin")
+    async def connection_signin(cid: str, request: Request):
+        redirect_uri = str(request.base_url).rstrip("/") + "/oauth/callback"
+        try:
+            url = await state["oauth"].start(cid, redirect_uri)
+        except KeyError:
+            raise HTTPException(404, "unknown connection") from None
+        except ValueError as e:
+            raise HTTPException(400, str(e)) from None
+        except Exception as e:  # noqa: BLE001 - the service refused or is unreachable: tell the user why
+            raise HTTPException(502, f"could not start the sign-in: {e}"[:300]) from None
+        return {"url": url, "signed_in": url is None}
+
+    @app.post("/api/connections/{cid}/signout")
+    def connection_signout(cid: str):
+        try:
+            state["oauth"].sign_out(cid)
+        except KeyError:
+            raise HTTPException(404, "unknown connection") from None
+        return state["connections"].get(cid)
+
+    @app.get("/oauth/callback")
+    async def oauth_callback(code: str | None = None, error: str | None = None, iss: str | None = None,
+                             oauth_state: str = Query("", alias="state")):
+        def page(title: str, body: str, status: int = 200) -> HTMLResponse:
+            html = (f"<!doctype html><meta charset=utf-8><title>{title}</title><body style='font:16px system-ui;"
+                    f"max-width:32em;margin:15vh auto;padding:0 1em'><h2>{title}</h2><p>{body}</p>")
+            return HTMLResponse(html, status_code=status)
+
+        try:
+            state["oauth"].complete(oauth_state, code, error, iss)
+        except KeyError:
+            return page("Sign-in not recognised", "This tab belongs to an older sign-in attempt: pressing Sign in again "
+                        "replaces the previous one. Close this tab, use the newest sign-in tab, or press Sign in once "
+                        "more on the Connections page.", 400)
+        if error or not code:
+            return page("Sign-in cancelled", "The service did not sign you in. You can close this tab.")
+        return page("Signed in", "You can close this tab and go back to Zyven.")
+
+    @app.post("/api/connections/{cid}/enabled")
+    def connection_enable(cid: str, body: Toggle):
+        try:
+            return state["connections"].set_enabled(cid, body.enabled)
+        except KeyError:
+            raise HTTPException(404, "unknown connection") from None
+        except ConnectionError_ as e:
+            raise HTTPException(400, str(e)) from None
+
+    @app.delete("/api/connections/{cid}")
+    def connection_remove(cid: str):
+        try:
+            state["connections"].remove(cid)
+        except KeyError:
+            raise HTTPException(404, "unknown connection") from None
+        return {"ok": True}
+
+    @app.get("/api/approvals")
+    def approvals(pending: bool = True):
+        return state["control"].approvals_for(pending_only=pending)
+
+    @app.post("/api/approvals/{approval_id}")
+    def approval_decide(approval_id: str, body: Decision):
+        try:
+            return state["control"].decide(approval_id, body.approved)
+        except KeyError:
+            raise HTTPException(404, "unknown approval") from None
+        except ValueError as e:
+            raise HTTPException(409, str(e)) from None
 
     # --- repo explorer: static analysis -> funnel + module graph (cached per repo, computed in a thread) ---
     jobs: dict[str, dict] = {}
@@ -418,7 +678,12 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
     return app
 
 
+BOARD_PORT = 8765  # where the board listens; the agents are told to reach the hub there
+
+
 def serve(host: str = "127.0.0.1", port: int = 8765, board_dir: Path | None = None) -> None:
+    global BOARD_PORT
+    BOARD_PORT = port
     import uvicorn
 
     uvicorn.run(create_app(board_dir=board_dir), host=host, port=port, log_level="warning")

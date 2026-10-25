@@ -1,6 +1,10 @@
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, init);
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  if (!res.ok) {
+    let why = "";  // the server explains refusals in `detail`: show that, not just the status code
+    try { const body = await res.json(); why = typeof body?.detail === "string" ? body.detail : ""; } catch { /* not JSON */ }
+    throw new Error(why || `${res.status} ${res.statusText}`);
+  }
   return (await res.json()) as T;
 }
 

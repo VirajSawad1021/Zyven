@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, ChartColumn, LayoutGrid, Menu, Network, Rocket, Sparkles, X } from "lucide-react";
+import { BookOpen, ChartColumn, LayoutGrid, Menu, Network, Plug, Rocket, Sparkles, X } from "lucide-react";
 import { Logo } from "./Logo";
 import { LiveDot } from "./ui";
 import { useBoardData } from "../lib/board";
@@ -12,6 +12,7 @@ type BadgeKey = "approvals" | "skills";
 const NAV: { href: string; label: string; icon: typeof LayoutGrid; badge?: BadgeKey }[] = [
   { href: "/app/", label: "Tasks", icon: LayoutGrid, badge: "approvals" },
   { href: "/app/control/", label: "Control", icon: Rocket },
+  { href: "/app/connections/", label: "Connections", icon: Plug },
   { href: "/app/skills/", label: "Skills", icon: Sparkles, badge: "skills" },
   { href: "/app/insights/", label: "Insights", icon: ChartColumn },
   { href: "/app/explore/", label: "Explorer", icon: Network },

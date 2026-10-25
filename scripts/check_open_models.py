@@ -43,7 +43,7 @@ class Finding:
 def _add(findings: list[Finding], root: Path, path: Path, field: str, model: str) -> None:
     model = model.strip()
     if model and (is_proprietary(model) or "[PROPRIETARY" in model.upper()):
-        findings.append(Finding(str(path.relative_to(root)), field, model))
+        findings.append(Finding(path.relative_to(root).as_posix(), field, model))
 
 
 def _scan_env(path: Path, root: Path, findings: list[Finding]) -> None:
@@ -61,7 +61,7 @@ def _scan_provenance(path: Path, root: Path, findings: list[Finding]) -> None:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as e:
-        findings.append(Finding(str(path.relative_to(root)), "provenance", f"unreadable: {e}"))
+        findings.append(Finding(path.relative_to(root).as_posix(), "provenance", f"unreadable: {e}"))
         return
     if isinstance(data, dict):
         for key in JSON_KEYS:
