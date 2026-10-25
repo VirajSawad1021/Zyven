@@ -24,6 +24,7 @@ toolkit = [
     "hijridate @ git+https://github.com/dralshehri/hijridate@f6f0f4f69da8e58dc65179213822ef7b83a77dcd",
     "pyluach @ git+https://github.com/simlist/pyluach@c1ffe4265f25ab7f5d850f4720111470f27e7ce5",
     "packaging @ git+https://github.com/pypa/packaging@929fd4b1410ac7ef61ef3f45b2f5d7e87711a9b5",
+    "networkx @ git+https://github.com/networkx/networkx@49ca2290b80c1389eb4d8d8e49dcba73f8fec016 ; python_full_version >= '3.12'",  # 3.7 needs Python 3.12+
     "phonenumbers @ git+https://github.com/daviddrysdale/python-phonenumbers@e92147091eca7db103f35cb4daed85376ab79328#subdirectory=python",
 ]
 dev = ["pytest>=8"]
