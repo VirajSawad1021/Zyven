@@ -1,39 +1,43 @@
-# Zyven: 60-second demo script
+# Zyven: 3-minute demo script
 
-Goal: show the whole loop once. An agent lacks a capability, Zyven compiles a verified tool from a real
-repository, and the agent then answers correctly.
+Goal: show every part of the product once, in the order a user meets it. An agent lacks an exact capability, Zyven
+compiles a verified tool from a real repository, and the same tool then serves other agents (Codex, OpenCode) and
+connected services.
 
 ## Setup (before recording)
 
 ```bash
-uv run zyven board --port 8767 --board-dir workspace/board-open
+docker build -q -t zyven-sandbox:py312 zyven/sandbox       # once, after pulling
+uv run zyven board --port 8767 --board-dir workspace/board-demo
 ```
 
 - Open http://127.0.0.1:8767 in a clean browser window at 1280x720, light theme, zoom 110%.
-- Use the clean board (`workspace/board-open`), not the older 8766 board.
-- Pre-warm Docker (Docker Desktop running) so the sandbox starts quickly, and rebuild the image once
-  (`docker build -q -t zyven-sandbox:py312 zyven/sandbox`).
-- The compile step takes several minutes live. Record it once, then speed that stretch up to about 8 seconds
-  in the edit and label it "sped up".
-- Task to give the agent: "In this weighted graph, what is the shortest path length from A to H?" with an edge list of about 12 edges
-  (from `eval/tasks_networkx.py`). A small model gets this wrong or runs out of tokens working it by hand.
+- Docker Desktop running. Codex signed in (`codex login`) and turned on in the Control center.
+- Notion signed in on the Connections page (or cut chapter 6).
+- The graph question to use (from `eval/tasks_networkx.py`): "In this weighted graph, what is the shortest path
+  length from A to H?" with an edge list of about 12 edges.
+- The live compile takes several minutes. Record it once and speed that stretch up to about 10 seconds, labelled "sped up".
+- Do not show `.env`, any key, or the terminal (except the `zyven board` line).
+- Show open-weight results only. Label dev-only runs or leave them out.
 
-## Shots
+## Chapters
 
-| Time | Screen | Voice-over (about 150 words in total) |
-|---|---|---|
-| 0:00-0:06 | Landing page, then Board | "Language models are unreliable at exact things: calendars, versions, ID checksums. Zyven turns a real open-source library into a verified tool an agent can call." |
-| 0:06-0:14 | Control center: create a Zyven run with the task above | "I give the agent a task. It first checks whether it already has a tool for it." |
-| 0:14-0:22 | Board card: gap check says "no matching skill", catalog match found (networkx), approval request appears | "It finds a gap, matches the pinned repository in the catalog, and asks me to approve. Nothing is compiled without a human saying yes." |
-| 0:22-0:38 | Click Approve. Show the compile timeline: Scout, Architect, Compiler, Tester, then the six gates turning green (policy, import, upstream tests, input robustness, MCP smoke, differential) | "Approved. Zyven reads the repository, designs the tool boundary, writes the adapter, and runs it through six checks in a Docker sandbox, including the library's own tests. Only a tool that passes is kept." (sped up) |
-| 0:38-0:48 | Skill detail page: provenance (repo, pinned commit, license), validation report | "Every skill records its source, pinned commit, license and the checks it passed." |
-| 0:48-0:56 | Agent answer on the board card, tool calls visible | "Now the agent calls the compiled tool and answers from the library, not from memory." |
-| 0:56-1:00 | Insights/results page: "18/30 alone, 27/30 with compiled skills" (global suite) | "On our evaluation, an open model gets 60 percent alone and 90 percent with compiled skills. Zyven: tools that are verified, not trusted." |
+| Time | Chapter | On screen | Narration file |
+|---|---|---|---|
+| 0:00-0:15 | Problem | Results page: a small open model alone gets 1/24 graph questions right | `00-problem.txt` |
+| 0:15-0:50 | 1. Compiler | Repo, then Scout, Architect, Compiler, Tester, six gates turning green, skill page with provenance | `01-compiler.txt` |
+| 0:50-1:10 | 2. Approval cards | The compile waits for a human yes; show approve | `02-approval.txt` |
+| 1:10-1:35 | 3. Self-extending agent | Task the agent cannot do, gap found, catalog match, compile, answer | `03-agent.txt` |
+| 1:35-2:05 | 4. Control center | Same task with Codex headless; run log; export folder | `04-control.txt` |
+| 2:05-2:30 | 5. Zyven hub | Codex calling Zyven's verified tools with no key of its own | `05-hub.txt` |
+| 2:30-2:50 | 6. Connections | Notion sign-in, connector card, agent reads a page (Slack and Google Docs listed) | `06-connections.txt` |
+| 2:50-3:05 | 7. Safety | Local-only guard, per-run tokens, full access needs two switches (do not turn it on) | `07-safety.txt` |
+| 3:05-3:20 | Value | Results: 1/24 alone, 19/24 with the skill; repo URL | `08-value.txt` |
 
-## Notes for the recording
+Narration text lives in `docs/narration/`. Each file is one chapter, so one chapter can be re-recorded alone.
 
-- Do not show `.env` or any key. Keep the terminal out of frame, or show it only for the `zyven board` line.
-- Use only open-weight model results on screen. Label dev-only runs, or leave them out.
-- Use the `graph_algorithms` skill (networkx, six gates passed) for the green-gates shot. It is already compiled in
-  `skills/`, so the live compile can be replaced by its recorded timeline if the model host is slow.
-- Export at 1080p, under 60 seconds, with burned-in captions in case it plays muted.
+## Fallbacks
+
+- If the live compile fails, use the recorded timeline or the screenshots in `docs/screenshots`.
+- If Notion is not signed in, cut chapter 6 and give its seconds to chapter 4.
+- Export at 1080p, under 3:30, with burned-in captions in case it plays muted.

@@ -1,0 +1,1 @@
+Zyven turns a real open-source library into a verified tool. It reads the repository, designs the tool, writes the code, and runs it through six checks in a Docker sandbox, including the library's own tests. Only a tool that passes is kept, with its source, pinned commit and license recorded.
