@@ -15,8 +15,10 @@ This document details every file and function in the repository where artificial
 | `zyven/ai/roles.py` | `compiler` | Compiler | `AdapterCode` | Generates Python tool bodies wrapping library functions into an MCP server. | Code parsed into AST and checked by `check_adapter` static policy before sandbox execution. |
 | `zyven/ai/roles.py` | `tester` | Tester | `DiffTests` | Generates independent differential test cases calling the library directly. | Validated against tool parameter signatures; inputs tied to expressions; re-queries if tools are omitted. Never sees adapter code. |
 | `zyven/ai/roles.py` | `repair` | Repair | `AdapterCode` | Generates corrected tool bodies for tools that failed sandbox verification gates. | Bounded repair loop (max 2 rounds); only failing tools recompiled; re-tested in sandbox. |
-| `zyven/agent/gap.py` | `gap_check` | Gap Detector | `GapResult` | Determines if agent's current tools suffice for a task or if new tools are needed. | Cross-checked for consistency; falls back to missing capabilities if contradictory. |
+| `zyven/agent/gap.py` | `gap_check` | Gap Detector | `GapCheck` | Determines if agent's current tools suffice for a task or if new tools are needed. | Cross-checked for consistency; falls back to missing capabilities if contradictory. |
 | `zyven/agent/gap.py` | `match_capability` | Capability Matcher | `CapabilityMatch` | Matches a missing capability to an option in the Skill Library or Catalog. | Model choice strictly checked against valid candidate IDs (`o.id`); invented IDs are dropped. |
+| `zyven/compiler/verify.py` | `_differential_gate` | Tester output consumed | `DiffTests` | Each Tester case carries a short reference program that calls the library directly. It is policy-checked, then run in the sandbox and its value is compared with the tool's output. | Every line passes `check_adapter` (the same static policy as adapter code); rejected cases are reported with the reason; the program runs in the container with no network (`zyven/sandbox/diff_check.py::evaluate`). |
+| `zyven/agent/self_extend.py` | `run_self_extending` | Gap and match output consumed | `GapCheck`, `CapabilityMatch` | Decides whether to search the skill library and the catalog, and which entry to offer for approval. | The gap check sees only verified tools (`verified_tools` drops tools that run the agent's own code); a match must name a real candidate id; nothing is compiled without a human approval. |
 | `zyven/agent/loop.py` | `run_agent` | Tool-Using Agent | OpenAI Chat Completion (Text & Tool Calls) | Iteratively solves user tasks by invoking MCP tools. | Tool calls dispatched to `ToolBox` via MCP JSON-RPC; tool results formatted back into chat context; capped by step limits. |
 
 ---
@@ -64,7 +66,7 @@ This document details every file and function in the repository where artificial
 
 ### 2.2 `zyven/agent/gap.py`
 
-#### `gap_check(provider: ModelProvider, task: str, tools: list[dict[str, Any]]) -> GapResult`
+#### `gap_check(provider: ModelProvider, task: str, tools: list[dict[str, Any]]) -> GapCheck`
 - **Model Consumption:** Inspects available MCP tool definitions and decides whether the task requires external tools.
 - **Post-Processing & Validation:**
   - Programmatically validates consistency: if `missing_capabilities` is populated, `can_complete_with_current_tools` is forced to `False`.
@@ -86,6 +88,16 @@ This document details every file and function in the repository where artificial
   - If any capability the task needs has no verified tool (its compile failed verification, or its approval was rejected), a notice naming each one is added to the system prompt, forbidding the model from claiming or implying library backing for those parts, and the card ends `UNVERIFIED` instead of `DONE`.
 
 ---
+
+### 2.4 Where Tester and gap output are executed
+
+- `zyven/compiler/verify.py::_differential_gate` takes each `DiffCase.reference_expr` (a short Python program written by the
+  Tester model). Every line is parsed with `ast`, the last line must be an expression, and the whole program passes
+  `check_adapter` before it is written to `diff_tests.json`. It is then evaluated inside the sandbox by
+  `zyven/sandbox/diff_check.py::evaluate`, and the result is compared with what the compiled tool returns.
+- `zyven/agent/self_extend.py::run_self_extending` consumes the `GapCheck` and `CapabilityMatch` results to decide the
+  next step of the task. Both are validated structures; an invented capability id is dropped, and a compile only starts
+  after a person approves it.
 
 ## 3. Open-Weight Model Policy
 
