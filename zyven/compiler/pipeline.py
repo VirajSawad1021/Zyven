@@ -73,6 +73,11 @@ def compile_capability(
             return _failed(emit, events, started, f"architect: {e}", candidate.name, skills_root)
         spec = out.value
         lint_warns = lint_interface(spec, a)
+        if candidate.tests:  # a reviewer chose which upstream tests prove this capability
+            known = {t.file for t in a.tests}
+            chosen = [t for t in candidate.tests if t in known]
+            if chosen:
+                spec.relevant_tests = chosen
         emit("architect.done", detail=f"{len(spec.tools)} tools: {', '.join(t.name for t in spec.tools)}",
              resolved=out.resolved, dropped=out.dropped, fixes=out.fixes,
              lint_warnings=len(lint_warns))
