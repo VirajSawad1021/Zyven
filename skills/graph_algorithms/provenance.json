@@ -1,0 +1,27 @@
+{
+ "repository": "https://github.com/networkx/networkx",
+ "commit": "49ca2290b80c1389eb4d8d8e49dcba73f8fec016",
+ "license": "BSD",
+ "generator": "zyven 0.1.0",
+ "model": "gemma-4-31b-it@generativelanguage.googleapis.com",
+ "capability": "graph_algorithms",
+ "mode": "wrap",
+ "included_symbols": [
+  "networkx.algorithms.shortest_paths.weighted.dijkstra_path_length",
+  "networkx.algorithms.components.connected.number_connected_components",
+  "networkx.algorithms.tree.mst.minimum_spanning_tree",
+  "networkx.algorithms.flow.maxflow.maximum_flow_value",
+  "networkx.algorithms.centrality.betweenness.betweenness_centrality",
+  "networkx.algorithms.cluster.triangles"
+ ],
+ "source_checkout": "C:\\Users\\Viraj\\Desktop\\ZYVEN-followup\\workspace\\repos\\networkx",
+ "source_root": ".",
+ "generated_files": [
+  "server.py"
+ ],
+ "compile_seconds": 390.6,
+ "attempts": 2,
+ "dropped_tools": {},
+ "model_calls": 5,
+ "lint_warnings": 4
+}

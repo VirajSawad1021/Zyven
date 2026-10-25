@@ -1,0 +1,464 @@
+{
+ "cases": [
+  {
+   "tool": "shortest_path_weight",
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B",
+      5
+     ],
+     [
+      "B",
+      "C",
+      10
+     ],
+     [
+      "A",
+      "C",
+      20
+     ]
+    ],
+    "source": "A",
+    "target": "C"
+   },
+   "field": "weight",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_weighted_edges_from({edges})\nnx.dijkstra_path_length(G, {source}, {target}, weight='weight')"
+  },
+  {
+   "tool": "shortest_path_weight",
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B",
+      5
+     ],
+     [
+      "C",
+      "D",
+      10
+     ]
+    ],
+    "source": "A",
+    "target": "D"
+   },
+   "field": "path_exists",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_weighted_edges_from({edges})\ntry:\n    nx.dijkstra_path_length(G, {source}, {target}, weight='weight')\n    exists = True\nexcept nx.NetworkXNoPath:\n    exists = False\nexists"
+  },
+  {
+   "tool": "shortest_path_weight",
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B",
+      1
+     ],
+     [
+      "B",
+      "C",
+      1
+     ],
+     [
+      "C",
+      "D",
+      1
+     ]
+    ],
+    "source": "A",
+    "target": "D"
+   },
+   "field": "weight",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_weighted_edges_from({edges})\nnx.dijkstra_path_length(G, {source}, {target}, weight='weight')"
+  },
+  {
+   "tool": "count_connected_components",
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B"
+     ],
+     [
+      "C",
+      "D"
+     ]
+    ]
+   },
+   "field": "count",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_edges_from({edges})\nnx.number_connected_components(G)"
+  },
+  {
+   "tool": "count_connected_components",
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B"
+     ],
+     [
+      "B",
+      "C"
+     ],
+     [
+      "C",
+      "A"
+     ]
+    ]
+   },
+   "field": "is_connected",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_edges_from({edges})\nnx.number_connected_components(G) == 1"
+  },
+  {
+   "tool": "count_connected_components",
+   "args": {
+    "edges": []
+   },
+   "field": "count",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_edges_from({edges})\nnx.number_connected_components(G)"
+  },
+  {
+   "tool": "mst_total_weight",
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B",
+      1
+     ],
+     [
+      "B",
+      "C",
+      2
+     ],
+     [
+      "A",
+      "C",
+      3
+     ]
+    ]
+   },
+   "field": "total_weight",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_weighted_edges_from({edges})\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))"
+  },
+  {
+   "tool": "mst_total_weight",
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B",
+      1
+     ],
+     [
+      "C",
+      "D",
+      1
+     ]
+    ]
+   },
+   "field": "total_weight",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_weighted_edges_from({edges})\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))"
+  },
+  {
+   "tool": "mst_total_weight",
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B",
+      10
+     ],
+     [
+      "B",
+      "C",
+      10
+     ],
+     [
+      "A",
+      "C",
+      1
+     ]
+    ]
+   },
+   "field": "total_weight",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_weighted_edges_from({edges})\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))"
+  },
+  {
+   "tool": "max_flow_value",
+   "args": {
+    "edges": [
+     [
+      "S",
+      "A",
+      10
+     ],
+     [
+      "A",
+      "T",
+      5
+     ]
+    ],
+    "source": "S",
+    "target": "T"
+   },
+   "field": "flow_value",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.DiGraph()\nfor u, v, c in {edges}:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, {source}, {target}, capacity='capacity')"
+  },
+  {
+   "tool": "max_flow_value",
+   "args": {
+    "edges": [
+     [
+      "S",
+      "A",
+      10
+     ],
+     [
+      "S",
+      "B",
+      10
+     ],
+     [
+      "A",
+      "T",
+      5
+     ],
+     [
+      "B",
+      "T",
+      5
+     ]
+    ],
+    "source": "S",
+    "target": "T"
+   },
+   "field": "flow_value",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.DiGraph()\nfor u, v, c in {edges}:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, {source}, {target}, capacity='capacity')"
+  },
+  {
+   "tool": "max_flow_value",
+   "args": {
+    "edges": [
+     [
+      "S",
+      "A",
+      10
+     ],
+     [
+      "A",
+      "B",
+      10
+     ],
+     [
+      "B",
+      "T",
+      1
+     ]
+    ],
+    "source": "S",
+    "target": "T"
+   },
+   "field": "flow_value",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.DiGraph()\nfor u, v, c in {edges}:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, {source}, {target}, capacity='capacity')"
+  },
+  {
+   "tool": "highest_betweenness_centrality_node",
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B"
+     ],
+     [
+      "B",
+      "C"
+     ],
+     [
+      "C",
+      "D"
+     ]
+    ]
+   },
+   "field": "node",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_edges_from({edges})\ncentralities = nx.betweenness_centrality(G)\nmax(centralities, key=centralities.get)"
+  },
+  {
+   "tool": "highest_betweenness_centrality_node",
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B"
+     ],
+     [
+      "B",
+      "C"
+     ],
+     [
+      "C",
+      "A"
+     ],
+     [
+      "C",
+      "D"
+     ]
+    ]
+   },
+   "field": "node",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_edges_from({edges})\ncentralities = nx.betweenness_centrality(G)\nmax(centralities, key=centralities.get)"
+  },
+  {
+   "tool": "highest_betweenness_centrality_node",
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B"
+     ],
+     [
+      "C",
+      "D"
+     ]
+    ]
+   },
+   "field": "centrality_value",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_edges_from({edges})\ncentralities = nx.betweenness_centrality(G)\nmax(centralities.values())"
+  },
+  {
+   "tool": "count_triangles",
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B"
+     ],
+     [
+      "B",
+      "C"
+     ],
+     [
+      "C",
+      "A"
+     ]
+    ]
+   },
+   "field": "total_triangles",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_edges_from({edges})\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3"
+  },
+  {
+   "tool": "count_triangles",
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B"
+     ],
+     [
+      "B",
+      "C"
+     ],
+     [
+      "C",
+      "A"
+     ],
+     [
+      "A",
+      "D"
+     ],
+     [
+      "D",
+      "B"
+     ],
+     [
+      "D",
+      "C"
+     ]
+    ]
+   },
+   "field": "total_triangles",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_edges_from({edges})\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3"
+  },
+  {
+   "tool": "count_triangles",
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B"
+     ],
+     [
+      "B",
+      "C"
+     ],
+     [
+      "C",
+      "D"
+     ],
+     [
+      "D",
+      "A"
+     ]
+    ]
+   },
+   "field": "total_triangles",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_edges_from({edges})\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3"
+  }
+ ]
+}

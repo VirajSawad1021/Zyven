@@ -1,0 +1,139 @@
+[
+ {
+  "t": 0.0,
+  "event": "architect.start",
+  "detail": "Graph Algorithms"
+ },
+ {
+  "t": 177.52,
+  "event": "architect.done",
+  "detail": "6 tools: shortest_path_weight, count_connected_components, mst_total_weight, max_flow_value, highest_betweenness_centrality_node, count_triangles",
+  "resolved": {},
+  "dropped": [],
+  "fixes": [
+   "interface lint: shortest_path_weight: returns none of the related facts the library computes directly from the same input (johnson, all_pairs_dijkstra, negative_edge_cycle, all_pairs_dijkstra_path, all_pairs_bellman_ford_path); add the ones an agent would need for follow-up questions as named return fields, computed by calling the library, so the agent never derives them itself",
+   "interface lint: shortest_path_weight: returns only numbers/objects; add a ready-to-quote formatted string field and named/derived facts (e.g. names instead of numeric codes)",
+   "interface lint: count_connected_components: returns only numbers/objects; add a ready-to-quote formatted string field and named/derived facts (e.g. names instead of numeric codes)",
+   "interface lint: mst_total_weight: already returns 1 related fact(s) but still omits 6 the library computes directly (random_spanning_tree, maximum_spanning_tree, maximum_spanning_edges, minimum_spanning_edges, partition_spanning_tree); consider adding them as named return fields so the agent avoids redundant follow-up tool calls",
+   "interface lint: mst_total_weight: returns only numbers/objects; add a ready-to-quote formatted string field and named/derived facts (e.g. names instead of numeric codes)",
+   "interface lint: max_flow_value: returns only numbers/objects; add a ready-to-quote formatted string field and named/derived facts (e.g. names instead of numeric codes)",
+   "interface lint: highest_betweenness_centrality_node: returns none of the related facts the library computes directly from the same input (edge_betweenness_centrality); add the ones an agent would need for follow-up questions as named return fields, computed by calling the library, so the agent never derives them itself",
+   "interface lint: count_triangles: returns none of the related facts the library computes directly from the same input (clustering, transitivity, all_triangles, square_clustering, average_clustering); add the ones an agent would need for follow-up questions as named return fields, computed by calling the library, so the agent never derives them itself",
+   "interface lint: count_triangles: returns only numbers/objects; add a ready-to-quote formatted string field and named/derived facts (e.g. names instead of numeric codes)",
+   "interface lint: revised: 9 -> 4 interface warnings"
+  ],
+  "lint_warnings": 4
+ },
+ {
+  "t": 177.52,
+  "event": "compiler.start",
+  "detail": "writing 6 tool bodies"
+ },
+ {
+  "t": 217.0,
+  "event": "compiler.done",
+  "detail": "all tools implemented"
+ },
+ {
+  "t": 217.0,
+  "event": "tester.start",
+  "detail": "writing differential tests from the spec and library (adapter code not shown)"
+ },
+ {
+  "t": 299.97,
+  "event": "tester.done",
+  "detail": "18 cases for 6 tools"
+ },
+ {
+  "t": 299.97,
+  "event": "verify.start",
+  "detail": "attempt 1"
+ },
+ {
+  "t": 339.86,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 339.86,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 339.86,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 268 tests ran, 0 failures, 0 errors (networkx/algorithms/shortest_paths/tests/test_weighted.py, networkx/algorithms/components/tests/test_connected.py, networkx/algorithms/tree/tests/test_mst.py, networkx/algorithms/flow/tests/test_maxflow.py, networkx/algorithms/centrality/tests/test_betweenness_ce",
+  "passed": true
+ },
+ {
+  "t": 339.86,
+  "event": "gate.input_robustness",
+  "detail": "FAIL 0/4 equivalent-input probes gave identical results: shortest_path_weight {\"edges\": [[\"A\", \"B\", 5], [\"B\", \"C\", 10], [\"A\", \"C\", 20]], \"source\": \"  A \", \"target\": \"C\"}; shortest_path_weight {\"edges\": [[\"A\", \"B\", 5], [\"B\", \"C\", 10], [\"A\", \"C\", 20]], \"source\": \"A\", \"target\": \"  C \"}; max_flow_value {\"edg",
+  "passed": false
+ },
+ {
+  "t": 339.86,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 6 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 339.86,
+  "event": "gate.differential",
+  "detail": "PASS 18/18 cases match the library",
+  "passed": true
+ },
+ {
+  "t": 339.86,
+  "event": "repair.start",
+  "detail": "2 failing tool(s): shortest_path_weight, max_flow_value"
+ },
+ {
+  "t": 358.03,
+  "event": "repair.done",
+  "detail": "patched shortest_path_weight, max_flow_value"
+ },
+ {
+  "t": 358.03,
+  "event": "verify.start",
+  "detail": "attempt 2"
+ },
+ {
+  "t": 390.56,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 390.56,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 390.56,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 268 tests ran, 0 failures, 0 errors (networkx/algorithms/shortest_paths/tests/test_weighted.py, networkx/algorithms/components/tests/test_connected.py, networkx/algorithms/tree/tests/test_mst.py, networkx/algorithms/flow/tests/test_maxflow.py, networkx/algorithms/centrality/tests/test_betweenness_ce",
+  "passed": true
+ },
+ {
+  "t": 390.56,
+  "event": "gate.input_robustness",
+  "detail": "PASS 4/4 equivalent-input probes gave identical results",
+  "passed": true
+ },
+ {
+  "t": 390.56,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 6 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 390.56,
+  "event": "gate.differential",
+  "detail": "PASS 18/18 cases match the library",
+  "passed": true
+ }
+]

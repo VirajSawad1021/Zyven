@@ -1,0 +1,959 @@
+{
+ "passed": true,
+ "verified_for": [
+  "policy",
+  "import",
+  "upstream_tests",
+  "input_robustness",
+  "mcp_smoke",
+  "differential"
+ ],
+ "gates": [
+  {
+   "name": "policy",
+   "passed": true,
+   "detail": "imports and builtins within policy",
+   "data": {}
+  },
+  {
+   "name": "import",
+   "passed": true,
+   "detail": "server module imports cleanly",
+   "data": {}
+  },
+  {
+   "name": "upstream_tests",
+   "passed": true,
+   "detail": "268 tests ran, 0 failures, 0 errors (networkx/algorithms/shortest_paths/tests/test_weighted.py, networkx/algorithms/components/tests/test_connected.py, networkx/algorithms/tree/tests/test_mst.py, networkx/algorithms/flow/tests/test_maxflow.py, networkx/algorithms/centrality/tests/test_betweenness_centrality.py, networkx/algorithms/tests/test_cluster.py)",
+   "data": {
+    "ran": 268,
+    "failures": 0,
+    "errors": 0
+   }
+  },
+  {
+   "name": "input_robustness",
+   "passed": true,
+   "detail": "4/4 equivalent-input probes gave identical results",
+   "data": {
+    "probes": [
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         5
+        ],
+        [
+         "B",
+         "C",
+         10
+        ],
+        [
+         "A",
+         "C",
+         20
+        ]
+       ],
+       "source": "  A ",
+       "target": "C"
+      },
+      "ok": true,
+      "output": {
+       "weight": 15,
+       "path_exists": true,
+       "display": "Shortest path weight from A to C is 15"
+      }
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         5
+        ],
+        [
+         "B",
+         "C",
+         10
+        ],
+        [
+         "A",
+         "C",
+         20
+        ]
+       ],
+       "source": "A",
+       "target": "  C "
+      },
+      "ok": true,
+      "output": {
+       "weight": 15,
+       "path_exists": true,
+       "display": "Shortest path weight from A to C is 15"
+      }
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "S",
+         "A",
+         10
+        ],
+        [
+         "A",
+         "T",
+         5
+        ]
+       ],
+       "source": "  S ",
+       "target": "T"
+      },
+      "ok": true,
+      "output": {
+       "flow_value": 5,
+       "display": "The maximum flow from S to T is 5"
+      }
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "S",
+         "A",
+         10
+        ],
+        [
+         "A",
+         "T",
+         5
+        ]
+       ],
+       "source": "S",
+       "target": "  T "
+      },
+      "ok": true,
+      "output": {
+       "flow_value": 5,
+       "display": "The maximum flow from S to T is 5"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "mcp_smoke",
+   "passed": true,
+   "detail": "6 tools called with example args; invalid input rejected",
+   "data": {
+    "server_started": true,
+    "listed_tools": [
+     "shortest_path_weight",
+     "count_connected_components",
+     "mst_total_weight",
+     "max_flow_value",
+     "highest_betweenness_centrality_node",
+     "count_triangles"
+    ],
+    "missing_tools": [],
+    "calls": [
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         5
+        ],
+        [
+         "B",
+         "C",
+         10
+        ],
+        [
+         "A",
+         "C",
+         20
+        ]
+       ],
+       "source": "A",
+       "target": "C"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "weight": 15,
+       "path_exists": true,
+       "display": "Shortest path weight from A to C is 15"
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "count_connected_components",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "C",
+         "D"
+        ]
+       ]
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "count": 2,
+       "display": "The graph has 2 connected components",
+       "is_connected": false
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         1
+        ],
+        [
+         "B",
+         "C",
+         2
+        ],
+        [
+         "A",
+         "C",
+         3
+        ]
+       ]
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "total_weight": 3,
+       "mst_edges": [
+        [
+         "A",
+         "B",
+         1
+        ],
+        [
+         "B",
+         "C",
+         2
+        ]
+       ],
+       "display": "The total weight of the MST is 3"
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "S",
+         "A",
+         10
+        ],
+        [
+         "A",
+         "T",
+         5
+        ]
+       ],
+       "source": "S",
+       "target": "T"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "flow_value": 5,
+       "display": "The maximum flow from S to T is 5"
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "highest_betweenness_centrality_node",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "D"
+        ]
+       ]
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "node": "B",
+       "centrality_value": 0.6666666666666666,
+       "display": "Node B has the highest betweenness centrality of 0.6666666666666666"
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "A"
+        ]
+       ]
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "total_triangles": 1,
+       "display": "The graph contains 1 unique triangle"
+      },
+      "missing_fields": []
+     }
+    ],
+    "invalid_calls": [
+     {
+      "ok": true,
+      "tool": "shortest_path_weight",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "count_connected_components",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "mst_total_weight",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "max_flow_value",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "highest_betweenness_centrality_node",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "count_triangles",
+      "detail": "rejected cleanly"
+     }
+    ],
+    "robustness": [
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         5
+        ],
+        [
+         "B",
+         "C",
+         10
+        ],
+        [
+         "A",
+         "C",
+         20
+        ]
+       ],
+       "source": "  A ",
+       "target": "C"
+      },
+      "ok": true,
+      "output": {
+       "weight": 15,
+       "path_exists": true,
+       "display": "Shortest path weight from A to C is 15"
+      }
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         5
+        ],
+        [
+         "B",
+         "C",
+         10
+        ],
+        [
+         "A",
+         "C",
+         20
+        ]
+       ],
+       "source": "A",
+       "target": "  C "
+      },
+      "ok": true,
+      "output": {
+       "weight": 15,
+       "path_exists": true,
+       "display": "Shortest path weight from A to C is 15"
+      }
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "S",
+         "A",
+         10
+        ],
+        [
+         "A",
+         "T",
+         5
+        ]
+       ],
+       "source": "  S ",
+       "target": "T"
+      },
+      "ok": true,
+      "output": {
+       "flow_value": 5,
+       "display": "The maximum flow from S to T is 5"
+      }
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "S",
+         "A",
+         10
+        ],
+        [
+         "A",
+         "T",
+         5
+        ]
+       ],
+       "source": "S",
+       "target": "  T "
+      },
+      "ok": true,
+      "output": {
+       "flow_value": 5,
+       "display": "The maximum flow from S to T is 5"
+      }
+     }
+    ],
+    "still_alive_after_calls": true
+   }
+  },
+  {
+   "name": "differential",
+   "passed": true,
+   "detail": "18/18 cases match the library",
+   "data": {
+    "results": [
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         5
+        ],
+        [
+         "B",
+         "C",
+         10
+        ],
+        [
+         "A",
+         "C",
+         20
+        ]
+       ],
+       "source": "A",
+       "target": "C"
+      },
+      "field": "weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 5], ['B', 'C', 10], ['A', 'C', 20]])\nnx.dijkstra_path_length(G, 'A', 'C', weight='weight')",
+      "expected": 15,
+      "got": 15,
+      "status": "match"
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         5
+        ],
+        [
+         "C",
+         "D",
+         10
+        ]
+       ],
+       "source": "A",
+       "target": "D"
+      },
+      "field": "path_exists",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 5], ['C', 'D', 10]])\ntry:\n    nx.dijkstra_path_length(G, 'A', 'D', weight='weight')\n    exists = True\nexcept nx.NetworkXNoPath:\n    exists = False\nexists",
+      "expected": false,
+      "got": false,
+      "status": "match"
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         1
+        ],
+        [
+         "B",
+         "C",
+         1
+        ],
+        [
+         "C",
+         "D",
+         1
+        ]
+       ],
+       "source": "A",
+       "target": "D"
+      },
+      "field": "weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 1], ['B', 'C', 1], ['C', 'D', 1]])\nnx.dijkstra_path_length(G, 'A', 'D', weight='weight')",
+      "expected": 3,
+      "got": 3,
+      "status": "match"
+     },
+     {
+      "tool": "count_connected_components",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "C",
+         "D"
+        ]
+       ]
+      },
+      "field": "count",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['C', 'D']])\nnx.number_connected_components(G)",
+      "expected": 2,
+      "got": 2,
+      "status": "match"
+     },
+     {
+      "tool": "count_connected_components",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "A"
+        ]
+       ]
+      },
+      "field": "is_connected",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'A']])\nnx.number_connected_components(G) == 1",
+      "expected": true,
+      "got": true,
+      "status": "match"
+     },
+     {
+      "tool": "count_connected_components",
+      "args": {
+       "edges": []
+      },
+      "field": "count",
+      "expr": "G = nx.Graph()\nG.add_edges_from([])\nnx.number_connected_components(G)",
+      "expected": 0,
+      "got": 0,
+      "status": "match"
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         1
+        ],
+        [
+         "B",
+         "C",
+         2
+        ],
+        [
+         "A",
+         "C",
+         3
+        ]
+       ]
+      },
+      "field": "total_weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 1], ['B', 'C', 2], ['A', 'C', 3]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
+      "expected": 3,
+      "got": 3,
+      "status": "match"
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         1
+        ],
+        [
+         "C",
+         "D",
+         1
+        ]
+       ]
+      },
+      "field": "total_weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 1], ['C', 'D', 1]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
+      "expected": 2,
+      "got": 2,
+      "status": "match"
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         10
+        ],
+        [
+         "B",
+         "C",
+         10
+        ],
+        [
+         "A",
+         "C",
+         1
+        ]
+       ]
+      },
+      "field": "total_weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 10], ['B', 'C', 10], ['A', 'C', 1]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
+      "expected": 11,
+      "got": 11,
+      "status": "match"
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "S",
+         "A",
+         10
+        ],
+        [
+         "A",
+         "T",
+         5
+        ]
+       ],
+       "source": "S",
+       "target": "T"
+      },
+      "field": "flow_value",
+      "expr": "G = nx.DiGraph()\nfor u, v, c in [['S', 'A', 10], ['A', 'T', 5]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
+      "expected": 5,
+      "got": 5,
+      "status": "match"
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "S",
+         "A",
+         10
+        ],
+        [
+         "S",
+         "B",
+         10
+        ],
+        [
+         "A",
+         "T",
+         5
+        ],
+        [
+         "B",
+         "T",
+         5
+        ]
+       ],
+       "source": "S",
+       "target": "T"
+      },
+      "field": "flow_value",
+      "expr": "G = nx.DiGraph()\nfor u, v, c in [['S', 'A', 10], ['S', 'B', 10], ['A', 'T', 5], ['B', 'T', 5]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
+      "expected": 10,
+      "got": 10,
+      "status": "match"
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "S",
+         "A",
+         10
+        ],
+        [
+         "A",
+         "B",
+         10
+        ],
+        [
+         "B",
+         "T",
+         1
+        ]
+       ],
+       "source": "S",
+       "target": "T"
+      },
+      "field": "flow_value",
+      "expr": "G = nx.DiGraph()\nfor u, v, c in [['S', 'A', 10], ['A', 'B', 10], ['B', 'T', 1]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
+      "expected": 1,
+      "got": 1,
+      "status": "match"
+     },
+     {
+      "tool": "highest_betweenness_centrality_node",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "D"
+        ]
+       ]
+      },
+      "field": "node",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'D']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities, key=centralities.get)",
+      "expected": "B",
+      "got": "B",
+      "status": "match"
+     },
+     {
+      "tool": "highest_betweenness_centrality_node",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "A"
+        ],
+        [
+         "C",
+         "D"
+        ]
+       ]
+      },
+      "field": "node",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'A'], ['C', 'D']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities, key=centralities.get)",
+      "expected": "C",
+      "got": "C",
+      "status": "match"
+     },
+     {
+      "tool": "highest_betweenness_centrality_node",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "C",
+         "D"
+        ]
+       ]
+      },
+      "field": "centrality_value",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['C', 'D']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities.values())",
+      "expected": 0.0,
+      "got": 0.0,
+      "status": "match"
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "A"
+        ]
+       ]
+      },
+      "field": "total_triangles",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'A']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
+      "expected": 1,
+      "got": 1,
+      "status": "match"
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "A"
+        ],
+        [
+         "A",
+         "D"
+        ],
+        [
+         "D",
+         "B"
+        ],
+        [
+         "D",
+         "C"
+        ]
+       ]
+      },
+      "field": "total_triangles",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'A'], ['A', 'D'], ['D', 'B'], ['D', 'C']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
+      "expected": 4,
+      "got": 4,
+      "status": "match"
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "D"
+        ],
+        [
+         "D",
+         "A"
+        ]
+       ]
+      },
+      "field": "total_triangles",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'D'], ['D', 'A']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
+      "expected": 0,
+      "got": 0,
+      "status": "match"
+     }
+    ]
+   }
+  }
+ ],
+ "failing_tools": {}
+}
