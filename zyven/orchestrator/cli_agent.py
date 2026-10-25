@@ -61,7 +61,7 @@ class CLIAgentAdapter(RuntimeAdapter):
         self._refreshing = threading.Event()
 
     # --- what a subclass provides ---------------------------------------------------------------------
-    def command(self, cwd: Path | None = None, full: bool = False) -> list[str]:
+    def command(self, cwd: Path | None = None, full: bool = False, hub: dict[str, str] | None = None) -> list[str]:
         raise NotImplementedError
 
     def prepare(self, ctx: RunContext) -> str:
@@ -144,7 +144,8 @@ class CLIAgentAdapter(RuntimeAdapter):
                 return 2
         full = bool(ctx.run.get("full_access")) and self.supports_full_access
         note = self.prepare(ctx)
-        cmd = self.command(ctx.cwd, full)
+        hub = ctx.hub if self.supports_hub else None
+        cmd = self.command(ctx.cwd, full, hub)
         if full:
             ctx.emit("error", "FULL PC ACCESS: this run is NOT sandboxed. It can read, change and delete any file your "
                               "account can, and run any program.")
@@ -157,7 +158,9 @@ class CLIAgentAdapter(RuntimeAdapter):
             cmd = [*cmd, ctx.run["prompt"]]
         if note:
             ctx.emit("info", note)
-        env = {**os.environ, "PWD": str(ctx.cwd)}  # see the module note: a parent shell's PWD must not leak in
+        env = {**os.environ, "PWD": str(ctx.cwd)}
+        if hub:
+            env["ZYVEN_HUB_TOKEN"] = hub["token"]  # by environment, not on the command line  # see the module note: a parent shell's PWD must not leak in
         env.pop("OLDPWD", None)
         p = subprocess.Popen(cmd, cwd=ctx.cwd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace")
@@ -173,6 +176,8 @@ class CLIAgentAdapter(RuntimeAdapter):
         def watchdog() -> None:
             while p.poll() is None:
                 time.sleep(1)
+                if ctx.pending_approval():  # waiting for the user to click Approve is not being stuck
+                    last_output[0] = time.monotonic()
                 if self.idle_timeout_s and time.monotonic() - last_output[0] > self.idle_timeout_s:
                     stalled.set()
                     ctx.emit("error", f"{self.label} printed nothing for {int(self.idle_timeout_s)}s and was stopped "

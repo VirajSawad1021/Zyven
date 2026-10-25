@@ -87,11 +87,12 @@ class CodexAdapter(CLIAgentAdapter):
     sign_in_help = "Install Codex (`npm i -g @openai/codex`) and run `codex login`."
     open_weight = False
     supports_full_access = True
+    supports_hub = True
     exposes = {"live_output": True, "tool_calls": True, "approvals": False, "file_changes": True, "tokens": True}
     note = ("Codex in headless mode inside its own sandbox: it can change files only in the task folder, "
             "with no network and no access to the temp folders. Proprietary model by default.")
 
-    def command(self, cwd: Path | None = None, full: bool = False) -> list[str]:
+    def command(self, cwd: Path | None = None, full: bool = False, hub: dict[str, str] | None = None) -> list[str]:
         exe = self._executable()
         assert exe, "codex is not installed"
         sandbox = "danger-full-access" if full else os.environ.get("ZYVEN_CODEX_SANDBOX", "workspace-write").strip()
@@ -109,6 +110,12 @@ class CodexAdapter(CLIAgentAdapter):
                 # a JavaScript REPL) are not loaded: they are a different, larger power than this switch grants.
                 "--ignore-user-config", "--ignore-rules",
                 "--disable", "computer_use", "--disable", "browser_use", "--disable", "apps"]
+        if hub:  # Zyven's tools. Approval happens in the hub (a card on the board), so Codex must not ask a second time:
+            cmd += ["-c", f"mcp_servers.zyven.url={hub['url']}",  # headless it would refuse every non-read-only tool
+                    "-c", "mcp_servers.zyven.bearer_token_env_var=ZYVEN_HUB_TOKEN",
+                    "-c", "mcp_servers.zyven.default_tools_approval_mode=approve",
+                    "-c", "mcp_servers.zyven.tool_timeout_sec=3600",  # a call can wait a long time for the user's yes
+                    "-c", "mcp_servers.zyven.startup_timeout_sec=120"]  # the hub starts its tool servers on first use
         if os.name == "nt" and not full:  # this setting lives in the user's config file, which is ignored above; without it Codex
             cmd += ["-c", "windows.sandbox=unelevated"]  # has no Windows sandbox and treats the disk as read-only
         if cwd is not None:

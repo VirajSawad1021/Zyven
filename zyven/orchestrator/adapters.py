@@ -37,6 +37,10 @@ class RunContext:
     # approve(kind, summary, detail="") -> bool: ask the user before an outward action (send, push, post, create).
     # Blocks until they decide; False when denied, expired or cancelled. Adapters must not act on False.
     approve: Callable[..., bool] = lambda kind, summary, detail="": False
+    # {"url": ..., "token": ...}: the Zyven hub for this run (connected services and verified skills), or None
+    hub: dict[str, str] | None = None
+    # True while the run waits for the user's decision on an approval card (a silent agent is not a stuck one)
+    pending_approval: Callable[[], bool] = lambda: False
 
 
 class RuntimeAdapter:
@@ -45,6 +49,7 @@ class RuntimeAdapter:
     open_weight = True
     exposes: dict[str, bool] = {}
     note = ""
+    supports_hub = False  # can this runtime be pointed at the Zyven hub?
     supports_full_access = False  # can this runtime be started without its sandbox, on the user's explicit request?
 
     def available(self) -> tuple[bool, str]:

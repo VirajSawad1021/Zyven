@@ -9,10 +9,10 @@ import { relTime, type Tone } from "../lib/labels";
 interface RuntimeStatus { installed: boolean; signed_in: boolean | null; detail: string }
 interface RuntimeInfo { label: string; open_weight: boolean; available: boolean; note: string; exposes: Record<string, boolean>; status?: RuntimeStatus;
   settings?: { enabled: boolean; model: string }; env_enabled?: boolean;
-  full_access?: { supported: boolean; allowed: boolean } }
+  full_access?: { supported: boolean; allowed: boolean }; supports_hub?: boolean }
 interface Runtimes { runtimes: Record<string, RuntimeInfo>; planned: Record<string, string>; default_image: string }
 interface Run {
-  id: string; title: string; runtime: string; full_access?: boolean; prompt: string; image: string; network: boolean; memory: string; cpus: string;
+  id: string; title: string; runtime: string; full_access?: boolean; zyven_tools?: boolean; prompt: string; image: string; network: boolean; memory: string; cpus: string;
   repo_url: string; run_at: number | null; status: string; created: number; updated: number; exit_code: number | null;
   files: { added: string[]; modified: string[] } | null; answer?: string; log?: { ts: number; kind: string; text: string }[];
 }
@@ -59,6 +59,7 @@ function NewTask({ rt, onCreated, onSettingsChanged }: { rt: Runtimes; onCreated
   const [when, setWhen] = useState("");
   const [every, setEvery] = useState("0");
   const [fullAccess, setFullAccess] = useState(false);
+  const [zyvenTools, setZyvenTools] = useState(true);
   const [fullSure, setFullSure] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -73,6 +74,7 @@ function NewTask({ rt, onCreated, onSettingsChanged }: { rt: Runtimes; onCreated
         run_at: when ? new Date(when).getTime() / 1000 : null,
         repeat_secs: Number(every) || null,
         full_access: fullAccess && fullSure,
+        zyven_tools: !!info.supports_hub && zyvenTools,
       });
       setPrompt(""); setTitle(""); setFullAccess(false); setFullSure(false); onCreated(run.id);
     } catch (e) { setErr(e instanceof Error ? e.message : "failed"); } finally { setBusy(false); }
@@ -124,6 +126,12 @@ function NewTask({ rt, onCreated, onSettingsChanged }: { rt: Runtimes; onCreated
         <label className="text-[11px] font-semibold text-ink">Repeat<select className={`${input} mt-1`} value={every} onChange={(e) => setEvery(e.target.value)}>
           <option value="0">Once</option><option value="3600">Every hour</option><option value="86400">Every day</option><option value="604800">Every week</option></select></label>
       </div>
+      {info.supports_hub && (
+        <label className="mt-3 flex items-start gap-2 text-[12.5px]">
+          <input type="checkbox" className="mt-0.5" checked={zyvenTools} onChange={(e) => setZyvenTools(e.target.checked)} />
+          <span><b>Give this task Zyven&apos;s tools</b> <span className="text-muted">(your connected services, such as Notion, and the verified skills). Anything that changes something waits for your approval below.</span></span>
+        </label>
+      )}
       {info.full_access?.supported && (
         <div className={`mt-3 rounded-xl border px-3 py-2.5 text-[12.5px] ${fullAccess ? "border-bad/40 bg-bad-bg" : "border-line bg-panel"}`}>
           <label className="flex items-center gap-2 font-medium">

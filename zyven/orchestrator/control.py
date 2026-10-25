@@ -52,6 +52,7 @@ def runtime_info(adapters: dict[str, RuntimeAdapter]) -> dict[str, dict]:
             info["settings"] = {**{"enabled": False, "model": ""}, **rs.current().get(name)}
             info["env_enabled"] = os.environ.get(f"ZYVEN_ENABLE_{name.upper()}") == "1"
     for name, a in adapters.items():
+        infos[name]["supports_hub"] = bool(getattr(a, "supports_hub", False))
         if getattr(a, "supports_full_access", False):
             infos[name]["full_access"] = {"supported": True, "allowed": os.environ.get("ZYVEN_ALLOW_FULL_ACCESS") == "1"}
     return {"zyven": ZYVEN_RUNTIME, **infos}
@@ -87,6 +88,10 @@ class Control:
             self.db.execute("ALTER TABLE runs ADD COLUMN repeat_secs REAL")
         if "full_access" not in cols:
             self.db.execute("ALTER TABLE runs ADD COLUMN full_access INTEGER DEFAULT 0")
+        if "zyven_tools" not in cols:
+            self.db.execute("ALTER TABLE runs ADD COLUMN zyven_tools INTEGER DEFAULT 0")
+        self.hub = None  # the Zyven hub, set by the server when it starts
+        self.hub_url = lambda: ""
         self.root = Path(data_dir).resolve() / "control"  # absolute: programs started in a task folder resolve paths from inside it
         self.root.mkdir(parents=True, exist_ok=True)
         self.board = board
@@ -115,9 +120,10 @@ class Control:
 
     def _row(self, r) -> dict:
         keys = ["id", "title", "runtime", "prompt", "image", "network", "memory", "cpus", "repo_url", "run_at", "status",
-                "created", "updated", "card_id", "exit_code", "files", "full_access"]
+                "created", "updated", "card_id", "exit_code", "files", "full_access", "zyven_tools"]
         d = dict(zip(keys, r))
         d["full_access"] = bool(d["full_access"])
+        d["zyven_tools"] = bool(d["zyven_tools"])
         d["network"] = bool(d["network"])
         d["files"] = json.loads(d["files"]) if d["files"] else None
         if d["runtime"] == "zyven" and d["card_id"]:  # status mirrors the board card
@@ -130,12 +136,12 @@ class Control:
 
     def list(self) -> list[dict]:
         rows = self.db.execute("SELECT id,title,runtime,prompt,image,network,memory,cpus,repo_url,run_at,status,created,"
-                               "updated,card_id,exit_code,files,full_access FROM runs ORDER BY created DESC").fetchall()
+                               "updated,card_id,exit_code,files,full_access,zyven_tools FROM runs ORDER BY created DESC").fetchall()
         return [self._row(r) for r in rows]
 
     def get(self, run_id: str) -> dict:
         r = self.db.execute("SELECT id,title,runtime,prompt,image,network,memory,cpus,repo_url,run_at,status,created,"
-                            "updated,card_id,exit_code,files,full_access FROM runs WHERE id=?", (run_id,)).fetchone()
+                            "updated,card_id,exit_code,files,full_access,zyven_tools FROM runs WHERE id=?", (run_id,)).fetchone()
         if not r:
             raise KeyError(run_id)
         d = self._row(r)
@@ -199,7 +205,7 @@ class Control:
     # --- lifecycle ----------------------------------------------------------------------------------
     def create(self, *, title: str, runtime: str, prompt: str, image: str = DEFAULT_IMAGE, network: bool = False,
                memory: str = "1g", cpus: str = "1", repo_url: str = "", run_at: float | None = None,
-               repeat_secs: float | None = None, full_access: bool = False) -> dict:
+               repeat_secs: float | None = None, full_access: bool = False, zyven_tools: bool = False) -> dict:
         if runtime != "zyven":
             if runtime not in self.adapters:
                 raise ValueError(f"unknown runtime {runtime!r}")
@@ -221,6 +227,8 @@ class Control:
                 raise ValueError(f"{runtime} cannot run with full PC access")
             if repeat_secs:
                 raise ValueError("a repeating task cannot have full PC access: start each run by hand")
+        if zyven_tools and not getattr(self.adapters.get(runtime), "supports_hub", False):
+            raise ValueError(f"{runtime} cannot use Zyven's tools")
         if repeat_secs is not None and not MIN_REPEAT_SECS <= repeat_secs <= MAX_REPEAT_SECS:
             raise ValueError("repeat interval must be between 1 minute and 30 days")
         rid = uuid.uuid4().hex[:8]
@@ -234,7 +242,8 @@ class Control:
                         "created,updated,card_id,exit_code,files,workdir) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                         (rid, title.strip() or prompt.strip()[:60], runtime, prompt.strip(), image, int(network), memory,
                          cpus, repo_url, run_at, status, now, now, card_id, None, None, str(self.root / rid)))
-        self.db.execute("UPDATE runs SET repeat_secs=?, full_access=? WHERE id=?", (repeat_secs, int(full_access), rid))
+        self.db.execute("UPDATE runs SET repeat_secs=?, full_access=?, zyven_tools=? WHERE id=?",
+                        (repeat_secs, int(full_access), int(zyven_tools), rid))
         self.db.commit()
         if repeat_secs and status == "RUNNING":
             self._schedule_next(rid)
@@ -296,7 +305,11 @@ class Control:
                 if c.returncode:
                     raise RuntimeError("git clone failed: " + c.stderr.strip()[-300:])
             before = _snapshot(work)
-            ctx = RunContext(run=r, workdir=work, cwd=work / "repo" if r["repo_url"] else work,
+            grant = None
+            if r["zyven_tools"] and self.hub is not None and self.hub_url():
+                grant = {"url": self.hub_url(), "token": self.hub.issue(rid)}  # valid for this run only
+            ctx = RunContext(run=r, workdir=work, cwd=work / "repo" if r["repo_url"] else work, hub=grant,
+                             pending_approval=lambda: bool(self.approvals_for(run=rid, pending_only=True)),
                              emit=lambda kind, text: self._emit(rid, kind, text),
                              cancelled=lambda: rid in self._cancel,
                              approve=lambda kind, summary, detail="": self.request_approval(rid, kind, summary, detail))
@@ -311,6 +324,9 @@ class Control:
         except Exception as e:
             self._emit(rid, "error", f"{type(e).__name__}: {e}")
             self._set(rid, status="FAILED")
+        finally:
+            if self.hub is not None:
+                self.hub.revoke_from_thread(rid)  # the token and the run's tool servers end with the run
 
     def workdir(self, rid: str) -> Path:
         return self.root / rid

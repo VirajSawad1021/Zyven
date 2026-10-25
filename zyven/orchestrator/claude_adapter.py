@@ -66,12 +66,14 @@ class ClaudeCodeAdapter(CLIAgentAdapter):
     sign_in_help = "Install Claude Code and log in with `claude`, then `/login`."
     open_weight = False
     supports_full_access = True
+    supports_hub = True
+    scaffold_files = (".zyven-mcp.json",)
     exposes = {"live_output": True, "tool_calls": True, "approvals": False, "file_changes": True, "tokens": True}
     note = ("Claude Code in headless mode with a restricted tool set (no shell), edits only in the task folder, "
             "and a spending cap. Proprietary model: experiments, not submission results.")
     DEFAULT_TOOLS = DEFAULT_TOOLS
 
-    def command(self, cwd: Path | None = None, full: bool = False) -> list[str]:
+    def command(self, cwd: Path | None = None, full: bool = False, hub: dict[str, str] | None = None) -> list[str]:
         exe = self._executable()
         assert exe, "claude is not installed"
         tools = os.environ.get("ZYVEN_CLAUDE_TOOLS", DEFAULT_TOOLS)
@@ -83,11 +85,17 @@ class ClaudeCodeAdapter(CLIAgentAdapter):
                "--no-session-persistence"]
         if self.model():
             cmd += ["--model", self.model()]
+        if hub and cwd is not None:  # Zyven's tools, from a config file in the task folder (the token stays out of argv)
+            cmd += ["--mcp-config", str(Path(cwd) / ".zyven-mcp.json"), "--strict-mcp-config", "--allowedTools", "mcp__zyven"]
         return [*cmd, "--max-budget-usd", cap]
 
     def prepare(self, ctx) -> str:
         full = bool(ctx.run.get("full_access"))
-        cmd = self.command(ctx.cwd, full)
+        if ctx.hub:
+            (ctx.cwd / ".zyven-mcp.json").write_text(json.dumps({"mcpServers": {"zyven": {
+                "type": "http", "url": ctx.hub["url"], "headers": {"Authorization": f"Bearer {ctx.hub['token']}"}}}}),
+                encoding="utf-8")
+        cmd = self.command(ctx.cwd, full, ctx.hub)
         return (f"claude -p ({'NO RESTRICTIONS, ' if full else ''}tools: {cmd[cmd.index('--tools') + 1]}; "
                 f"cap ${cmd[-1]}; runs on this machine)")
 

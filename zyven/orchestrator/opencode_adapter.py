@@ -87,11 +87,12 @@ class OpenCodeAdapter(CLIAgentAdapter):
     sign_in_help = "Install it from opencode.ai; `opencode auth login` adds your own provider."
     open_weight = False  # depends on the model the user picks; not verified here
     supports_full_access = True
+    supports_hub = True
     exposes = {"live_output": True, "tool_calls": True, "approvals": False, "file_changes": True, "tokens": True}
     note = ("OpenCode in headless mode, locked to its task folder (no shell, no web). "
             "You choose the model; Zyven does not verify that it is open-weight.")
 
-    def command(self, cwd: Path | None = None, full: bool = False) -> list[str]:
+    def command(self, cwd: Path | None = None, full: bool = False, hub: dict[str, str] | None = None) -> list[str]:
         exe = self._executable()
         assert exe, "opencode is not installed"
         cmd = [*exe, "run", "--standalone", "--format", "json"]
@@ -103,7 +104,11 @@ class OpenCodeAdapter(CLIAgentAdapter):
     def prepare(self, ctx: RunContext) -> str:
         allow_shell = os.environ.get("ZYVEN_OPENCODE_ALLOW_SHELL") == "1"
         full = bool(ctx.run.get("full_access"))
-        (ctx.cwd / "opencode.json").write_text(json.dumps(permission_config(allow_shell, full), indent=2), encoding="utf-8")
+        cfg = permission_config(allow_shell, full)
+        if ctx.hub:  # Zyven's tools; a long timeout because a call can wait for the user's approval
+            cfg["mcp"] = {"zyven": {"type": "remote", "url": ctx.hub["url"], "enabled": True, "timeout": 3600000,
+                                    "headers": {"Authorization": f"Bearer {ctx.hub['token']}"}}}
+        (ctx.cwd / "opencode.json").write_text(json.dumps(cfg, indent=2), encoding="utf-8")
         mode = "NO RESTRICTIONS: whole disk, shell and web" if full else (
             "shell ALLOWED on this machine" if allow_shell else "no shell, no web, folder only")
         return (f"opencode run ({mode}; "

@@ -37,6 +37,7 @@ from zyven.connections.runtime import load_enabled
 from zyven.connections.store import ConnectionError_, ConnectionStore, stdio_allowed
 from zyven.connections.templates import TEMPLATES
 from zyven.agent.workspace import safe_path
+from zyven.hub.hub import ZyvenHub
 from zyven.orchestrator import settings as runtime_settings
 from zyven.orchestrator.guard import install as install_guard
 from zyven.orchestrator.control import DEFAULT_IMAGE, PLANNED, Control, runtime_info
@@ -103,6 +104,7 @@ class NewRun(BaseModel):
     run_at: float | None = None
     repeat_secs: float | None = None
     full_access: bool = False  # no sandbox, for runtimes that support it; needs ZYVEN_ALLOW_FULL_ACCESS=1
+    zyven_tools: bool = False  # give the agent Zyven's tools (connected services, verified skills) through the hub
 
 
 class Board:
@@ -294,11 +296,19 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
         state["connections"] = board.connections = ConnectionStore(board_dir)
         board.workspaces = board_dir / "workspaces"
         state["oauth"] = OAuthCoordinator(state["connections"])
+        hub.loop = asyncio.get_running_loop()
+        state["control"].hub, state["control"].hub_url = hub, lambda: f"http://127.0.0.1:{BOARD_PORT}/hub/mcp"
         worker = asyncio.create_task(board.worker())
-        yield
+        async with hub.server.session_manager.run():  # a mounted app's own lifespan does not run, so start it here
+            yield
         worker.cancel()
 
+    hub = ZyvenHub(lambda: state["connections"],
+                   lambda: [sk.server_spec() for sk in state["board"].library.list()],
+                   lambda *a: state["control"].request_approval(*a))
+
     app = FastAPI(title="Zyven board", lifespan=lifespan)
+    app.mount("/hub", hub.asgi())  # MCP over HTTP at /hub/mcp, only with a live per-run token
     install_guard(app)  # refuse other websites and foreign host names: the board can run programs
 
     # The Next.js site (web/out) is mounted last, after every API route. The single-file page is a
@@ -667,7 +677,12 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
     return app
 
 
+BOARD_PORT = 8765  # where the board listens; the agents are told to reach the hub there
+
+
 def serve(host: str = "127.0.0.1", port: int = 8765, board_dir: Path | None = None) -> None:
+    global BOARD_PORT
+    BOARD_PORT = port
     import uvicorn
 
     uvicorn.run(create_app(board_dir=board_dir), host=host, port=port, log_level="warning")
