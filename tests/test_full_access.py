@@ -131,6 +131,9 @@ def test_claude_full_access_adds_the_shell_and_stops_asking(monkeypatch):
 
 
 def test_the_runtime_list_says_which_runtimes_support_it_and_whether_it_is_allowed(codex, monkeypatch):
+    from zyven.orchestrator import codex_adapter
+
+    monkeypatch.setattr(codex_adapter, "run_quiet", lambda cmd, timeout=15: "")  # no real program is started for the status
     monkeypatch.delenv("ZYVEN_ALLOW_FULL_ACCESS", raising=False)
     info = runtime_info({"codex": codex, "docker": DockerAdapter()})
     assert info["codex"]["full_access"] == {"supported": True, "allowed": False} and "full_access" not in info["docker"]
