@@ -1,1 +1,1 @@
-And those agents can use what Zyven built. The Zyven hub gives Codex and OpenCode the verified tools over a private link for that one run. No extra API key, and the link dies when the run ends.
+Those agents can use what Zyven built. The Zyven hub hands the agent the verified graph tool over a private link for this one run. It calls the tool and answers G, the right answer. No extra key, and the link dies when the run ends.

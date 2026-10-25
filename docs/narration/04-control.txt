@@ -1,1 +1,1 @@
-The Control center runs real coding agents too. Here Codex works on the same task in its own folder, headless, with a live log. When it finishes, everything it made is exported to a folder.
+The Control center runs coding agents too. Here the Qoder CLI, with an open-weight Qwen model, works in its own folder, headless, with a live log. Whatever it makes is listed as changed files.

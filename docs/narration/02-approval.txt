@@ -1,1 +1,1 @@
-Nothing is compiled without a person saying yes. Zyven shows what it plans to do, and waits. If you deny it, or never answer, the answer is no.
+Before anything risky, Zyven stops and asks. Here the agent wants to install a package with internet access. I say no, and the answer is no. Nothing runs without a person's yes.
