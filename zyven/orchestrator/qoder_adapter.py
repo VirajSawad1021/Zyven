@@ -38,7 +38,7 @@ class QoderAdapter(CLIAgentAdapter):
     open_weight = False  # the model family can be open-weight; the host and exact weights are not verified here
     supports_full_access = True
     supports_hub = True
-    exposes = {"live_output": True, "tool_calls": True, "approvals": False, "file_changes": True, "tokens": True}
+    exposes = {"live_output": True, "tool_calls": True, "approvals": False, "file_changes": True, "tokens": False}  # it reports 0
     note = ("Qoder CLI in headless mode with a restricted tool set (no shell, no web), edits in the task folder. "
             "Pick an open-weight model (for example a Qwen or DeepSeek one) on the Control center page.")
 
@@ -75,6 +75,8 @@ class QoderAdapter(CLIAgentAdapter):
 
     def parse(self, line: str, emit: Callable[[str, str], None], totals: dict[str, float]) -> bool:
         def once(kind: str, text: str) -> None:  # Qoder repeats the final answer in its result line: show it once
+            if kind == "info" and text.startswith("done:"):
+                return  # Qoder reports zero usage; the shared runner prints its own totals line
             if kind == "out":
                 if text == totals.get("_out"):
                     return
