@@ -22,6 +22,7 @@ import asyncio
 import json
 import logging
 import secrets
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Awaitable, Callable
 
 from mcp import types
@@ -37,11 +38,15 @@ log = logging.getLogger("zyven.hub")
 
 # approve(run_id, kind, summary, detail) -> bool: blocks until the user decides (Control.request_approval)
 Approve = Callable[[str, str, str, str], bool]
+STATUS_NAME = "zyven_status"
 STATUS_TOOL = {"type": "function", "function": {
-    "name": "zyven_status",
+    "name": STATUS_NAME,
     "description": "Report which of Zyven's tools are available and why a service is missing (for example an expired "
                    "sign-in). Call this if a tool you expected, such as a Notion tool, is not in your list.",
     "parameters": {"type": "object", "properties": {}}}}
+# A pending approval waits (up to an hour) in a thread. Give those their own pool so a pile of waiting cards can never
+# starve the default executor that the rest of the board uses.
+_APPROVAL_THREADS = ThreadPoolExecutor(max_workers=64, thread_name_prefix="zyven-approval")
 DENIED = "Denied: the user did not approve this action, so it was not run. Do not retry it."
 
 
@@ -113,7 +118,7 @@ class HubSession:
             self.sources.append(_Source(f"skill {spec.name}", lambda tb, spec=spec: tb.add_server(spec)))
         self._route: dict[str, ToolBox] = {}
         self._tools: list[dict[str, Any]] = []
-        self._built: asyncio.Future | None = None
+        self._built: asyncio.Task | None = None
 
     @property
     def notes(self) -> list[str]:
@@ -122,31 +127,41 @@ class HubSession:
     def _gate_for(self, connection: str):
         async def gate(tool: str, args: dict[str, Any]) -> bool:
             detail = json.dumps(args, ensure_ascii=False)[:3000]
-            return await asyncio.to_thread(self._approve, self.run_id, "tool_call", f"{connection}: {tool}", detail)
+            return await asyncio.get_running_loop().run_in_executor(
+                _APPROVAL_THREADS, self._approve, self.run_id, "tool_call", f"{connection}: {tool}", detail)
         return gate
+
+    async def _build(self) -> None:
+        self._route, self._tools = {}, []
+        await asyncio.gather(*(s.ready() for s in self.sources))
+        for s in self.sources:
+            if s.toolbox is None:
+                continue
+            for t in s.toolbox.openai_tools:
+                name = t["function"]["name"]
+                if name != STATUS_NAME and name not in self._route:  # the status tool's name is Zyven's own
+                    self._route[name] = s.toolbox
+                    self._tools.append(t)
+        for s in self.sources:  # tell the user in the run's log what could not be offered, and why
+            if s.error and self._notify:
+                self._notify(self.run_id, f"Zyven hub: {s.label} unavailable. {s.error}")
+        self._tools.append(STATUS_TOOL)
 
     async def tools(self) -> list[dict[str, Any]]:
         if self._built is None:
-            self._built = asyncio.get_running_loop().create_future()
-            await asyncio.gather(*(s.ready() for s in self.sources))
-            for s in self.sources:
-                if s.toolbox is None:
-                    continue
-                for t in s.toolbox.openai_tools:
-                    if t["function"]["name"] not in self._route:
-                        self._route[t["function"]["name"]] = s.toolbox
-                        self._tools.append(t)
-            for s in self.sources:  # tell the user in the run's log what could not be offered, and why
-                if s.error and self._notify:
-                    self._notify(self.run_id, f"Zyven hub: {s.label} unavailable. {s.error}")
-            self._tools.append(STATUS_TOOL)
-            self._built.set_result(None)
-        await self._built
+            self._built = asyncio.create_task(self._build())  # its own task: one caller giving up does not stop it
+        try:
+            await asyncio.shield(self._built)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            self._built = None  # a failed build is tried again by the next caller instead of hanging them
+            raise
         return self._tools
 
     async def call(self, name: str, arguments: dict[str, Any]) -> tuple[bool, str]:
         await self.tools()
-        if name == STATUS_TOOL["function"]["name"]:
+        if name == STATUS_NAME:
             return True, "\n".join(self.notes) or "No connections or skills are set up."
         tb = self._route.get(name)
         if tb is None:
@@ -222,6 +237,8 @@ class ZyvenHub:
         if self._lock is None:
             self._lock = asyncio.Lock()
         async with self._lock:
+            if run_id not in self._tokens.values():  # revoked while this request was on its way: do not start tool servers
+                raise PermissionError("this run has ended")
             session = self._sessions.get(run_id)
             if session is None:
                 session = self._sessions[run_id] = HubSession(run_id, self._store(), self._skills(), self._approve, self._notify)

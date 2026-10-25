@@ -107,6 +107,8 @@ class ToolBox:
                    fn: Callable[[dict[str, Any]], str], gate: Gate | None = None) -> None:
         """A built-in tool: `fn(arguments)` returns the text the model sees, or raises ValueError with a message
         the model can act on. With a gate, every call waits for a yes first."""
+        if name in self._route:
+            raise ValueError(f"tool name {name!r} is already in use")
         self._native[name] = fn
         self._route[name] = "native"
         if gate is not None:
