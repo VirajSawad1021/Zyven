@@ -121,7 +121,7 @@ class Board:
         self.listeners: set[asyncio.Queue] = set()
         self.approvals: dict[str, asyncio.Future] = {}
         self.loop: asyncio.AbstractEventLoop | None = None
-        self._lock = threading.Lock()  # compile events arrive from worker threads
+        self._lock = threading.RLock()  # one sqlite connection is shared: every use of it, read or write, takes this lock
         # Cards interrupted by a restart are marked failed rather than silently lost.
         self.db.execute("UPDATE cards SET status='FAILED', answer='interrupted by restart' "
                         "WHERE status NOT IN ('DONE','FAILED','UNVERIFIED')")
@@ -154,6 +154,10 @@ class Board:
         self._publish({"type": "event", "card": card_id, "kind": kind, "data": clean, "status": status})
 
     def card(self, card_id: str) -> dict | None:
+        with self._lock:
+            return self._card(card_id)
+
+    def _card(self, card_id: str) -> dict | None:
         row = self.db.execute("SELECT id, task, status, created, updated, answer, learned, reused FROM cards "
                               "WHERE id=?", (card_id,)).fetchone()
         if not row:
@@ -167,15 +171,17 @@ class Board:
         return c
 
     def cards(self) -> list[dict]:
-        ids = [r[0] for r in self.db.execute("SELECT id FROM cards ORDER BY created DESC LIMIT 50")]
-        return [self.card(i) for i in ids]
+        with self._lock:
+            ids = [r[0] for r in self.db.execute("SELECT id FROM cards ORDER BY created DESC LIMIT 50")]
+            return [self._card(i) for i in ids]
 
     # --- lifecycle ----------------------------------------------------------------------------
     def create(self, task: str) -> dict:
         cid = uuid.uuid4().hex[:8]
         now = time.time()
-        self.db.execute("INSERT INTO cards VALUES (?,?,?,?,?,?,?,?)", (cid, task, "QUEUED", now, now, None, "[]", "[]"))
-        self.db.commit()
+        with self._lock:
+            self.db.execute("INSERT INTO cards VALUES (?,?,?,?,?,?,?,?)", (cid, task, "QUEUED", now, now, None, "[]", "[]"))
+            self.db.commit()
         self.queue.put_nowait(cid)
         self._publish({"type": "card", "card": self.card(cid)})
         return self.card(cid)
@@ -184,7 +190,8 @@ class Board:
         self.loop = asyncio.get_running_loop()
         while True:
             cid = await self.queue.get()
-            task = self.db.execute("SELECT task FROM cards WHERE id=?", (cid,)).fetchone()[0]
+            with self._lock:
+                task = self.db.execute("SELECT task FROM cards WHERE id=?", (cid,)).fetchone()[0]
 
             async def approve(req: ApprovalRequest, cid=cid) -> bool:
                 fut = asyncio.get_running_loop().create_future()
