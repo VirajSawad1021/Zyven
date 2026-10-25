@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zyven compile timeline: networkx</title>
+<style>
+  :root { --bg:#faf8f4; --ink:#1d1b18; --mute:#6f6a62; --line:#e3ddd2; --card:#fff; --pass:#1f7a4d; --fail:#b3402a; --warn:#9a6a00; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141311; --ink:#f1ede6; --mute:#a39d92; --line:#2e2b26; --card:#1c1a17; --pass:#5fcf95; --fail:#ff8a70; --warn:#e3b341; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui, "Segoe UI", sans-serif; }
+  main { max-width:1000px; margin:0 auto; padding:32px 24px 48px; }
+  h1 { font-size:28px; margin:0 0 4px; letter-spacing:-.02em; }
+  .sub { color:var(--mute); margin:0 0 24px; }
+  .roles { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:24px; }
+  .role { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .role b { display:block; font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--mute); }
+  .role span { font-size:15px; }
+  .attempts { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .att { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .att h2 { font-size:15px; margin:0 0 10px; }
+  .g { display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-top:1px solid var(--line); font-size:14px; }
+  .g:first-of-type { border-top:0; }
+  .p { color:var(--pass); font-weight:600; } .f { color:var(--fail); font-weight:600; }
+  .note { margin:10px 0 0; font-size:13px; color:var(--mute); }
+  .fix { margin-top:10px; font-size:13px; color:var(--warn); }
+  .result { margin-top:20px; background:var(--card); border:1px solid var(--pass); border-radius:12px; padding:16px 18px; }
+  .result b { color:var(--pass); }
+  @media (max-width:760px) { .roles, .attempts { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>networkx → verified tools</h1>
+  <p class="sub">Live compile of <code>graph_algorithms</code> from networkx 3.7 (commit 49ca229) with an open-weight model. Real log, 444.5 s.</p>
+
+  <div class="roles">
+    <div class="role"><b>Architect</b><span>7 tools designed</span></div>
+    <div class="role"><b>Compiler</b><span>7 bodies written</span></div>
+    <div class="role"><b>Tester</b><span>21 cases, adapter code hidden</span></div>
+    <div class="role"><b>Repair</b><span>patched 4, then 1, then dropped 1</span></div>
+  </div>
+
+  <div class="attempts">
+    <section class="att">
+      <h2>Attempt 1</h2>
+      <div class="g"><span>Policy</span><span class="p">pass</span></div>
+      <div class="g"><span>Import</span><span class="p">pass</span></div>
+      <div class="g"><span>Upstream tests</span><span class="p">268 pass</span></div>
+      <div class="g"><span>Input robustness</span><span class="f">1/8 identical</span></div>
+      <div class="g"><span>MCP smoke</span><span class="f">fail</span></div>
+      <div class="g"><span>Differential</span><span class="p">21/21</span></div>
+      <p class="fix">Repair patched 4 tools.</p>
+    </section>
+    <section class="att">
+      <h2>Attempt 2</h2>
+      <div class="g"><span>Policy</span><span class="p">pass</span></div>
+      <div class="g"><span>Import</span><span class="p">pass</span></div>
+      <div class="g"><span>Upstream tests</span><span class="p">268 pass</span></div>
+      <div class="g"><span>Input robustness</span><span class="f">7/8 identical</span></div>
+      <div class="g"><span>MCP smoke</span><span class="p">7 tools</span></div>
+      <div class="g"><span>Differential</span><span class="p">21/21</span></div>
+      <p class="fix">Repair patched 1 tool.</p>
+    </section>
+    <section class="att">
+      <h2>Attempt 3</h2>
+      <div class="g"><span>Policy</span><span class="f">syntax error</span></div>
+      <p class="note">One tool still failed. It is dropped, not shipped.</p>
+      <div class="g"><span>Policy (6 tools)</span><span class="p">pass</span></div>
+      <div class="g"><span>Import</span><span class="p">pass</span></div>
+      <div class="g"><span>Upstream tests</span><span class="p">268 pass</span></div>
+      <div class="g"><span>Input robustness</span><span class="p">5/5</span></div>
+      <div class="g"><span>MCP smoke</span><span class="p">6 tools</span></div>
+      <div class="g"><span>Differential</span><span class="p">18/18</span></div>
+    </section>
+  </div>
+
+  <div class="result"><b>VERIFIED</b> after 3 attempts: 6 tools kept, 1 dropped as unverifiable. Only tools that pass all six gates are published.</div>
+</main>
+</body>
+</html>
