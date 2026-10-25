@@ -39,6 +39,8 @@ Zyven does that step automatically, and refuses to hand over anything it can't p
 
 ![The six sandbox gates for the IBAN skill](docs/screenshots/showcase-verify.jpg)
 
+*The IBAN skill's gates, from an earlier build of the app.*
+
 ## Results
 
 Every run uses the open-weight model `gemma-4-26b-a4b-it`, with the same tasks and budget in each condition. Ground
@@ -114,11 +116,19 @@ on a clean board (`zyven board --board-dir …`) where every model call was made
 `gemma-4-26b-a4b-it`.
 
 **Task board.** Give the agent a task. When it lacks a capability it proposes a pinned repository, waits for your
-approval, compiles in the sandbox and finishes the task with the new tool. Below, the first IBAN task compiled a skill
-from python-stdnum (366 modules) in 2 minutes. The second reused it and finished in 19 seconds. A UK phone number the
-model could answer on its own needed no tool at all.
+approval, compiles in the sandbox and finishes the task with the new tool. Anything risky waits for your click.
 
 ![Task board](docs/screenshots/board.jpg)
+
+*The current board, with the verified `graph_algorithms` skill in its library. The agent can also solve a task with its
+own code in a sandbox, as it did here, so whether it goes to the catalog is the model's judgement (see
+`LIMITATIONS.md`).*
+
+An earlier run on the same board showed the compile-then-reuse loop: the first IBAN task compiled a skill from
+python-stdnum (366 modules) in 2 minutes, the second reused it and finished in 19 seconds, and a UK phone number the
+model could answer on its own needed no tool at all.
+
+![Compile once, reuse later (an earlier build of the board)](docs/screenshots/board-compile-reuse.jpg)
 
 **A finished task.** The answer, the tool calls that produced it, the skill learned from the repository, and the six
 sandbox gates it passed. Answers render as Markdown, with maths when there is any.
@@ -132,18 +142,32 @@ disagreeing with the library on a UK mobile number. Two repairs didn't fix it, s
 
 ![Insights dashboard](docs/screenshots/insights.jpg)
 
-**Repository explorer.** What could a repository become? Here it is sympy, 425,281 lines in 882 modules, analysed
-statically in about 100 seconds. It shows the funnel from every symbol to MCP-able tool candidates, and an
-interactive module graph: zoom, pan, drag, search, and click a module to see what it imports and what imports it.
+*From an earlier run on an earlier build; the page still looks like this with newer data.*
 
-![Module graph with a module selected](docs/screenshots/graph.jpg)
+**Repository explorer.** What could a repository become? Here it is networkx: 102,639 lines in 309 modules, 9,707 tests
+in 505 files, and 2,247 symbols, of which an estimated 1,454 could become MCP tools. It is static analysis only, so
+nothing is executed. The interactive module graph lets you zoom, pan, drag, search, and click a module to see what it
+imports and what imports it.
+
+![networkx in the repository explorer](docs/screenshots/graph.jpg)
 
 **Skill library.** Every verified skill is kept with its tools, call health, provenance (repository and pinned
 commit) and exactly which of the six gates it passed, so the next task can reuse it.
 
+![Skills](docs/screenshots/skills.jpg)
+
+**Catalog.** The pinned repositories Zyven may compile from: reviewer-curated, commit-pinned, licenses recorded, and
+nothing outside the list is ever fetched. Adding one is an entry in `catalog/repos.json` and a `zyven sync`.
+
+![Catalog](docs/screenshots/catalog.jpg)
+
 **Control center, connections and the hub (optional extras).** Beyond the task board, the Control center runs work
 on other runtimes and shows each run live (output, tool calls, token use, the files it changed). Everything below is
 off until you switch it on, and none of it is used for any result in this README.
+
+![Control center: a Qoder CLI run that calls a Zyven hub tool](docs/screenshots/control.jpg)
+
+*A run on the Qoder CLI runtime, given Zyven's tools through the hub. It called the verified graph tool and answered G.*
 
 | Runtime | What it is | Checked |
 |---|---|---|
@@ -152,6 +176,7 @@ off until you switch it on, and none of it is used for any result in this README
 | GitHub | create a repository or issue with `gh`, after you approve the exact command | unit tests only; no real `gh` call yet |
 | Codex | `codex exec` headless, in Codex's own sandbox | live, on Windows |
 | OpenCode | `opencode run` headless, locked to its task folder | live, on Windows |
+| Qoder CLI | `qodercli -p` headless, built-in tools limited to read and edit, hub tools through a config file | live, on Windows (Qwen3.8-Flash; model host not verified) |
 | Claude Code | `claude -p` headless | unit tests only; not logged in on the dev machine |
 | Antigravity | `agy` print mode | experimental: its headless mode printed one line and then waited, so runs stop after 2 minutes of silence |
 
@@ -159,11 +184,14 @@ The coding agents use whatever provider each program is signed in to (for exampl
 free hosted models OpenCode offers. They are labelled as not verified open-weight. You turn each one on, and pick a
 model, from the Control center page.
 
-- **Connections.** Connect any MCP server by URL or local command, or sign in through a service's own page (OAuth with
+- **Connections.** (screenshot below) Connect any MCP server by URL or local command, or sign in through a service's own page (OAuth with
   PKCE; tokens stay in a local file that the API never returns and that refreshes silently). Test a connection to see
   its real tools. A tool its server does not mark read-only asks for your approval before it runs. Notion's hosted
-  server was tested live (sign-in, a read, and a write that was denied); Gmail and Slack's hosted servers have
-  templates but were not run against the real services.
+  server was tested live (sign-in, a read, and a write that was denied). Google Docs, Gmail and Slack's hosted
+  servers have templates; Google Docs connected and listed its tools, while Gmail and Slack were not run against the
+  real services (Slack refuses automatic app registration and needs its own app).
+
+![Connections: every tool marked read-only or "asks"](docs/screenshots/connections.jpg)
 - **The Zyven hub.** A task started on Codex or OpenCode can be given "Zyven's tools": the board serves an MCP endpoint
   (`/hub/mcp`) with a short-lived token per run, offering your enabled connections and your verified skills. The agent
   needs no model key from Zyven. Anything that changes something raises an approval card with its exact arguments, and
@@ -294,12 +322,13 @@ npm run dev                                   # http://localhost:3000, proxies /
 | `zyven/memory/` | skill library: verified skills, provenance, call health |
 | `zyven/connections/` | connected MCP servers: local secret store, OAuth sign-in, tool listing, templates |
 | `zyven/hub/` | the Zyven hub: connected services and verified skills offered to coding agents over MCP |
-| `zyven/orchestrator/` | board server: tasks, approvals, SSE, explorer API; Control center, runtime adapters (Docker, GitHub, Codex, OpenCode, Claude Code, Antigravity), local-only guard |
+| `zyven/orchestrator/` | board server: tasks, approvals, SSE, explorer API; Control center, runtime adapters (Docker, GitHub, Codex, OpenCode, Qoder CLI, Claude Code, Antigravity), local-only guard |
 | `web/` | Next.js site and board UI (static export served by the board) |
 | `toolkit/` | hand-written reference skill (baseline) |
 | `eval/` | task suites, before/after runner, results |
 | `catalog/repos.json` | pinned source repositories, commits and licenses |
 | `scripts/` | offline checks: open-weight model policy, control-center smoke test |
+| `docs/` | demo script, narration text, animated explainer slides (`docs/demo/`), screenshots |
 
 ## Models and sources
 
@@ -313,6 +342,9 @@ local Ollama, with automatic failover to a backup host.
 | [simlist/pyluach](https://github.com/simlist/pyluach) | `c1ffe42` | MIT | wrapped (imported, not copied) |
 | [daviddrysdale/python-phonenumbers](https://github.com/daviddrysdale/python-phonenumbers) | `e921470` | Apache-2.0 | wrapped (imported, not copied) |
 | [opensource-nepal/py-nepali](https://github.com/opensource-nepal/py-nepali) | `3ff1947` | MIT | wrapped (imported, not copied) |
+| [sympy/sympy](https://github.com/sympy/sympy) | `16fa855` | BSD-3-Clause | wrapped (imported, not copied) |
+| [pypa/packaging](https://github.com/pypa/packaging) | `929fd4b` | Apache-2.0 OR BSD-2-Clause | wrapped (imported, not copied) |
+| [networkx/networkx](https://github.com/networkx/networkx) | `49ca229` | BSD-3-Clause | wrapped (imported, not copied) |
 
 The pinned list lives in `catalog/repos.json`.
 
@@ -343,12 +375,13 @@ The capability compiler, the self-extending agent and the board work end to end.
 - [#9](https://github.com/VirajSawad1021/Zyven/issues/9) Interface lint: measure the effect of the merged related-facts rule
 - [#24](https://github.com/VirajSawad1021/Zyven/issues/24) Evaluation: add a model + Python interpreter baseline
 - [#25](https://github.com/VirajSawad1021/Zyven/issues/25) Evaluation: held-out suite and run-to-run variance
-- [#26](https://github.com/VirajSawad1021/Zyven/issues/26) Catalog: real-world libraries beyond pure calculators
-- [#27](https://github.com/VirajSawad1021/Zyven/issues/27) 60-second demo video of the compile-then-reuse flow
+- [#26](https://github.com/VirajSawad1021/Zyven/issues/26) Catalog: real-world libraries beyond pure calculators (packaging and networkx added; more to come)
+- [#27](https://github.com/VirajSawad1021/Zyven/issues/27) Demo video: done, linked at the top of this README
 
 Known gaps in the optional extras: Claude Code and the GitHub connector have not been run against the real services;
 Antigravity's headless mode does not work on the development machine; Gmail and hosted Slack sign-in were not run
-against the real services; and everything was checked on Windows only. `LIMITATIONS.md` lists the trust assumptions.
+against the real services; the Qoder CLI runtime was checked with a Qwen model whose host and exact weights are not
+verified; and everything was checked on Windows only. `LIMITATIONS.md` lists the trust assumptions.
 
 ## License
 
