@@ -62,6 +62,15 @@ class SelfExtendResult:
     rejected: list[str] = field(default_factory=list)  # approval refused: never compiled
 
 
+# Tools that run code the agent writes itself. They can do anything, so they say nothing about whether a verified
+# implementation exists; the gap check must not count them, or it would call every task "doable" and never grow.
+CODE_RUNNING_TOOLS = {"run_command", "run_command_with_network"}
+
+
+def verified_tools(tools: list[dict]) -> list[dict]:
+    return [t for t in tools if t["function"]["name"] not in CODE_RUNNING_TOOLS]
+
+
 async def run_self_extending(
     provider: ModelProvider,
     task: str,
@@ -96,7 +105,7 @@ async def run_self_extending(
             attach(tb, ws, make_gate("Sandbox with internet access", emit, approve))
         emit("RUNNING", detail=f"{len(tb.openai_tools)} tools loaded")
         try:
-            gap = await asyncio.to_thread(gap_check, provider, task, tb.openai_tools)
+            gap = await asyncio.to_thread(gap_check, provider, task, verified_tools(tb.openai_tools))
             emit("GAP_CHECK", detail="tools sufficient" if not gap.missing_capabilities else
                  "; ".join(m.description for m in gap.missing_capabilities), plan=gap.plan)
         except ProviderError as e:  # the gap check only advises; a model glitch must not end the task

@@ -1,0 +1,1 @@
+Safety is built in. The app only answers on this computer. Every run gets its own token. Full computer access needs two separate switches, and is off by default.

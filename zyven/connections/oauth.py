@@ -215,6 +215,15 @@ def expire_sign_in(store: ConnectionStore, cid: str) -> str:
     return msg
 
 
+def friendly_error(e: BaseException) -> str:
+    """What the user should read when a sign-in cannot start. Services such as Slack refuse to register apps
+    automatically (the refusal is a web page), so say what to do instead of showing that page."""
+    inner = leaf_error(e)
+    if any(c.__name__ == "OAuthRegistrationError" for c in type(inner).__mro__):
+        return ("This service does not register apps automatically. Create an app with it, then paste that app's "
+                "client id and secret on this card and sign in again.")
+    return f"{type(inner).__name__}: {inner}"[:300]
+
+
 def _message(e: BaseException) -> str:
-    inner = e.exceptions[0] if isinstance(e, BaseExceptionGroup) and e.exceptions else e
-    return f"{type(inner).__name__}: {inner}"[:400]
+    return friendly_error(e)

@@ -123,3 +123,22 @@ def test_gate_emits_the_card_event_then_the_decision():
     gate = make_gate("GitHub", lambda k, **d: seen.append((k, d)), ask)
     assert asyncio.run(gate("github__create_issue", {"title": "t"})) is True
     assert [k for k, _ in seen] == ["NEEDS_APPROVAL", "RESUMED"] and seen[1][1]["detail"].startswith("approved")
+
+
+def test_a_connection_that_never_answers_is_skipped_and_the_next_one_still_loads(demo, monkeypatch):
+    from zyven.connections import runtime
+
+    store, cid = demo
+    monkeypatch.setattr(runtime, "CONNECT_TIMEOUT", 3.0)
+    hung = store.add(name="Hung", kind="stdio", command=sys.executable, args=["-c", "import time; time.sleep(120)"])
+    store.update(hung["id"], tools=[], enabled=True)
+    events: list[tuple[str, dict]] = []
+
+    async def go():
+        async with ToolBox() as tb:
+            return await load_enabled(tb, store, lambda k, **d: events.append((k, d)), lambda req: asyncio.sleep(0, False))
+
+    loaded = asyncio.run(go())
+    assert "demo_notes__lookup" in loaded  # the working connection was not blocked by the hung one
+    failed = [d["detail"] for k, d in events if k == "CONNECTION_FAILED"]
+    assert any("Hung" in d and "no answer" in d for d in failed), failed

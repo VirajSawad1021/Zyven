@@ -185,3 +185,16 @@ def test_pressing_sign_in_again_replaces_the_old_attempt_without_leaving_an_erro
 
     with oauth_mcp_server() as (base, provider):
         asyncio.run(go(base, provider))
+
+
+def test_a_service_that_refuses_automatic_registration_gets_a_plain_instruction_not_its_error_page():
+    from zyven.connections.oauth import friendly_error
+
+    class OAuthRegistrationError(Exception):  # the MCP client's error, matched by name
+        pass
+
+    page = OAuthRegistrationError("Registration failed: 404 <!DOCTYPE html><html><title>There's been a glitch</title>")
+    for err in (page, BaseExceptionGroup("unhandled errors in a TaskGroup", [page])):
+        msg = friendly_error(err)
+        assert "client id and secret" in msg and "<html" not in msg.lower() and "DOCTYPE" not in msg
+    assert friendly_error(ValueError("boom")) == "ValueError: boom"

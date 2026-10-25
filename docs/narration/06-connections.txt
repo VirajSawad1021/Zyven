@@ -1,0 +1,1 @@
+Connections work like connectors in a chat app. Sign in to Notion with OAuth, and the agent can read your pages. Slack and Google Docs are there too. Anything that writes asks for approval first.

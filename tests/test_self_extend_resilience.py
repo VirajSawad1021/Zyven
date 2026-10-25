@@ -58,3 +58,13 @@ def test_a_failure_says_what_tool_is_missing(monkeypatch):
 def test_a_provider_error_is_reported_in_the_answer(monkeypatch):
     res, _ = _run(monkeypatch, GapCheck(plan=[], can_complete_with_current_tools=True), "", error="HTTP 429 quota")
     assert res.status == "FAILED" and "HTTP 429 quota" in res.answer.final_text
+
+
+def test_the_gap_check_does_not_count_tools_that_run_the_agents_own_code():
+    from zyven.agent.self_extend import verified_tools
+
+    def tool(name):
+        return {"function": {"name": name, "description": "d"}}
+
+    names = ["list_files", "run_command", "run_command_with_network", "hijri__convert", "write_file"]
+    assert [t["function"]["name"] for t in verified_tools([tool(n) for n in names])] == ["list_files", "hijri__convert", "write_file"]
