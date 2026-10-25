@@ -91,5 +91,5 @@ repositories; they say nothing about third-party MCP servers or coding agents.**
 - **Coding agents send the task text to their provider** (for example OpenAI for Codex), unlike the open-weight roles above.
 - **Notion rotates refresh tokens**, so copying a connection's secrets to another process invalidates the original
   sign-in. One board should own a connection.
-- **Hub start-up time:** the first request in a run starts that run's tool servers; Docker-based skills add 1-2 s each. A real Docker
-  skill has not yet been served through the hub (a stand-in skill was).
+- **Hub start-up time:** the first request in a run starts that run's tool servers, in parallel; each Docker-based skill adds
+  1-2 s. One real skill (IBAN validation) was served through the hub with Codex; a task with many skills has not been timed.

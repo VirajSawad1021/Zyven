@@ -149,7 +149,9 @@ model, from the Control center page.
 - **The Zyven hub.** A task started on Codex or OpenCode can be given "Zyven's tools": the board serves an MCP endpoint
   (`/hub/mcp`) with a short-lived token per run, offering your enabled connections and your verified skills. The agent
   needs no model key from Zyven. Anything that changes something raises an approval card with its exact arguments, and
-  the agent's call waits for your click. Tested live with Codex and OpenCode against Notion.
+  the agent's call waits for your click. Tested live with Codex and OpenCode against Notion, and with Codex using a
+  verified Docker skill (IBAN validation, compiled earlier by `gemma-4-26b-a4b-it`): two calls, correct answers, 24 s
+  for the whole task including the container start.
 - **Approvals.** Denial, a one-hour timeout, a cancel and a restart all mean no.
 - **Getting results out.** Download a file or a zip from a finished run, open its folder, or copy its files into one
   export folder you choose (in a new subfolder, never overwriting).
@@ -323,8 +325,7 @@ The capability compiler, the self-extending agent and the board work end to end.
 
 Known gaps in the optional extras: Claude Code and the GitHub connector have not been run against the real services;
 Antigravity's headless mode does not work on the development machine; Gmail and hosted Slack sign-in were not run
-against the real services; everything was checked on Windows only; and a real Docker skill has not yet been served
-through the hub (a stand-in was). `LIMITATIONS.md` lists the trust assumptions.
+against the real services; and everything was checked on Windows only. `LIMITATIONS.md` lists the trust assumptions.
 
 ## License
 
