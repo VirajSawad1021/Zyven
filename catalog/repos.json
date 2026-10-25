@@ -94,6 +94,36 @@
           "tests": ["tests/test_specifiers.py", "tests/test_utils.py"]
         }
       ]
+    },
+    {
+      "name": "networkx",
+      "url": "https://github.com/networkx/networkx",
+      "commit": "49ca2290b80c1389eb4d8d8e49dcba73f8fec016",
+      "license": "BSD-3-Clause",
+      "note": "Graph algorithms in pure Python: shortest paths, connected components, spanning trees, maximum flow, centrality, clustering (networkx 3.7)",
+      "curated": [
+        {
+          "name": "graph_algorithms",
+          "title": "Graph Algorithms",
+          "description": "Answer exact questions about a graph given as an edge list: the shortest-path weight between two nodes, the number of connected components, the total weight of a minimum spanning tree, the maximum flow between two nodes, the node with the highest betweenness centrality, and the number of triangles.",
+          "entry_points": [
+            "networkx.algorithms.shortest_paths.weighted.dijkstra_path_length",
+            "networkx.algorithms.components.connected.number_connected_components",
+            "networkx.algorithms.tree.mst.minimum_spanning_tree",
+            "networkx.algorithms.flow.maxflow.maximum_flow_value",
+            "networkx.algorithms.centrality.betweenness.betweenness_centrality",
+            "networkx.algorithms.cluster.triangles"
+          ],
+          "tests": [
+            "networkx/algorithms/shortest_paths/tests/test_weighted.py",
+            "networkx/algorithms/components/tests/test_connected.py",
+            "networkx/algorithms/tree/tests/test_mst.py",
+            "networkx/algorithms/flow/tests/test_maxflow.py",
+            "networkx/algorithms/centrality/tests/test_betweenness_centrality.py",
+            "networkx/algorithms/tests/test_cluster.py"
+          ]
+        }
+      ]
     }
   ]
 }

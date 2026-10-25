@@ -148,20 +148,28 @@ def _skill_spec(name: str, script: Path):
 
 
 async def main() -> None:
+    global MAX_TOKENS
     ap = argparse.ArgumentParser()
     ap.add_argument("--skill", action="append", help="MCP server script; repeat for several skills")
     ap.add_argument("--label", default="manual")
     ap.add_argument("--limit", type=int, default=10, help="tasks per category")
     ap.add_argument("--concurrency", type=int, default=3)
     ap.add_argument("--skip-baseline", action="store_true")
-    ap.add_argument("--suite", choices=["nepali", "stdnum", "global", "packaging"], default="nepali")
+    ap.add_argument("--max-tokens", type=int, default=MAX_TOKENS, help="output budget per model call, same in every condition")
+    ap.add_argument("--baseline-only", action="store_true", help="run only the model alone (no skill condition)")
+    ap.add_argument("--suite", choices=["nepali", "stdnum", "global", "packaging", "networkx"], default="nepali")
     args = ap.parse_args()
+    MAX_TOKENS = args.max_tokens
 
     provider = ModelProvider.from_env(ROOT / ".env")
     if args.suite == "global":
         from eval import tasks_global
         SUITE.update(system=SYSTEM_BASE + " " + tasks_global.SYSTEM_HINT, score=tasks_global.score,
                      generate=tasks_global.generate)
+    if args.suite == "networkx":
+        from eval import tasks_networkx
+        SUITE.update(system=SYSTEM_BASE + " " + tasks_networkx.SYSTEM_HINT, score=tasks_networkx.score,
+                     generate=tasks_networkx.generate)
     if args.suite == "packaging":
         from eval import tasks_packaging
         SUITE.update(system=SYSTEM_BASE + " " + tasks_packaging.SYSTEM_HINT, score=tasks_packaging.score,
@@ -181,13 +189,14 @@ async def main() -> None:
         if not args.skip_baseline:
             print(f"Condition A: {provider.model} alone ({len(tasks)} tasks)")
             records += await run_condition(provider, tasks, "no_tools", None, args.concurrency, out)
-        print(f"Condition B: {provider.model} + skill '{args.label}'")
-        async with ToolBox() as tb:
-            names = []
-            for i, script in enumerate(args.skill or [str(ROOT / "toolkit/py_nepali_manual/server.py")]):
-                names += await tb.add_server(_skill_spec(f"{args.label}-{i}", Path(script)))
-            print(f"  tools: {names}")
-            records += await run_condition(provider, tasks, f"with_{args.label}", tb, args.concurrency, out)
+        if not args.baseline_only:
+            print(f"Condition B: {provider.model} + skill '{args.label}'")
+            async with ToolBox() as tb:
+                names = []
+                for i, script in enumerate(args.skill or [str(ROOT / "toolkit/py_nepali_manual/server.py")]):
+                    names += await tb.add_server(_skill_spec(f"{args.label}-{i}", Path(script)))
+                print(f"  tools: {names}")
+                records += await run_condition(provider, tasks, f"with_{args.label}", tb, args.concurrency, out)
 
     path.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in records), encoding="utf-8")
     by = summarize(records)

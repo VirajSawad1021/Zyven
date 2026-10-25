@@ -4,7 +4,8 @@ requires-python = ">=3.11"
 resolution-markers = [
     "python_full_version >= '3.14'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
-    "(python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version < '3.12' and sys_platform == 'emscripten')",
+    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten'",
+    "python_full_version < '3.12'",
 ]
 
 [[package]]
@@ -426,6 +427,11 @@ wheels = [
 name = "nepali"
 version = "1.2.0"
 source = { git = "https://github.com/opensource-nepal/py-nepali?rev=3ff19477150ea597d6ce2e9d3dce62e6cf0065e6#3ff19477150ea597d6ce2e9d3dce62e6cf0065e6" }
+
+[[package]]
+name = "networkx"
+version = "3.7"
+source = { git = "https://github.com/networkx/networkx?rev=49ca2290b80c1389eb4d8d8e49dcba73f8fec016#49ca2290b80c1389eb4d8d8e49dcba73f8fec016" }
 
 [[package]]
 name = "opentelemetry-api"
@@ -932,6 +938,7 @@ dev = [
 toolkit = [
     { name = "hijridate" },
     { name = "nepali" },
+    { name = "networkx", marker = "python_full_version >= '3.12'" },
     { name = "packaging" },
     { name = "phonenumbers" },
     { name = "pyluach" },
@@ -952,6 +959,7 @@ dev = [{ name = "pytest", specifier = ">=8" }]
 toolkit = [
     { name = "hijridate", git = "https://github.com/dralshehri/hijridate?rev=f6f0f4f69da8e58dc65179213822ef7b83a77dcd" },
     { name = "nepali", git = "https://github.com/opensource-nepal/py-nepali?rev=3ff19477150ea597d6ce2e9d3dce62e6cf0065e6" },
+    { name = "networkx", marker = "python_full_version >= '3.12'", git = "https://github.com/networkx/networkx?rev=49ca2290b80c1389eb4d8d8e49dcba73f8fec016" },
     { name = "packaging", git = "https://github.com/pypa/packaging?rev=929fd4b1410ac7ef61ef3f45b2f5d7e87711a9b5" },
     { name = "phonenumbers", git = "https://github.com/daviddrysdale/python-phonenumbers?subdirectory=python&rev=e92147091eca7db103f35cb4daed85376ab79328" },
     { name = "pyluach", git = "https://github.com/simlist/pyluach?rev=c1ffe4265f25ab7f5d850f4720111470f27e7ce5" },

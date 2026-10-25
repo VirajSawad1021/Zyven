@@ -73,6 +73,22 @@ truth is computed by the source library itself, and the raw records are in `eval
 | Model + hand-written skill | 10/10 each | **40/40** |
 | Model + compiled skills | 10/10 each | **40/40** |
 
+**networkx** (graph algorithms, `gemma-4-26b-a4b-it`, skill compiled by `gemma-4-31b-it`)
+
+| Condition | Output cap | Questions | Total |
+|---|---|---|---|
+| Model alone | 4096 tokens | 24 | **1/24** |
+| Model + compiled skill | 4096 tokens | 24 | **19/24** |
+| Model alone | 8192 tokens | 12 | **3/12** |
+| Model + compiled skill | 8192 tokens | 12 | **11/12** |
+
+At the 4096-token cap, 23 of 24 runs without the skill used up the budget working the answer out by hand and gave none,
+and all 5 misses with the skill were the same cap, not wrong tool results. Doubling the cap helps both conditions; the
+skill still adds the most (3/12 to 11/12). The second run is a smaller sample (12 questions per condition), so read
+it as a direction. A check with a second model through the Qoder CLI (5 questions per condition, dev only, not
+counted here) pointed the same way. Details are in `eval/results/run-20261025-150806.md` and
+`eval/results/run-20261025-170753.md`.
+
 </details>
 
 \*There was no Jewish-holiday skill in this run: the hosted endpoint timed out on that compile, so that category ran
