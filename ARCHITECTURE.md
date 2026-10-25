@@ -137,6 +137,49 @@ Zyven divides capability creation into 5 focused AI roles, each with strict boun
 - **ToolBox:** Launches each skill's MCP server over stdio **inside the sandbox container** (`docker run -i`, same flags as verification, skill and pinned source mounted read-only) and discovers its tools over MCP. Starting the container costs about 1–2 s, once per skill per task. Running a skill on the host is a development-only opt-in (`ZYVEN_SKILL_RUNTIME=host`), logged on every launch.
 - **SkillLibrary:** Persists verified skills with immutable provenance (repository URL, commit hash) and tracks call health (success/failure rates across tasks).
 
+### 4.6 Control Center & Runtime Adapters (`zyven/orchestrator/`)
+The Control center queues, schedules (once or repeating), cancels and observes **runs**, each on a *runtime*. The built-in
+Zyven agent runs as a board card. Every other runtime is an adapter (`adapters.py`) implementing `run(ctx)` and
+`cancel()`; the Control center keeps the queue, repeats, repo checkout, per-run folder, before/after file diff and status.
+
+- `DockerAdapter`: one command in a container. `GitHubAdapter` (`github_adapter.py`): validated JSON task, the exact `gh`
+  command shown on an approval card, private repositories by default.
+- `CLIAgentAdapter` (`cli_agent.py`) is the base for **Codex, OpenCode, Claude Code and Antigravity**. It gives each the
+  same handling: prompt on stdin (never a command line); an absolute task folder with `PWD` pinned to it (OpenCode trusts
+  `$PWD` over the real working directory); stderr kept apart from the event stream; an idle timeout (paused while an
+  approval is pending); process-tree kill on cancel; a refusal to run a checked-out repository that ships its own agent
+  settings; and a non-blocking installed / signed-in check (cached for a minute, refreshed in the background).
+- Each program's own containment is used and checked: Codex runs in `workspace-write` with the system temp folders and
+  network closed, **without loading the user's config** (`--ignore-user-config`, computer-use, browser and apps features
+  disabled: a user's own plugins and MCP tools act outside Codex's sandbox); OpenCode gets a project `opencode.json`
+  denying shell, web and anything outside the folder; Claude Code gets a tool allowlist without a shell, `acceptEdits`,
+  and the repository's own settings ignored.
+- **Approvals** (`ctx.approve`): a run asks before an outward action and blocks until the user decides; denial, a one-hour
+  timeout, a cancel and a restart all mean no. **Full PC access** is a per-task opt-in (an environment switch plus a
+  confirmation, not repeatable, badged) that selects each program's own no-sandbox mode.
+- **Runtime settings** (`settings.py`): on/off and model per runtime, saved in the board directory (environment variables
+  still work). **Getting results out:** download, zip, open folder, and a one-folder export that never overwrites.
+- **Local-only guard** (`guard.py`): the board refuses a foreign `Host` header (DNS rebinding) and changing requests from
+  another origin.
+
+### 4.7 Connections (`zyven/connections/`)
+A *connection* is an MCP server: a hosted URL or a local command (the latter refused unless `ZYVEN_ALLOW_STDIO_CONNECTORS=1`).
+Keys and OAuth tokens live in a separate local file that the API never returns, and a server error that echoes a secret is
+masked. OAuth uses the MCP SDK (PKCE, dynamic client registration, refresh) with Zyven's storage, a callback that checks
+the OAuth `state`, and the `iss` check that services such as Notion require. The SDK treats a stored token as never expiring
+in a new process, so the expiry is saved and restored (otherwise an old token is sent and rejected instead of refreshed).
+An expired or revoked sign-in is reported plainly and the dead token is forgotten, so the card returns to "Not signed in".
+After a Test, each tool is marked read-only or *asks first* from the server's own hint; an unknown hint means ask.
+
+### 4.8 The Zyven Hub (`zyven/hub/`)
+The board serves an MCP endpoint at `/hub/mcp` so a coding agent that brings its own model can use Zyven's tools. A task
+that asks for them gets a per-run bearer token (revoked when the run ends). For each run the hub starts, in parallel and
+each in a task of its own, a ToolBox per enabled connection (with prefixes) and per verified skill. A tool a server does
+not mark read-only calls the Control center's approval flow before it runs; the agent's call blocks until the user decides,
+and a denial returns "Denied ... do not retry". A `zyven_status` tool lets the agent ask why a service is missing.
+Codex is configured by `-c` flags (approve mode so it does not ask a second time, a long tool timeout, the token in the
+environment); OpenCode by its project config; Claude Code by a config file in the task folder.
+
 ---
 
 ## 5. Trust Boundaries & Threat Model
@@ -148,4 +191,9 @@ Zyven divides capability creation into 5 focused AI roles, each with strict boun
 | **Sandbox Execution** | Adapter & Tests → Container | Docker container with `--network none`, read-only roots, non-root user, CPU/memory limits, dropped capabilities. |
 | **Skill Runtime** | Agent → Skill Server | Verified skills run in the same container when the agent calls them; a sandbox test checks that a skill has no network and can write only to `/tmp` at runtime. |
 | **Human Approval** | Agent → Human Reviewer | The agent cannot compile or load outside code without explicit user approval via UI/API (`/api/cards/{id}/decision`). |
+| **Connected Services** | Agent → Third-party MCP server | Enabled by the user after a Test shows the tool list. Tools not marked read-only wait for an approval card. The read-only hint comes from the server itself and is not verified by Zyven. Tool output is untrusted text. |
+| **Coding Agents** | Control center → Codex / OpenCode / Claude Code / Antigravity | Optional, off by default, each in its own containment (see 4.6). Task text goes to the provider each program is signed in to. |
+| **Zyven Hub** | Coding agent → `/hub/mcp` | Per-run bearer token, revoked at run end; only that run's connections and skills; approvals for non-read-only tools. |
+| **Full PC Access** | User → Agent without a sandbox | Two deliberate steps (environment switch, per-task confirmation); never for repeating tasks; not through the web page alone. |
+| **Local Board API** | Browser / other sites → Board | No login: only this machine's `Host`, and changing requests from other origins are refused. |
 | **Model Verification Overclaim** | Failed Compile → Agent | If verification fails, the agent is explicitly instructed that the capability is unverified, tools are withheld, and cards enter `UNVERIFIED` state. |

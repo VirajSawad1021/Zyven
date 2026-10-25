@@ -94,3 +94,30 @@ All AI operations in Zyven are built around open-weight models. The default mode
 The policy is a project rule, not a hard block: `is_proprietary()` in `zyven/ai/provider.py` recognises proprietary model IDs (`gemini`, `gpt-`, `gpt4`, `o1`, `o3`, `o4`, `claude`, `command-r`; Gemma is excepted). When one is configured, the provider logs a warning, and its label, the skill provenance and evaluation reports carry `[PROPRIETARY - experiment only]`, so such runs cannot be mistaken for submission results.
 
 The committed surfaces are also checked mechanically: `scripts/check_open_models.py` scans config, skill provenance and evaluation reports for proprietary model identifiers and exits non-zero on a violation. It runs in CI on every pull request.
+
+---
+
+## 4. Optional Agent Runtimes (not part of any published result)
+
+The Control center can start command-line coding agents. They are **not Zyven model calls**: Zyven sends them a task and
+reads their output. Each is off by default and labelled `open_weight: false`, because the model behind it is whatever the
+program is signed in to.
+
+| Runtime | Model | Where the task text goes |
+|---|---|---|
+| Codex | the signed-in account's default (a proprietary OpenAI model unless configured otherwise) | OpenAI, or the provider Codex is configured for |
+| OpenCode | the model the user selects; its free hosted models by default | OpenCode's hosted provider |
+| Claude Code | Anthropic's models | Anthropic |
+| Antigravity | whatever `agy models` lists for the account (Claude and gpt-oss models on the development machine) | Antigravity's service, which Google operates |
+
+- `is_proprietary()` and `scripts/check_open_models.py` (section 3) cover Zyven's own model provider, its skill provenance
+  and the evaluation reports. They **do not cover these runtimes**, so their output must never be placed in `eval/results/`
+  or in a skill's provenance. No README result, skill or evaluation number was produced through them.
+- When given Zyven's tools through the hub, an agent can read from and (after approval) write to the services the user has
+  connected, such as Notion. The model that decides what to read or write is the agent's, not an open-weight Zyven role.
+
+### Development assistance
+
+Parts of this repository's code, tests and documentation were written with an AI coding assistant (Claude Code, Sonnet 5.5; its
+co-authorship is recorded in the commit messages). Live checks with a stronger proprietary model (`gemini-3.5-flash`) were made
+only to test the pipeline, were not saved in the repository, and are not used for any result.

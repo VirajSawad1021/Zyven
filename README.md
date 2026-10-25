@@ -123,6 +123,41 @@ interactive module graph: zoom, pan, drag, search, and click a module to see wha
 **Skill library.** Every verified skill is kept with its tools, call health, provenance (repository and pinned
 commit) and exactly which of the six gates it passed, so the next task can reuse it.
 
+**Control center, connections and the hub (optional extras).** Beyond the task board, the Control center runs work
+on other runtimes and shows each run live (output, tool calls, token use, the files it changed). Everything below is
+off until you switch it on, and none of it is used for any result in this README.
+
+| Runtime | What it is | Checked |
+|---|---|---|
+| Zyven agent | the built-in agent above, using the model in `.env` | yes |
+| Docker command | one shell command in a locked-down container (network off by default) | yes |
+| GitHub | create a repository or issue with `gh`, after you approve the exact command | unit tests only; no real `gh` call yet |
+| Codex | `codex exec` headless, in Codex's own sandbox | live, on Windows |
+| OpenCode | `opencode run` headless, locked to its task folder | live, on Windows |
+| Claude Code | `claude -p` headless | unit tests only; not logged in on the dev machine |
+| Antigravity | `agy` print mode | experimental: its headless mode printed one line and then waited, so runs stop after 2 minutes of silence |
+
+The coding agents use whatever provider each program is signed in to (for example a ChatGPT account for Codex) or the
+free hosted models OpenCode offers. They are labelled as not verified open-weight. You turn each one on, and pick a
+model, from the Control center page.
+
+- **Connections.** Connect any MCP server by URL or local command, or sign in through a service's own page (OAuth with
+  PKCE; tokens stay in a local file that the API never returns and that refreshes silently). Test a connection to see
+  its real tools. A tool its server does not mark read-only asks for your approval before it runs. Notion's hosted
+  server was tested live (sign-in, a read, and a write that was denied); Gmail and Slack's hosted servers have
+  templates but were not run against the real services.
+- **The Zyven hub.** A task started on Codex or OpenCode can be given "Zyven's tools": the board serves an MCP endpoint
+  (`/hub/mcp`) with a short-lived token per run, offering your enabled connections and your verified skills. The agent
+  needs no model key from Zyven. Anything that changes something raises an approval card with its exact arguments, and
+  the agent's call waits for your click. Tested live with Codex and OpenCode against Notion.
+- **Approvals.** Denial, a one-hour timeout, a cancel and a restart all mean no.
+- **Getting results out.** Download a file or a zip from a finished run, open its folder, or copy its files into one
+  export folder you choose (in a new subfolder, never overwriting).
+- **Full PC access (no sandbox).** Off. It needs `ZYVEN_ALLOW_FULL_ACCESS=1` on the machine and then a per-task
+  confirmation, works only for Codex, OpenCode and Claude Code, cannot repeat on a schedule, and is badged on the run.
+- **Local only.** The board has no login. It refuses requests whose `Host` is not this machine and changing requests
+  from other websites. See `LIMITATIONS.md` for what that does not cover.
+
 ## How it works
 
 ```
@@ -186,6 +221,18 @@ uv run python eval/run_eval.py --suite stdnum --limit 6 --label compiled --skill
 uv run python eval/run_eval.py --suite global --limit 6 --label compiled --skill skills/<name>/server.py
 ```
 
+### Agents and connectors (optional)
+
+Everything here is off by default. In the Control center page (`/app/control/`), select a runtime, press **Turn on**
+and optionally set a model. Environment variables also work (`ZYVEN_ENABLE_CODEX=1`, `ZYVEN_ENABLE_OPENCODE=1`,
+`ZYVEN_ENABLE_CLAUDE=1`, `ZYVEN_ENABLE_AGY=1`, `ZYVEN_ENABLE_GITHUB=1`). Each program must be installed and signed in
+by itself (`codex login`, `opencode auth login`, and so on); the page shows "installed / signed in" for each.
+
+Two switches stay environment-only on purpose, so they cannot be turned on from the web page:
+`ZYVEN_ALLOW_STDIO_CONNECTORS=1` (connectors that start a local command) and `ZYVEN_ALLOW_FULL_ACCESS=1` (tasks
+without a sandbox). `ZYVEN_ALLOWED_HOSTS` adds host names the board answers to, if you serve it on purpose beyond
+this machine. On the Connections page, add a service, press **Test**, then **Turn on**.
+
 ### Working on the frontend
 
 The site is a Next.js static export in `web/`. The board server mounts `web/out`. Without a build, `/` falls back
@@ -220,7 +267,9 @@ npm run dev                                   # http://localhost:3000, proxies /
 | `zyven/agent/` | MCP toolbox, tool-using agent loop, gap check, self-extending agent |
 | `zyven/catalog/` | the pinned catalog: clone, scout, curate |
 | `zyven/memory/` | skill library: verified skills, provenance, call health |
-| `zyven/orchestrator/` | board server: tasks, approvals, SSE, control center, explorer API |
+| `zyven/connections/` | connected MCP servers: local secret store, OAuth sign-in, tool listing, templates |
+| `zyven/hub/` | the Zyven hub: connected services and verified skills offered to coding agents over MCP |
+| `zyven/orchestrator/` | board server: tasks, approvals, SSE, explorer API; Control center, runtime adapters (Docker, GitHub, Codex, OpenCode, Claude Code, Antigravity), local-only guard |
 | `web/` | Next.js site and board UI (static export served by the board) |
 | `toolkit/` | hand-written reference skill (baseline) |
 | `eval/` | task suites, before/after runner, results |
@@ -271,6 +320,11 @@ The capability compiler, the self-extending agent and the board work end to end.
 - [#25](https://github.com/VirajSawad1021/Zyven/issues/25) Evaluation: held-out suite and run-to-run variance
 - [#26](https://github.com/VirajSawad1021/Zyven/issues/26) Catalog: real-world libraries beyond pure calculators
 - [#27](https://github.com/VirajSawad1021/Zyven/issues/27) 60-second demo video of the compile-then-reuse flow
+
+Known gaps in the optional extras: Claude Code and the GitHub connector have not been run against the real services;
+Antigravity's headless mode does not work on the development machine; Gmail and hosted Slack sign-in were not run
+against the real services; everything was checked on Windows only; and a real Docker skill has not yet been served
+through the hub (a stand-in was). `LIMITATIONS.md` lists the trust assumptions.
 
 ## License
 

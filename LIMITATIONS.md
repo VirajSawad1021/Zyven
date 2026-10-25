@@ -63,3 +63,33 @@ Users and evaluators should be aware of what Zyven's verification process does n
 - **Language Support:** Currently targets Python libraries (Python 3.11+). Libraries requiring complex compilation toolchains (e.g., custom Fortran or Rust bindings not pre-installed in the base sandbox image) may fail upstream test gates.
 - **Skills Run Sandboxed at Runtime:** When the agent uses a verified skill, its MCP server runs in the same locked-down container as verification, so using skills also requires Docker, and each skill adds about 1–2 s of container start-up per task. The `ZYVEN_SKILL_RUNTIME=host` opt-in removes that isolation and is meant for development only.
 - **No Direct Internet in Sandbox:** The container sandbox runs with `--network none`. Libraries that attempt to make live HTTP/DNS queries during their test suite or validation will fail and be rejected.
+
+---
+
+## 4. Control Center, Connections and Coding Agents (optional extras)
+
+These features are separate from the verification pipeline above. **Zyven's six gates verify skills compiled from
+repositories; they say nothing about third-party MCP servers or coding agents.**
+
+- **Connected services are trusted as far as the user chose to trust them.** Whether a tool is read-only comes from the
+  server's own hint. A server that marks a destructive tool read-only would run without an approval card. An unknown hint
+  means ask, but a wrong hint is not detected.
+- **Tool output is untrusted text.** A page or message returned by a connected service can try to steer the model
+  (prompt injection). The approval card on writes, which shows the exact arguments, is the safeguard; reads are not gated.
+- **Each coding agent's containment is that program's own.** Zyven checked it on Windows and configured it (Codex's sandbox with temp
+  folders and network closed and without loading the user's plugins; OpenCode's permission file; Claude Code's tool
+  allowlist), but relies on those programs enforcing it. Claude Code's was not checked live, and Antigravity's headless mode
+  does not work on the development machine. macOS and Linux were not tried for the agents.
+- **Full PC access removes the sandbox on request.** A wrong or manipulated model can then read, change and delete anything the
+  user's account can. It is off unless the machine owner sets `ZYVEN_ALLOW_FULL_ACCESS=1`, and each task needs a confirmation.
+- **The board has no login.** The guard refuses a foreign `Host` and cross-site writes, which stops the usual browser-based
+  routes. It does not stop another program running as the same user from calling the API.
+- **Secrets are stored in plain files** in the board directory (connection keys, OAuth tokens). On Windows the file mode
+  is not a protection. Use a board directory only you can read; an OS secret store would be better.
+- **The hub token and the OpenCode / Claude Code config files sit in the task folder**, readable by that run's agent. They are
+  valid for that run only.
+- **Coding agents send the task text to their provider** (for example OpenAI for Codex), unlike the open-weight roles above.
+- **Notion rotates refresh tokens**, so copying a connection's secrets to another process invalidates the original
+  sign-in. One board should own a connection.
+- **Hub start-up time:** the first request in a run starts that run's tool servers; Docker-based skills add 1-2 s each. A real Docker
+  skill has not yet been served through the hub (a stand-in skill was).
