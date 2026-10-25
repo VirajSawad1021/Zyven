@@ -68,6 +68,7 @@ SERVER = textwrap.dedent('''
 
 
 def _gate(tmp_path, monkeypatch, cases):
+    pytest.importorskip("networkx", reason="the reference programs call networkx (a catalog dependency)")
     (tmp_path / "server.py").write_text(SERVER, encoding="utf-8")
 
     def fake_run(cmd, mounts, policy, workdir="/src"):  # run diff_check here instead of in a container
