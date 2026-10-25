@@ -243,8 +243,13 @@ uv run python eval/run_eval.py --suite global --limit 6 --label compiled --skill
 
 Everything here is off by default. In the Control center page (`/app/control/`), select a runtime, press **Turn on**
 and optionally set a model. Environment variables also work (`ZYVEN_ENABLE_CODEX=1`, `ZYVEN_ENABLE_OPENCODE=1`,
-`ZYVEN_ENABLE_CLAUDE=1`, `ZYVEN_ENABLE_AGY=1`, `ZYVEN_ENABLE_GITHUB=1`). Each program must be installed and signed in
-by itself (`codex login`, `opencode auth login`, and so on); the page shows "installed / signed in" for each.
+`ZYVEN_ENABLE_CLAUDE=1`, `ZYVEN_ENABLE_AGY=1`, `ZYVEN_ENABLE_QODER=1`, `ZYVEN_ENABLE_GITHUB=1`). Each program must be installed
+and signed in by itself (`codex login`, `opencode auth login`, and so on); the page shows "installed / signed in" for each.
+
+The **Qoder CLI** runtime runs `qodercli` headless with no shell or web tools, and can be given Zyven's verified tools
+through the hub. Pick the model on the Control center page (the demo used a Qwen model); Zyven does not verify which
+weights or host answer, so Qoder results are not part of the published numbers. If `qodercli` is not on `PATH`, set
+`ZYVEN_QODERCLI` to its path.
 
 Two switches stay environment-only on purpose, so they cannot be turned on from the web page:
 `ZYVEN_ALLOW_STDIO_CONNECTORS=1` (connectors that start a local command) and `ZYVEN_ALLOW_FULL_ACCESS=1` (tasks
