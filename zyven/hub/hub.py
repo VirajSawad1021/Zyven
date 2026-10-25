@@ -117,7 +117,7 @@ class HubSession:
 
     @property
     def notes(self) -> list[str]:
-        return [f"{s.label}: {s.error or 'ready'}" for s in self.sources]
+        return [(s.error if s.error and s.error.startswith(s.label) else f"{s.label}: {s.error or 'ready'}") for s in self.sources]
 
     def _gate_for(self, connection: str):
         async def gate(tool: str, args: dict[str, Any]) -> bool:
