@@ -1,0 +1,248 @@
+{
+ "tools": {
+  "shortest_path_weight": {
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B",
+      5
+     ],
+     [
+      "B",
+      "C",
+      10
+     ],
+     [
+      "A",
+      "C",
+      20
+     ]
+    ],
+    "source": "A",
+    "target": "C"
+   },
+   "returns": [
+    "weight",
+    "path_exists",
+    "display"
+   ],
+   "required": [
+    "edges",
+    "source",
+    "target"
+   ],
+   "variants": [
+    {
+     "edges": [
+      [
+       "A",
+       "B",
+       5
+      ],
+      [
+       "B",
+       "C",
+       10
+      ],
+      [
+       "A",
+       "C",
+       20
+      ]
+     ],
+     "source": "  A ",
+     "target": "C"
+    },
+    {
+     "edges": [
+      [
+       "A",
+       "B",
+       5
+      ],
+      [
+       "B",
+       "C",
+       10
+      ],
+      [
+       "A",
+       "C",
+       20
+      ]
+     ],
+     "source": "A",
+     "target": "  C "
+    }
+   ]
+  },
+  "count_connected_components": {
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B"
+     ],
+     [
+      "C",
+      "D"
+     ]
+    ]
+   },
+   "returns": [
+    "count",
+    "display",
+    "is_connected"
+   ],
+   "required": [
+    "edges"
+   ],
+   "variants": []
+  },
+  "mst_total_weight": {
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B",
+      1
+     ],
+     [
+      "B",
+      "C",
+      2
+     ],
+     [
+      "A",
+      "C",
+      3
+     ]
+    ]
+   },
+   "returns": [
+    "total_weight",
+    "mst_edges",
+    "display"
+   ],
+   "required": [
+    "edges"
+   ],
+   "variants": []
+  },
+  "max_flow_value": {
+   "args": {
+    "edges": [
+     [
+      "S",
+      "A",
+      10
+     ],
+     [
+      "A",
+      "T",
+      5
+     ]
+    ],
+    "source": "S",
+    "target": "T"
+   },
+   "returns": [
+    "flow_value",
+    "display"
+   ],
+   "required": [
+    "edges",
+    "source",
+    "target"
+   ],
+   "variants": [
+    {
+     "edges": [
+      [
+       "S",
+       "A",
+       10
+      ],
+      [
+       "A",
+       "T",
+       5
+      ]
+     ],
+     "source": "  S ",
+     "target": "T"
+    },
+    {
+     "edges": [
+      [
+       "S",
+       "A",
+       10
+      ],
+      [
+       "A",
+       "T",
+       5
+      ]
+     ],
+     "source": "S",
+     "target": "  T "
+    }
+   ]
+  },
+  "highest_betweenness_centrality_node": {
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B"
+     ],
+     [
+      "B",
+      "C"
+     ],
+     [
+      "C",
+      "D"
+     ]
+    ]
+   },
+   "returns": [
+    "node",
+    "centrality_value",
+    "display"
+   ],
+   "required": [
+    "edges"
+   ],
+   "variants": []
+  },
+  "count_triangles": {
+   "args": {
+    "edges": [
+     [
+      "A",
+      "B"
+     ],
+     [
+      "B",
+      "C"
+     ],
+     [
+      "C",
+      "A"
+     ]
+    ]
+   },
+   "returns": [
+    "total_triangles",
+    "display"
+   ],
+   "required": [
+    "edges"
+   ],
+   "variants": []
+  }
+ }
+}

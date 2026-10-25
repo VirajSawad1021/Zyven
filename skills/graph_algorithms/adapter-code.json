@@ -1,0 +1,46 @@
+{
+ "tools": [
+  {
+   "tool": "shortest_path_weight",
+   "imports": [
+    "import networkx as nx"
+   ],
+   "body": "source = source.strip()\ntarget = target.strip()\nif not edges:\n    raise ValueError(\"Edges list cannot be empty\")\n\nG = nx.Graph()\nfor edge in edges:\n    if len(edge) < 2:\n        raise ValueError(\"Each edge must have at least two nodes\")\n    if len(edge) == 2:\n        G.add_edge(edge[0], edge[1])\n    else:\n        G.add_edge(edge[0], edge[1], weight=edge[2])\n\ntry:\n    weight = nx.dijkstra_path_length(G, source, target, weight='weight')\n    path_exists = True\n    display = f\"Shortest path weight from {source} to {target} is {weight}\"\nexcept nx.NetworkXNoPath:\n    weight = None\n    path_exists = False\n    display = \"No path exists\"\nexcept nx.NodeNotFound:\n    raise ValueError(f\"Source or target node not found in graph: {source}, {target}\")\n\nreturn {\"weight\": weight, \"path_exists\": path_exists, \"display\": display}"
+  },
+  {
+   "tool": "count_connected_components",
+   "imports": [
+    "import networkx as nx"
+   ],
+   "body": "G = nx.Graph()\nG.add_edges_from(edges)\ncount = nx.number_connected_components(G)\nis_connected = (count == 1)\ndisplay = f\"The graph has {count} connected components\"\n\nreturn {\"count\": count, \"display\": display, \"is_connected\": is_connected}"
+  },
+  {
+   "tool": "mst_total_weight",
+   "imports": [
+    "import networkx as nx"
+   ],
+   "body": "G = nx.Graph()\nfor edge in edges:\n    if len(edge) != 3:\n        raise ValueError(\"Each edge must be [node1, node2, weight]\")\n    G.add_edge(edge[0], edge[1], weight=edge[2])\n\nT = nx.minimum_spanning_tree(G, weight='weight')\ntotal_weight = sum(d['weight'] for u, v, d in T.edges(data=True))\nmst_edges = [[u, v, w] for u, v, w in T.edges(data='weight')]\ndisplay = f\"The total weight of the MST is {total_weight}\"\n\nreturn {\"total_weight\": total_weight, \"mst_edges\": mst_edges, \"display\": display}"
+  },
+  {
+   "tool": "max_flow_value",
+   "imports": [
+    "import networkx as nx"
+   ],
+   "body": "source = source.strip()\ntarget = target.strip()\nG = nx.DiGraph()\nfor edge in edges:\n    if len(edge) != 3:\n        raise ValueError(\"Each edge must be [node1, node2, capacity]\")\n    G.add_edge(edge[0], edge[1], capacity=edge[2])\n\ntry:\n    flow_value = nx.maximum_flow_value(G, source, target, capacity='capacity')\n    display = f\"The maximum flow from {source} to {target} is {flow_value}\"\nexcept (nx.NetworkXError, nx.NodeNotFound):\n    raise ValueError(f\"Error computing max flow: source or target node not found or graph structure invalid\")\n\nreturn {\"flow_value\": flow_value, \"display\": display}"
+  },
+  {
+   "tool": "highest_betweenness_centrality_node",
+   "imports": [
+    "import networkx as nx"
+   ],
+   "body": "G = nx.Graph()\nif weight_attribute:\n    for edge in edges:\n        if len(edge) != 3:\n            raise ValueError(\"Edges must be [node1, node2, weight] when weight_attribute is provided\")\n        G.add_edge(edge[0], edge[1], weight=edge[2])\nelse:\n    G.add_edges_from(edges)\n\ncentralities = nx.betweenness_centrality(G, weight=weight_attribute)\nif not centralities:\n    raise ValueError(\"Graph has no nodes to compute centrality\")\n\nnode = max(centralities, key=centralities.get)\ncentrality_value = centralities[node]\ndisplay = f\"Node {node} has the highest betweenness centrality of {centrality_value}\"\n\nreturn {\"node\": node, \"centrality_value\": centrality_value, \"display\": display}"
+  },
+  {
+   "tool": "count_triangles",
+   "imports": [
+    "import networkx as nx"
+   ],
+   "body": "G = nx.Graph()\nG.add_edges_from(edges)\ntri_dict = nx.triangles(G)\ntotal_triangles = sum(tri_dict.values()) // 3\ndisplay = f\"The graph contains {total_triangles} unique triangle\"\nif total_triangles != 1:\n    display = f\"The graph contains {total_triangles} unique triangles\"\n\nreturn {\"total_triangles\": total_triangles, \"display\": display}"
+  }
+ ]
+}

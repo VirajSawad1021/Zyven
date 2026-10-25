@@ -1,0 +1,284 @@
+{
+ "name": "graph_algorithms",
+ "title": "Graph Algorithms",
+ "summary": "Provides tools to analyze graphs given as edge lists, computing shortest paths, connectivity, minimum spanning trees, maximum flow, centrality, and triangle counts.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "shortest_path_weight",
+   "description": "Computes the shortest weighted path length between two nodes in a graph.",
+   "params": [
+    {
+     "name": "edges",
+     "type": "array",
+     "description": "A list of edges, where each edge is represented as [node1, node2, weight]. If weight is omitted, it defaults to 1.",
+     "required": true,
+     "example": "[[\"A\", \"B\", 5], [\"B\", \"C\", 10], [\"A\", \"C\", 20]]"
+    },
+    {
+     "name": "source",
+     "type": "string",
+     "description": "The starting node for the path.",
+     "required": true,
+     "example": "A"
+    },
+    {
+     "name": "target",
+     "type": "string",
+     "description": "The ending node for the path.",
+     "required": true,
+     "example": "C"
+    }
+   ],
+   "returns": [
+    {
+     "name": "weight",
+     "type": "number",
+     "description": "The shortest path length (sum of weights)."
+    },
+    {
+     "name": "path_exists",
+     "type": "boolean",
+     "description": "Whether a path exists between the source and target."
+    },
+    {
+     "name": "display",
+     "type": "string",
+     "description": "A human-readable summary of the result (e.g., 'Shortest path weight from A to C is 15' or 'No path exists')."
+    }
+   ],
+   "implementation_symbols": [
+    "networkx.algorithms.shortest_paths.weighted.dijkstra_path_length"
+   ],
+   "implementation_notes": "Import networkx as nx. Create a nx.Graph(). Add edges using G.add_weighted_edges_from(edges). Call nx.dijkstra_path_length(G, source, target, weight='weight'). Handle nx.NetworkXNoPath by returning path_exists=False and weight=None. Construct the display string based on the result.",
+   "example_args": {
+    "edges": "[[\"A\", \"B\", 5], [\"B\", \"C\", 10], [\"A\", \"C\", 20]]",
+    "source": "A",
+    "target": "C"
+   }
+  },
+  {
+   "name": "count_connected_components",
+   "description": "Returns the number of connected components in an undirected graph.",
+   "params": [
+    {
+     "name": "edges",
+     "type": "array",
+     "description": "A list of edges, where each edge is [node1, node2].",
+     "required": true,
+     "example": "[[\"A\", \"B\"], [\"C\", \"D\"]]"
+    }
+   ],
+   "returns": [
+    {
+     "name": "count",
+     "type": "integer",
+     "description": "The number of connected components."
+    },
+    {
+     "name": "display",
+     "type": "string",
+     "description": "A human-readable summary (e.g., 'The graph has 2 connected components')."
+    },
+    {
+     "name": "is_connected",
+     "type": "boolean",
+     "description": "True if the graph is connected (count == 1), False otherwise."
+    }
+   ],
+   "implementation_symbols": [
+    "networkx.algorithms.components.connected.number_connected_components"
+   ],
+   "implementation_notes": "Import networkx as nx. Create a nx.Graph(). Add edges using G.add_edges_from(edges). Call nx.number_connected_components(G). Set is_connected = (count == 1).",
+   "example_args": {
+    "edges": "[[\"A\", \"B\"], [\"C\", \"D\"]]"
+   }
+  },
+  {
+   "name": "mst_total_weight",
+   "description": "Computes the total weight of the minimum spanning tree (or forest) of an undirected graph.",
+   "params": [
+    {
+     "name": "edges",
+     "type": "array",
+     "description": "A list of edges, where each edge is [node1, node2, weight].",
+     "required": true,
+     "example": "[[\"A\", \"B\", 1], [\"B\", \"C\", 2], [\"A\", \"C\", 3]]"
+    }
+   ],
+   "returns": [
+    {
+     "name": "total_weight",
+     "type": "number",
+     "description": "The sum of the weights of the edges in the minimum spanning tree."
+    },
+    {
+     "name": "mst_edges",
+     "type": "array",
+     "description": "The edges included in the MST, formatted as [node1, node2, weight]."
+    },
+    {
+     "name": "display",
+     "type": "string",
+     "description": "A human-readable summary (e.g., 'The total weight of the MST is 3')."
+    }
+   ],
+   "implementation_symbols": [
+    "networkx.algorithms.tree.mst.minimum_spanning_tree"
+   ],
+   "implementation_notes": "Import networkx as nx. Create a nx.Graph(). Add edges using G.add_weighted_edges_from(edges). Call T = nx.minimum_spanning_tree(G, weight='weight'). Calculate total_weight as sum(d['weight'] for u, v, d in T.edges(data=True)). Return T.edges(data='weight') as a list of [u, v, w].",
+   "example_args": {
+    "edges": "[[\"A\", \"B\", 1], [\"B\", \"C\", 2], [\"A\", \"C\", 3]]"
+   }
+  },
+  {
+   "name": "max_flow_value",
+   "description": "Computes the maximum flow value between a source and a sink node in a capacitated graph.",
+   "params": [
+    {
+     "name": "edges",
+     "type": "array",
+     "description": "A list of edges, where each edge is [node1, node2, capacity].",
+     "required": true,
+     "example": "[[\"S\", \"A\", 10], [\"A\", \"T\", 5]]"
+    },
+    {
+     "name": "source",
+     "type": "string",
+     "description": "The source node.",
+     "required": true,
+     "example": "S"
+    },
+    {
+     "name": "target",
+     "type": "string",
+     "description": "The sink node.",
+     "required": true,
+     "example": "T"
+    }
+   ],
+   "returns": [
+    {
+     "name": "flow_value",
+     "type": "number",
+     "description": "The value of the maximum flow."
+    },
+    {
+     "name": "display",
+     "type": "string",
+     "description": "A human-readable summary (e.g., 'The maximum flow from S to T is 5')."
+    }
+   ],
+   "implementation_symbols": [
+    "networkx.algorithms.flow.maxflow.maximum_flow_value"
+   ],
+   "implementation_notes": "Import networkx as nx. Create a nx.DiGraph(). For each edge [u, v, c] in edges, call G.add_edge(u, v, capacity=c). Call nx.maximum_flow_value(G, source, target, capacity='capacity').",
+   "example_args": {
+    "edges": "[[\"S\", \"A\", 10], [\"A\", \"T\", 5]]",
+    "source": "S",
+    "target": "T"
+   }
+  },
+  {
+   "name": "highest_betweenness_centrality_node",
+   "description": "Identifies the node with the highest betweenness centrality in a graph.",
+   "params": [
+    {
+     "name": "edges",
+     "type": "array",
+     "description": "A list of edges, where each edge is [node1, node2].",
+     "required": true,
+     "example": "[[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"D\"]]"
+    },
+    {
+     "name": "weight_attribute",
+     "type": "string",
+     "description": "The attribute name for edge weights. If omitted, weights are assumed to be 1.",
+     "required": false,
+     "example": "weight"
+    }
+   ],
+   "returns": [
+    {
+     "name": "node",
+     "type": "string",
+     "description": "The node with the highest betweenness centrality."
+    },
+    {
+     "name": "centrality_value",
+     "type": "number",
+     "description": "The betweenness centrality value of that node."
+    },
+    {
+     "name": "display",
+     "type": "string",
+     "description": "A human-readable summary (e.g., 'Node B has the highest betweenness centrality of 0.6')."
+    }
+   ],
+   "implementation_symbols": [
+    "networkx.algorithms.centrality.betweenness.betweenness_centrality"
+   ],
+   "implementation_notes": "Import networkx as nx. Create a nx.Graph(). Add edges. If weight_attribute is provided, use G.add_weighted_edges_from(edges). Call centralities = nx.betweenness_centrality(G, weight=weight_attribute). Find the node with the max value in the centralities dictionary.",
+   "example_args": {
+    "edges": "[[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"D\"]]"
+   }
+  },
+  {
+   "name": "count_triangles",
+   "description": "Computes the total number of unique triangles in an undirected graph.",
+   "params": [
+    {
+     "name": "edges",
+     "type": "array",
+     "description": "A list of edges, where each edge is [node1, node2].",
+     "required": true,
+     "example": "[[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"A\"]]"
+    }
+   ],
+   "returns": [
+    {
+     "name": "total_triangles",
+     "type": "integer",
+     "description": "The total number of unique triangles in the graph."
+    },
+    {
+     "name": "display",
+     "type": "string",
+     "description": "A human-readable summary (e.g., 'The graph contains 1 unique triangle')."
+    }
+   ],
+   "implementation_symbols": [
+    "networkx.algorithms.cluster.triangles"
+   ],
+   "implementation_notes": "Import networkx as nx. Create a nx.Graph(). Add edges using G.add_edges_from(edges). Call tri_dict = nx.triangles(G). Calculate total_triangles = sum(tri_dict.values()) // 3.",
+   "example_args": {
+    "edges": "[[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"A\"]]"
+   }
+  }
+ ],
+ "included_symbols": [
+  "networkx.algorithms.shortest_paths.weighted.dijkstra_path_length",
+  "networkx.algorithms.components.connected.number_connected_components",
+  "networkx.algorithms.tree.mst.minimum_spanning_tree",
+  "networkx.algorithms.flow.maxflow.maximum_flow_value",
+  "networkx.algorithms.centrality.betweenness.betweenness_centrality",
+  "networkx.algorithms.cluster.triangles"
+ ],
+ "excluded_symbols": [],
+ "dependencies": [
+  "networkx"
+ ],
+ "side_effects": [],
+ "relevant_tests": [
+  "networkx/algorithms/shortest_paths/tests/test_weighted.py",
+  "networkx/algorithms/components/tests/test_connected.py",
+  "networkx/algorithms/tree/tests/test_mst.py",
+  "networkx/algorithms/flow/tests/test_maxflow.py",
+  "networkx/algorithms/centrality/tests/test_betweenness_centrality.py",
+  "networkx/algorithms/tests/test_cluster.py"
+ ],
+ "uncertainties": [
+  "The tools assume the input edges are for an undirected graph unless specified (e.g., max_flow_value uses DiGraph).",
+  "The behavior for empty graphs or graphs with only one node is dependent on the library's implementation."
+ ]
+}
