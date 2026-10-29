@@ -62,7 +62,7 @@ Users and evaluators should be aware of what Zyven's verification process does n
 - **Single Task Concurrency:** To prevent hitting model host rate limits and resource contention during sandbox execution, the task board processes one task compile at a time.
 - **Language Support:** Currently targets Python libraries (Python 3.11+). Libraries requiring complex compilation toolchains (e.g., custom Fortran or Rust bindings not pre-installed in the base sandbox image) may fail upstream test gates.
 - **Skills Run Sandboxed at Runtime:** When the agent uses a verified skill, its MCP server runs in the same locked-down container as verification, so using skills also requires Docker, and each skill adds about 1–2 s of container start-up per task. The `ZYVEN_SKILL_RUNTIME=host` opt-in removes that isolation and is meant for development only.
-- **Gap Detection Is a Model Judgement:** Whether the agent decides it needs a verified tool, and so goes to the catalog, is the model's call, and a small model is not consistent. On the same graph question it sometimes says the task can be done with the tools it has. Tightening the prompt made it over-flag easy tasks such as `17 * 23`, so we left it. The reliable route is to compile from the Explore page or the CLI first; the agent then reuses the skill from its library. Tools that run the agent's own code are not counted when judging whether a gap exists.
+- **Gap Detection Is a Model Judgement:** Whether the agent decides it needs a verified tool, and so goes to the catalog, is the model's call, and a small model is not consistent. On the same graph question it sometimes says the task can be done with the tools it has. Tightening the prompt made it over-flag easy tasks such as `17 * 23`, so we left it. The reliable route is to compile with the CLI first (`zyven compile ...`; the Explorer page only analyzes a repository and has no compile button) and put the skill in the board's library, so the agent reuses it. Tools that run the agent's own code are not counted when judging whether a gap exists.
 - **Connections Share the Model's Prompt:** Every tool of every switched-on connection is described to the model on each call. Notion alone adds 65 tools, which can exhaust a small free quota. Keep connections off for tasks that do not need them. A connection that does not answer within 30 s is skipped.
 - **No Direct Internet in Sandbox:** The container sandbox runs with `--network none`. Libraries that attempt to make live HTTP/DNS queries during their test suite or validation will fail and be rejected.
 
@@ -80,7 +80,8 @@ repositories; they say nothing about third-party MCP servers or coding agents.**
   (prompt injection). The approval card on writes, which shows the exact arguments, is the safeguard; reads are not gated.
 - **Each coding agent's containment is that program's own.** Zyven checked it on Windows and configured it (Codex's sandbox with temp
   folders and network closed and without loading the user's plugins; OpenCode's permission file; Claude Code's tool
-  allowlist), but relies on those programs enforcing it. Claude Code's was not checked live, and Antigravity's headless mode
+  allowlist; the Qoder CLI's restricted built-in tools), but relies on those programs enforcing it. The Qoder runtime was run
+  live with a Qwen model whose host and exact weights Zyven cannot verify. Claude Code's was not checked live, and Antigravity's headless mode
   does not work on the development machine. macOS and Linux were not tried for the agents.
 - **Full PC access removes the sandbox on request.** A wrong or manipulated model can then read, change and delete anything the
   user's account can. It is off unless the machine owner sets `ZYVEN_ALLOW_FULL_ACCESS=1`, and each task needs a confirmation.
@@ -95,3 +96,21 @@ repositories; they say nothing about third-party MCP servers or coding agents.**
   sign-in. One board should own a connection.
 - **Hub start-up time:** the first request in a run starts that run's tool servers, in parallel; each Docker-based skill adds
   1-2 s. One real skill (IBAN validation) was served through the hub with Codex; a task with many skills has not been timed.
+
+---
+
+## 5. What the Evaluation Does and Does Not Show
+
+- **The baseline is the model alone, not the model with a Python interpreter.** A model that can write and run code can often
+  compute a checksum or a graph algorithm itself (in rehearsals, a 26B model with a command sandbox answered some of the
+  networkx questions without any skill). The result is therefore best read as "a small model without code execution, with and
+  without a verified tool", not as "models cannot do this". A model-plus-interpreter baseline is an open issue (#24).
+- **Small samples, not held out.** Each suite is 18 to 40 questions on a library the pipeline was developed against. The numbers
+  are a direction, not a benchmark. A held-out suite across many libraries is an open issue (#25).
+- **Output caps decide a lot.** At a 4096-token cap, 23 of 24 questions without the skill ended with the budget spent and no answer,
+  and the misses with the skill were the same cap. At 8192 both sides improve (3/12 vs 11/12 on a smaller sample).
+- **The compile-then-reuse timing (2 minutes, then 19 seconds) is one illustrative run.** The learning-curve evaluation is an open
+  issue (#8); the Insights page title is not a claim that it was done.
+- **Qoder results are development checks only** (a 5-question run), not part of any published number.
+- **Verification is narrow** (sections 1 and 2). A verified tool matches the library on sampled cases; it does not make the library
+  correct.

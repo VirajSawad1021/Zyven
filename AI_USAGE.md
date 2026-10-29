@@ -119,6 +119,7 @@ program is signed in to.
 |---|---|---|
 | Codex | the signed-in account's default (a proprietary OpenAI model unless configured otherwise) | OpenAI, or the provider Codex is configured for |
 | OpenCode | the model the user selects; its free hosted models by default | OpenCode's hosted provider |
+| Qoder CLI | the model the user selects (for example a Qwen or DeepSeek family model on the development account); host and exact weights not verified | Qoder's service |
 | Claude Code | Anthropic's models | Anthropic |
 | Antigravity | whatever `agy models` lists for the account (Claude and gpt-oss models on the development machine) | Antigravity's service, which Google operates |
 

@@ -100,6 +100,11 @@ without a skill in both conditions. Details are in `eval/results/global-open-mod
 
 Without tools, the model tries to compute checksums and calendars by hand and usually runs out of budget.
 
+**How to read these numbers.** The baseline is the model alone, not the model with a Python interpreter, the suites are small
+and were developed against these libraries, and the 4096-token cap decides much of the baseline (see
+[`LIMITATIONS.md`](LIMITATIONS.md) section 5). A model-plus-interpreter baseline and a held-out suite are open
+([#24](https://github.com/VirajSawad1021/Zyven/issues/24), [#25](https://github.com/VirajSawad1021/Zyven/issues/25)).
+
 ### What the gates caught during development
 
 - **Differential gate:** merged imports in a generated server made the "Luhn" tool silently run a different
