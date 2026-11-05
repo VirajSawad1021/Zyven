@@ -124,6 +124,14 @@ Zyven divides capability creation into 5 focused AI roles, each with strict boun
 4. **Tester:** Independently generates test cases calling the library directly. It **never** sees the adapter code proposed by the Compiler, preserving adversarial independence.
 5. **Repair:** Receives specific gate failure outputs and refactors only the failing tool implementations under strict token budgets.
 
+### 4.2b The Tester's reference programs
+Each differential case carries a `reference_expr`: a short Python **program** (setup statements, then a last line that is one
+expression) that calls the library directly. `compiler/verify.py::_differential_gate` parses it with `ast`, requires the last
+line to be an expression, and passes every line through the same `check_adapter` policy as adapter code; rejected cases are
+reported with the reason. Example arguments are converted to the declared parameter types first (`typed_args`: list and object
+parameters arrive as real lists and objects, not JSON text). The program is evaluated inside the sandbox by
+`sandbox/diff_check.py::evaluate` and its value is compared with the tool's output.
+
 ### 4.3 Compiler & Static Policy (`zyven/compiler/`)
 - **Import Scoping:** Generates local imports within each tool function body to prevent namespace pollution or accidental module shadowing across tools.
 - **AST Security Policy (an allowlist):** generated code may import only the source package, `mcp`, and a short list of pure stdlib modules (`datetime`, `re`, `math`, `decimal`, `json`, `functools`, `calendar`, …). Everything else, `os`, `sys`, `subprocess` and `socket` included, is rejected. Calls to `open`, `exec`, `eval`, `compile`, `__import__`, `globals`, `locals`, `vars`, `input`, `setattr` and `delattr`, introspection attributes such as `__globals__` and `__subclasses__`, and `global`/`nonlocal` are rejected too. The check runs before any execution.
@@ -135,6 +143,11 @@ Zyven divides capability creation into 5 focused AI roles, each with strict boun
 
 ### 4.5 Agent Loop & Memory (`zyven/agent/`, `zyven/memory/`)
 - **ToolBox:** Launches each skill's MCP server over stdio **inside the sandbox container** (`docker run -i`, same flags as verification, skill and pinned source mounted read-only) and discovers its tools over MCP. Starting the container costs about 1–2 s, once per skill per task. Running a skill on the host is a development-only opt-in (`ZYVEN_SKILL_RUNTIME=host`), logged on every launch.
+- **Gap check:** `gap_check` sees only `verified_tools(...)`: the agent's command tools (`run_command`, `run_command_with_network`)
+  are hidden from it, because code the agent writes itself is not a verified implementation. Whether the model then reports a
+  gap is still its own judgement (see `LIMITATIONS.md`).
+- **Connections at start-up:** `connections/runtime.py::load_enabled` connects each enabled connection in turn with a 30 s limit;
+  one that does not answer is skipped and reported.
 - **SkillLibrary:** Persists verified skills with immutable provenance (repository URL, commit hash) and tracks call health (success/failure rates across tasks).
 
 ### 4.6 Control Center & Runtime Adapters (`zyven/orchestrator/`)
@@ -144,7 +157,7 @@ Zyven agent runs as a board card. Every other runtime is an adapter (`adapters.p
 
 - `DockerAdapter`: one command in a container. `GitHubAdapter` (`github_adapter.py`): validated JSON task, the exact `gh`
   command shown on an approval card, private repositories by default.
-- `CLIAgentAdapter` (`cli_agent.py`) is the base for **Codex, OpenCode, Claude Code and Antigravity**. It gives each the
+- `CLIAgentAdapter` (`cli_agent.py`) is the base for **Codex, OpenCode, the Qoder CLI, Claude Code and Antigravity**. It gives each the
   same handling: prompt on stdin (never a command line); an absolute task folder with `PWD` pinned to it (OpenCode trusts
   `$PWD` over the real working directory); stderr kept apart from the event stream; an idle timeout (paused while an
   approval is pending); process-tree kill on cancel; a refusal to run a checked-out repository that ships its own agent
@@ -154,11 +167,17 @@ Zyven agent runs as a board card. Every other runtime is an adapter (`adapters.p
   disabled: a user's own plugins and MCP tools act outside Codex's sandbox); OpenCode gets a project `opencode.json`
   denying shell, web and anything outside the folder; Claude Code gets a tool allowlist without a shell, `acceptEdits`,
   and the repository's own settings ignored.
+- **Qoder CLI** (`qoder_adapter.py`): `qodercli -p -o stream-json`, built-in tools limited to Read, Write, Edit, Glob and Grep
+  (the variadic `--tools` option is last), `accept_edits`, and Zyven's tools through a `.zyven-mcp.json` in the task folder
+  (the token stays out of the command line). Its event stream has Claude Code's shape, so the parser is shared. It reports zero
+  token usage, so Zyven does not claim counts. The model is the user's choice; which weights and host answer is not verified.
 - **Approvals** (`ctx.approve`): a run asks before an outward action and blocks until the user decides; denial, a one-hour
   timeout, a cancel and a restart all mean no. **Full PC access** is a per-task opt-in (an environment switch plus a
   confirmation, not repeatable, badged) that selects each program's own no-sandbox mode.
 - **Runtime settings** (`settings.py`): on/off and model per runtime, saved in the board directory (environment variables
   still work). **Getting results out:** download, zip, open folder, and a one-folder export that never overwrites.
+- **Board persistence:** the board keeps its cards and events in one sqlite connection shared by request threads and task
+  workers. Every use of it takes `Board._lock` (an `RLock`); `tests/test_board_threads.py` fails without it.
 - **Local-only guard** (`guard.py`): the board refuses a foreign `Host` header (DNS rebinding) and changing requests from
   another origin.
 
@@ -192,8 +211,19 @@ environment); OpenCode by its project config; Claude Code by a config file in th
 | **Skill Runtime** | Agent → Skill Server | Verified skills run in the same container when the agent calls them; a sandbox test checks that a skill has no network and can write only to `/tmp` at runtime. |
 | **Human Approval** | Agent → Human Reviewer | The agent cannot compile or load outside code without explicit user approval via UI/API (`/api/cards/{id}/decision`). |
 | **Connected Services** | Agent → Third-party MCP server | Enabled by the user after a Test shows the tool list. Tools not marked read-only wait for an approval card. The read-only hint comes from the server itself and is not verified by Zyven. Tool output is untrusted text. |
-| **Coding Agents** | Control center → Codex / OpenCode / Claude Code / Antigravity | Optional, off by default, each in its own containment (see 4.6). Task text goes to the provider each program is signed in to. |
+| **Coding Agents** | Control center → Codex / OpenCode / Qoder CLI / Claude Code / Antigravity | Optional, off by default, each in its own containment (see 4.6). Task text goes to the provider each program is signed in to. |
 | **Zyven Hub** | Coding agent → `/hub/mcp` | Per-run bearer token, revoked at run end; only that run's connections and skills; approvals for non-read-only tools. |
 | **Full PC Access** | User → Agent without a sandbox | Two deliberate steps (environment switch, per-task confirmation); never for repeating tasks; not through the web page alone. |
 | **Local Board API** | Browser / other sites → Board | No login: only this machine's `Host`, and changing requests from other origins are refused. |
 | **Model Verification Overclaim** | Failed Compile → Agent | If verification fails, the agent is explicitly instructed that the capability is unverified, tools are withheld, and cards enter `UNVERIFIED` state. |
+
+---
+
+## 6. Evaluation Harness (`eval/`)
+
+`eval/run_eval.py` runs a task suite twice with the same model and budget: the model alone, then with a compiled skill attached
+(`--skill skills/<name>/server.py`). Suites: `nepali`, `stdnum`, `global`, `packaging`, `networkx`. Ground truth is computed by
+the source library itself; questions are generated from a seed, and the model's reply must end with an `ANSWER:` line.
+`--max-tokens` sets the per-call output budget (4096 by default; a reply that hits the cap counts as wrong), and
+`--baseline-only` runs only the model alone. Results go to `eval/results/run-<time>.{jsonl,md}`. See `README.md` for the
+numbers and `LIMITATIONS.md` section 5 for what they do and do not show.
