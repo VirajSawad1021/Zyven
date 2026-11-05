@@ -383,6 +383,17 @@ def test_tester_requeries_missing_tools(analysis, monkeypatch):
 
 # ---- src-style layouts and tests needing third-party packages ---------------------------------
 
+def test_src_layout_wins_over_a_stray_top_level_package(tmp_path):
+    # pypa/packaging: src/packaging plus a tasks/__init__.py at the top once made "." the source root
+    (tmp_path / "src/my_lib").mkdir(parents=True)
+    (tmp_path / "src/my_lib/__init__.py").write_text("def f():\n    return 1\n", encoding="utf-8")
+    (tmp_path / "tasks").mkdir()
+    (tmp_path / "tasks/__init__.py").write_text("", encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "my-lib"\n', encoding="utf-8")
+    a = analyze(tmp_path)
+    assert a.source_root == "src" and a.packages == ["my_lib"]
+
+
 def test_source_root_detection_and_module_names(tmp_path):
     (tmp_path / "src/cal").mkdir(parents=True)
     (tmp_path / "src/cal/__init__.py").write_text("from .core import convert\n", encoding="utf-8")

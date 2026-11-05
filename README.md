@@ -286,6 +286,12 @@ tools, OpenCode with every permission denied) and answers in text. Its answer go
 reference resolution, policy check and six sandbox gates as a chat model's. `provenance.json` records who did each role
 (`"roles"`). An agent uses its own sign-in, so the code and prompts go to whichever provider it is signed in to.
 
+First run (2026-11-06, not part of the published numbers): `--agent codex` on pypa/packaging `version_specifiers`
+was **verified on the first attempt in 163 s**: 4 tools, 2,108 upstream tests, 6/6 robustness probes, MCP smoke,
+12/12 differential cases. The run before it failed the policy gate and so found an analyzer bug: a stray
+`tasks/__init__.py` hid packaging's `src/` layout, so imports read `src.packaging...`. The analyzer now prefers
+the package `pyproject.toml` names.
+
 ### Agents and connectors (optional)
 
 Everything here is off by default. In the Control center page (`/app/control/`), select a runtime, press **Turn on**
