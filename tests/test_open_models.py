@@ -90,6 +90,19 @@ def test_proprietary_marker_is_reported_even_when_the_name_is_unknown(tmp_path):
     assert len(findings) == 1 and "PROPRIETARY" in findings[0].model
 
 
+def test_closed_model_and_coding_agent_labels_are_reported(tmp_path):
+    _write(tmp_path / "skills" / "a" / "provenance.json", json.dumps({"model": "custom@host [closed model]"}))
+    _write(tmp_path / "skills" / "b" / "provenance.json", json.dumps({"model": "Codex (its default model) [coding agent]"}))
+    assert sorted(f.path for f in scan(tmp_path)) == ["skills/a/provenance.json", "skills/b/provenance.json"]
+
+
+def test_a_coding_agent_in_one_role_is_reported(tmp_path):
+    _write(tmp_path / "skills" / "c" / "provenance.json", json.dumps({
+        "model": "gemma-4-26b-a4b-it@host",
+        "roles": {"architect": "gemma-4-26b-a4b-it@host", "compiler": "Codex (its default model) [coding agent]"}}))
+    assert [(f.path, f.field) for f in scan(tmp_path)] == [("skills/c/provenance.json", "roles.compiler")]
+
+
 def test_unreadable_provenance_is_reported_instead_of_skipped(tmp_path):
     _write(tmp_path / "skills" / "broken" / "provenance.json", "{not json")
     findings = scan(tmp_path)

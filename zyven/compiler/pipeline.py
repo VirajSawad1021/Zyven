@@ -22,6 +22,7 @@ from zyven.compiler.policy import check_adapter
 from zyven.compiler.verify import VerificationReport, verify
 
 EventFn = Callable[[str, dict], None]
+ROLE_NAMES = {"architect", "compiler", "tester", "repair"}
 
 
 @dataclass
@@ -49,8 +50,19 @@ def compile_capability(
     max_repairs: int = 2,
     on_event: EventFn = _print_event,
     run_upstream: bool = True,
+    roles: dict[str, ModelProvider] | None = None,
 ) -> CompileResult:
+    """`provider` serves every role unless `roles` names another one for "architect", "compiler", "tester" or
+    "repair" (for example a coding agent compiles and a chat model from another vendor writes the tests)."""
     started = time.monotonic()
+    roles = roles or {}
+    unknown = set(roles) - ROLE_NAMES
+    if unknown:
+        raise ValueError(f"unknown roles {sorted(unknown)}; use {', '.join(sorted(ROLE_NAMES))}")
+
+    def by(role: str) -> ModelProvider:
+        return roles.get(role) or provider
+
     events: list[dict] = []
 
     def emit(kind: str, **data) -> None:
@@ -62,13 +74,14 @@ def compile_capability(
     provenance = {
         "repository": _remote_url(repo) or repo.name, "commit": a.commit, "license": a.license,
         "generator": f"zyven {__version__}", "model": provider.label,
+        "roles": {r: by(r).label for r in sorted(ROLE_NAMES)},  # who wrote what
     }
 
     if spec is None:
         assert candidate is not None, "need a candidate or a spec"
-        emit("architect.start", detail=candidate.title)
+        emit("architect.start", detail=f"{candidate.title} ({by('architect').label})")
         try:
-            out = architect(provider, a, candidate)
+            out = architect(by("architect"), a, candidate)
         except ProviderError as e:
             return _failed(emit, events, started, f"architect: {e}", candidate.name, skills_root)
         spec = out.value
@@ -86,17 +99,18 @@ def compile_capability(
     skill_dir.mkdir(parents=True, exist_ok=True)
     (skill_dir / "capability.json").write_text(spec.model_dump_json(indent=1), encoding="utf-8")
 
-    emit("compiler.start", detail=f"writing {len(spec.tools)} tool bodies")
+    emit("compiler.start", detail=f"writing {len(spec.tools)} tool bodies ({by('compiler').label})")
     try:
-        code = compiler(provider, a, spec)
+        code = compiler(by("compiler"), a, spec)
     except ProviderError as e:
         return _failed(emit, events, started, f"compiler: {e}", spec.name, skills_root, spec)
     missing = [t.name for t in spec.tools if t.name not in {i.tool for i in code.tools}]
     emit("compiler.done", detail=f"missing implementations: {missing}" if missing else "all tools implemented")
 
-    emit("tester.start", detail="writing differential tests from the spec and library (adapter code not shown)")
+    emit("tester.start", detail="writing differential tests from the spec and library (adapter code not shown; "
+                                f"{by('tester').label})")
     try:
-        diff_tests = tester(provider, a, spec)
+        diff_tests = tester(by("tester"), a, spec)
         emit("tester.done", detail=f"{len(diff_tests.cases)} cases for {len({c.tool for c in diff_tests.cases})} tools")
     except ProviderError as e:
         diff_tests = None
@@ -123,7 +137,7 @@ def compile_capability(
         emit("repair.start", detail=f"{len(report.failing_tools)} failing tool(s): {', '.join(report.failing_tools)}")
         history += [f"attempt {attempt}: {k}: {v[:300]}" for k, v in report.failing_tools.items()]
         try:
-            fixed = repair(provider, a, spec, code, report.failing_tools, history[-6:])
+            fixed = repair(by("repair"), a, spec, code, report.failing_tools, history[-6:])
         except ProviderError as e:
             emit("repair.error", detail=str(e)[:300])
             break
@@ -166,7 +180,7 @@ def compile_capability(
         "source_root": a.source_root,
         "generated_files": ["server.py"], "compile_seconds": seconds, "attempts": attempt,
         "dropped_tools": dropped,  # tools that could not be verified and are NOT in the package
-        "model_calls": provider.stats.calls,
+        "model_calls": sum(p.stats.calls for p in {id(by(r)): by(r) for r in ROLE_NAMES}.values()),
         "lint_warnings": len(lint_interface(spec, a)),  # interface lint warnings on the final spec; use to track quality
     }, indent=1), encoding="utf-8")
     (skill_dir / "validation-report.json").write_text(json.dumps(report.to_dict() if report else {}, indent=1,
