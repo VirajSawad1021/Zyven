@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -27,7 +28,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from zyven.agent.self_extend import ApprovalRequest, run_self_extending
-from zyven.ai.provider import ModelProvider
+from zyven import paths
+from zyven.ai.provider import ModelProvider, ProviderError, ProviderStats
 from zyven.analysis.analyzer import analyze
 from zyven.analysis.explorer import explore
 from zyven.catalog.catalog import Catalog
@@ -43,10 +45,11 @@ from zyven.orchestrator.guard import install as install_guard
 from zyven.orchestrator.control import DEFAULT_IMAGE, PLANNED, Control, runtime_info
 from zyven.memory.skills import SkillLibrary
 
+log = logging.getLogger("zyven.board")
 ROOT = Path(__file__).resolve().parents[2]
-SITE = ROOT / "web" / "out"  # the Next.js static export (`cd web && npm run build`)
+SITE = paths.site_dir()  # the Next.js static export (`cd web && npm run build`), or the copy in the package
 LEGACY = Path(__file__).with_name("legacy.html")
-ART = ROOT / "web" / "public" / "art"
+ART = ROOT / "web" / "public" / "art" if (ROOT / "web" / "public" / "art").exists() else SITE / "art"  # the export copies public/
 
 AGENT_SYSTEM = (
     "You are a helpful assistant that completes the user's task using your tools when they apply. "
@@ -284,11 +287,39 @@ class Board:
         }
 
 
-def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspace",
+class NoModel(ModelProvider):
+    """Stands in when .env has no chat model: the board, Control center, verify and the hub still work, and only the
+    features that need a model say what is missing."""
+
+    def __init__(self, why: str) -> None:
+        self.why, self.model, self.host, self.fallback = why, "", "", None
+        self.stats = ProviderStats()
+
+    @property
+    def label(self) -> str:
+        return "no chat model configured"
+
+    def chat(self, *args, **kwargs):
+        raise ProviderError(f"no chat model is set up ({self.why}). Put MODEL_BASE_URL, MODEL_NAME and MODEL_API_KEY "
+                            f"in {paths.env_file().resolve()} (see .env.example), or use a coding agent: "
+                            "zyven compile --agent codex")
+
+
+def _provider(env_path: Path) -> ModelProvider:
+    try:
+        return ModelProvider.from_env(env_path)
+    except ProviderError as e:
+        log.warning("starting without a chat model: %s", e)
+        return NoModel(str(e))
+
+
+def create_app(env_path: Path | None = None, data_dir: Path | None = None,
                board_dir: Path | None = None) -> FastAPI:
     """data_dir holds catalog checkouts and analysis caches; board_dir (default: data_dir) holds the board's own
     state, its tasks and skill library, so a separate board can start clean without re-cloning the catalog."""
     state: dict = {}
+    env_path = env_path or paths.env_file()
+    data_dir = data_dir or paths.home()
     board_dir = board_dir or data_dir
 
     @asynccontextmanager
@@ -296,7 +327,7 @@ def create_app(env_path: Path = ROOT / ".env", data_dir: Path = ROOT / "workspac
         data_dir.mkdir(parents=True, exist_ok=True)
         board_dir.mkdir(parents=True, exist_ok=True)
         board = Board(board_dir / "board.sqlite", SkillLibrary(board_dir / "library"),
-                      Catalog(ROOT / "catalog" / "repos.json", data_dir), ModelProvider.from_env(env_path))
+                      Catalog(paths.catalog_file(), data_dir), _provider(env_path))
         state["board"] = board
         state["control"] = Control(board_dir / "board.sqlite", board_dir, board)
         runtime_settings.install(runtime_settings.RuntimeSettings(board_dir))

@@ -242,17 +242,36 @@ The self-extending agent wraps this pipeline:
 
 ## Quick start
 
+### Install (no clone)
+
+You need [uv](https://docs.astral.sh/uv/) (or pipx) and Docker. You don't need a model key: coding agents, `verify`
+and `mcp` work without one.
+
+```bash
+uvx --from git+https://github.com/VirajSawad1021/Zyven zyven setup     # builds the sandbox image, creates ~/.zyven
+uvx --from git+https://github.com/VirajSawad1021/Zyven zyven doctor    # what is ready, what is missing, how to fix it
+uvx --from git+https://github.com/VirajSawad1021/Zyven zyven verify -- npx -y @modelcontextprotocol/server-memory
+```
+
+Or install it once with `pipx install git+https://github.com/VirajSawad1021/Zyven` (or `uv tool install ...`) and run
+`zyven setup`, `zyven doctor`, `zyven board` and so on. An installed copy keeps everything in `~/.zyven`, or
+`ZYVEN_HOME` if set: the board, the skill library that `zyven mcp` serves, and the settings file `~/.zyven/.env`.
+`zyven doctor` warns when the sandbox image is older than the files it was built from, because gates run on a stale
+image can give wrong results.
+
+### From a clone (development)
+
 Requirements:
 - Python 3.11+ and [uv](https://docs.astral.sh/uv/)
 - Docker
 - Node 20+, to build the site
-- an API key for a host serving an open-weight model
+- for the chat-model roles: an API key for an OpenAI-compatible host (published results use open-weight models)
 
 ```bash
 git clone https://github.com/VirajSawad1021/Zyven.git && cd Zyven
 uv sync
-cp .env.example .env                          # set MODEL_API_KEY; the model must be open-weight
-docker build -t zyven-sandbox:py312 zyven/sandbox
+cp .env.example .env                          # set MODEL_API_KEY (optional with --agent codex)
+uv run zyven setup                            # build the sandbox image
 uv run zyven sync                             # clone the pinned catalog repos
 cd web && npm ci && npm run build && cd ..    # build the site (optional: there is a no-build fallback)
 uv run zyven board                            # http://127.0.0.1:8765
