@@ -154,9 +154,15 @@ class OAuthCoordinator:
                                            StoreTokenStorage(self.store, cid, redirect_uri),
                                            redirect_handler=redirect, callback_handler=callback)
             try:
+                from zyven.connections.probe import verify_listing
+                started = time.monotonic()
                 async with Client(make_server(conn, {}, auth=provider), read_timeout_seconds=30) as client:
+                    info = client.server_info
+                    meta = {"name": getattr(info, "name", ""), "version": getattr(info, "version", ""),
+                            "protocol": str(client.protocol_version or ""), "instructions": client.instructions or ""}
                     tools = list((await client.list_tools()).tools)
-                self.store.update(cid, tools=describe_tools(tools), error=None, checked=time.time())
+                self.store.update(cid, tools=describe_tools(tools), error=None, checked=time.time(),
+                                  **verify_listing(conn, tools, meta, time.monotonic() - started))
             except asyncio.CancelledError:
                 raise  # replaced by a newer attempt or signed out: not an error, and it must not overwrite one
             except BaseException as e:  # noqa: BLE001 - shown to the user; also unblocks start()

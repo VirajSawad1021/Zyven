@@ -33,6 +33,7 @@ from zyven.connections.oauth import SignInNeeded, expire_sign_in, leaf_error
 from zyven.connections.probe import server_for
 from zyven.connections.runtime import tool_prefix
 from zyven.connections.store import ConnectionStore
+from zyven.mcpverify.checks import DefinitionsChanged
 
 log = logging.getLogger("zyven.hub")
 
@@ -73,7 +74,10 @@ class _Source:
                 await self._close.wait()
         except Exception as e:  # noqa: BLE001 - a broken source must not hide the others
             e = leaf_error(e)
-            self.error = e.args[0] if isinstance(e, SignInNeeded) and e.args else f"{type(e).__name__}: {str(e)[:120]}"
+            if isinstance(e, DefinitionsChanged):  # the whole message matters: what changed and what to do
+                self.error = str(e)
+            else:
+                self.error = e.args[0] if isinstance(e, SignInNeeded) and e.args else f"{type(e).__name__}: {str(e)[:120]}"
             if isinstance(e, SignInNeeded) and self.on_sign_in_expired:
                 self.error = self.on_sign_in_expired()
             log.warning("hub: %s unavailable: %s", self.label, e)
@@ -109,8 +113,11 @@ class HubSession:
             prefixes.add(prefix)
 
             async def load_connection(tb: ToolBox, c=c, prefix=prefix) -> list[str]:
-                return await tb.add_transport(f"connection:{c['id']}", server_for(store, c["id"], c), prefix=prefix,
-                                              gate=self._gate_for(c["name"]))
+                try:
+                    return await tb.add_transport(f"connection:{c['id']}", server_for(store, c["id"], c), prefix=prefix,
+                                                  gate=self._gate_for(c["name"]), pins=c.get("pins"))
+                except DefinitionsChanged as e:  # shown by zyven_status and in the run's log, with what to do
+                    raise DefinitionsChanged(c["name"], e.changed, e.added) from None
 
             self.sources.append(_Source(c["name"], load_connection,
                                         lambda cid=c["id"]: expire_sign_in(store, cid)))
