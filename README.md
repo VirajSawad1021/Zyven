@@ -375,6 +375,35 @@ Each was installed with `npm install --ignore-scripts` and mounted read-only:
 All of them had valid schemas, no poisoning, correct annotations and the same definitions on a second connection. They
 also rejected every invalid probe: 54 in all.
 
+Fifteen popular community servers, checked the same way on 2026-11-06. This is what `zyven verify` reports, not a
+security audit. Warnings are quality findings, not vulnerabilities. Servers that must reach their service to start ran
+with `--allow-network`, and their reports say so. Each got dummy API keys, so nothing real was accessed.
+
+| Server (npm) | Tools | Verdict | Warnings |
+|---|---|---|---|
+| `@playwright/mcp` 0.0.84 | 25 | PASS | none |
+| `@browsermcp/mcp` 2.4.0 | 1 | PASS | none |
+| `@upstash/context7-mcp` 4.5.0 | 2 | PASS | one 2,006-character description |
+| `firecrawl-mcp` 3.37.0 | 28 | PASS | 23 tools with undocumented parameters; one long description |
+| `@notionhq/notion-mcp-server` 2.6.1 | 24 | PASS | 12 tools with undocumented parameters; 12 without a read-only hint |
+| `tavily-mcp` 0.2.22 | 5 | PASS | no read-only hints |
+| `@brave/brave-search-mcp-server` 2.1.4 | 8 | PASS | no read-only hints |
+| `exa-mcp-server` 3.4.3 | 3 | PASS | 1 tool with an undocumented parameter |
+| `@wonderwhy-er/desktop-commander` 0.3.1 | 25 | PASS | 20 tools with undocumented parameters; 8 descriptions of 2,000-6,135 characters |
+| `@executeautomation/playwright-mcp-server` 1.0.12 | 33 | PASS | no read-only hints |
+| `@sentry/mcp-server` 0.48.0 | 73 | PASS | 66 tools with undocumented parameters; one long description |
+| `@heroku/mcp-server` 1.2.13 | 33 | PASS | no read-only hints |
+| `@supabase/mcp-server-supabase` 0.16.0 | 31 | PASS (network) | 26 tools with undocumented parameters |
+| `figma-developer-mcp` 0.13.2 | 2 | PASS (network) | 1 of 2 tools without a read-only hint |
+| `mcp-server-kubernetes` 4.2.1 | - | inconclusive | did not start in the sandbox, even with network (it likely needs a cluster config) |
+
+None showed tool poisoning or a changed tool list, and every server that started rejected all invalid probes. Without
+read-only hints, a client must ask before every call. Undocumented parameters leave the model guessing. Very long
+descriptions cost context on every request and are hard for a person to review.
+
+The scan also improved `verify`. desktop-commander writes the container's host name into a tool description, so two
+sandbox runs first looked like a rug pull. Every sandbox container now has the same host name, `zyven-sandbox`.
+
 ### Agents and connectors (optional)
 
 Everything here is off by default. In the Control center page (`/app/control/`), select a runtime, press **Turn on**
