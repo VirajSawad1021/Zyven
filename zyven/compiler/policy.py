@@ -13,7 +13,7 @@ SAFE_STDLIB = {
     "datetime", "re", "math", "decimal", "fractions", "json", "typing", "enum", "functools", "itertools",
     "collections", "calendar", "string", "dataclasses", "statistics", "unicodedata", "__future__",
 }
-FRAMEWORK = {"mcp"}  # imported by the harness-written header only
+FRAMEWORK = {"mcp", "pydantic"}  # imported by the harness-written header (server, annotations, parameter docs)
 FORBIDDEN_CALLS = {"open", "exec", "eval", "compile", "__import__", "globals", "locals", "vars", "input",
                    "breakpoint", "setattr", "delattr"}
 FORBIDDEN_ATTRS = {"__subclasses__", "__globals__", "__builtins__", "__code__", "__class__", "__bases__",
