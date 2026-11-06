@@ -323,6 +323,19 @@ minimal environment (`--env NAME` passes a variable through), so your shell's se
 runs with your permissions, so use `--docker` for code you do not trust. Zyven's own compiled skills pass every check
 with no warnings: they declare themselves read-only and carry parameter descriptions in their schemas.
 
+The official reference servers, checked on 2026-11-06 with `--probe` inside the sandbox (`node:22-slim`, no network).
+Each was installed with `npm install --ignore-scripts` and mounted read-only:
+
+| Server (npm, v1.0.0) | Tools | Verdict | Warnings |
+|---|---|---|---|
+| `@modelcontextprotocol/server-everything` | 13 | PASS | 1 tool with an undocumented parameter |
+| `@modelcontextprotocol/server-filesystem` | 14 | PASS | 12 tools with undocumented parameters (e.g. `read_file.path`) |
+| `@modelcontextprotocol/server-memory` | 9 | PASS | 4 tools with undocumented parameters |
+| `@modelcontextprotocol/server-sequential-thinking` | 1 | PASS | a 2,781-character description (worth reading) |
+
+All of them had valid schemas, no poisoning, correct annotations and the same definitions on a second connection. They
+also rejected every invalid probe: 54 in all.
+
 ### Agents and connectors (optional)
 
 Everything here is off by default. In the Control center page (`/app/control/`), select a runtime, press **Turn on**
