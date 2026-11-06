@@ -52,7 +52,10 @@ def server_from(command: list[str] | None, url: str | None, headers: dict[str, s
     """(what Client connects to, sandboxed?, a label for the report)."""
     if url:
         from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client
-        return (streamable_http_client(url, http_client=create_mcp_http_client(headers=headers or None)), False, url)
+        from urllib.parse import urlsplit
+        u = urlsplit(url)  # keys are sometimes put in the URL (?api_key=...): the label shows no query or user info
+        label = f"{u.scheme}://{u.hostname or ''}{f':{u.port}' if u.port else ''}{u.path}" + ("?…" if u.query else "")
+        return (streamable_http_client(url, http_client=create_mcp_http_client(headers=headers or None)), False, label)
     if not command:
         raise ValueError("give a server command (after --) or --url")
     label = " ".join(command)

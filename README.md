@@ -347,7 +347,17 @@ uv run zyven verify -- npx -y @modelcontextprotocol/server-everything      # a c
 uv run zyven verify --url https://example.com/mcp --header "Authorization: Bearer ..."
 uv run zyven verify --probe --lock mcp-lock.json -- python my_server.py    # also send invalid input; pin definitions
 uv run zyven verify --docker zyven-sandbox:py312 --mount ./skill:/skill -- python /skill/server.py   # in the sandbox
+uv run zyven verify --discover                    # every server in your Claude Desktop/Code, Cursor, Codex... configs
+uv run zyven verify --config ~/.cursor/mcp.json   # or name the config files yourself
 ```
+
+`--discover` reads the usual config files:
+- Claude Desktop and Claude Code (`~/.claude.json`, `.mcp.json`)
+- Cursor, Windsurf, VS Code (`.vscode/mcp.json`), Gemini CLI, and Codex (`~/.codex/config.toml`)
+
+It checks every server it finds and ends with one table. Each server runs as its client would run it. The `env` values
+from the config are passed to that server and never printed. Query strings and user info are dropped from URLs in
+reports.
 
 | Check | Fails when |
 |---|---|
