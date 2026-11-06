@@ -8,6 +8,7 @@ side-effect hints, public exports) that both the rules-only miner and the model 
 from __future__ import annotations
 
 import ast
+import re
 import subprocess
 import sys
 from collections import defaultdict
@@ -131,8 +132,28 @@ _TEST_TOOLS = {"pytest", "_pytest", "hypothesis", "pretend"}  # available in the
 _NOT_LIBRARY = {"tests", "test", "docs", "doc", "examples", "scripts", "tools", "update", "benchmarks", "build"}
 
 
+def _project_name(repo: Path) -> str:
+    """The import name the project declares in pyproject.toml ([project] name), or ''."""
+    try:
+        import tomllib
+        data = tomllib.loads((repo / "pyproject.toml").read_text(encoding="utf-8"))
+    except (OSError, ValueError, ImportError):
+        return ""
+    name = (data.get("project") or {}).get("name") or ""
+    return re.sub(r"[-.]+", "_", str(name)).lower()
+
+
 def detect_source_root(repo: Path) -> str:
-    """Where the importable packages live: the first of ., src, python, lib holding a real package."""
+    """Where the importable packages live.
+
+    First the folder holding the package pyproject.toml names (packaging keeps `src/packaging` but also has a
+    `tasks/__init__.py` at the top, which once made `.` win and every import read `src.packaging...`); then the first
+    of ., src, python, lib holding a real package."""
+    name = _project_name(repo)
+    if name:
+        for cand in (".", "src", "python", "lib"):
+            if (repo / cand / name / "__init__.py").exists():
+                return cand
     for cand in (".", "src", "python", "lib"):
         d = repo / cand
         if not d.is_dir():

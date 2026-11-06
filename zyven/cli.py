@@ -67,9 +67,26 @@ def cmd_sync(args) -> None:
     print(f"{len(catalog.repos)} catalog repos at their pinned commits in {root / 'workspace' / 'repos'}")
 
 
+def _role_providers(args) -> tuple[ModelProvider, dict[str, ModelProvider]]:
+    """--agent picks who does everything; --architect/--compiler/--tester/--repair override single roles."""
+    from zyven.ai.agent_provider import provider_for
+    cache: dict[str, ModelProvider] = {}
+
+    def get(choice: str) -> ModelProvider:
+        if choice not in cache:
+            cache[choice] = provider_for(choice, args.env)
+        return cache[choice]
+
+    main = get(args.agent or "model")
+    roles = {r: get(getattr(args, r)) for r in ("architect", "compiler", "tester", "repair") if getattr(args, r)}
+    for role, prov in {"all roles": main, **roles}.items():
+        print(f"{role}: {prov.label}")
+    return main, roles
+
+
 def cmd_compile(args) -> None:
     a = analyze(args.repo)
-    p = ModelProvider.from_env(args.env)
+    p, roles = _role_providers(args)
     scout_file = _workdir(Path(args.repo)) / "scout.json"
     if scout_file.exists() and not args.rescout:
         candidates = ScoutResult.model_validate_json(scout_file.read_text(encoding="utf-8")).capabilities
@@ -103,7 +120,7 @@ def cmd_compile(args) -> None:
         cand = cand.model_copy(update={"tests": args.test})
     if cand is None:
         sys.exit(f"capability {args.capability!r} not found; available: {', '.join(c.name for c in candidates)}")
-    r = compile_capability(p, a, candidate=cand, skills_root=Path(args.out), max_repairs=args.max_repairs)
+    r = compile_capability(p, a, candidate=cand, skills_root=Path(args.out), max_repairs=args.max_repairs, roles=roles)
     checks = f" ({', '.join(r.report.to_dict()['verified_for'])})" if r.report else ""
     print(f"\nskill: {r.skill_dir}\nverified: {r.verified}{checks}")
     sys.exit(0 if r.verified else 1)
@@ -122,6 +139,11 @@ def main() -> None:
     s.add_argument("--entry", action="append", help="override entry points (human-edited boundary); repeatable")
     s.add_argument("--description", help="capability description when defining it with --entry")
     s.add_argument("--test", action="append", help="upstream test file to run for verification (repo-relative); repeatable")
+    who = ("'model' (the chat model in .env) or a coding agent run headless: codex, claude, agy, opencode, qoder, "
+           "optionally with a model, e.g. claude:opus or opencode:opencode/big-pickle")
+    s.add_argument("--agent", help=f"who does every role (and the scout): {who}")
+    for role in ("architect", "compiler", "tester", "repair"):
+        s.add_argument(f"--{role}", help=f"who does the {role} role only: {who}")
     s.set_defaults(fn=cmd_compile)
     s = sub.add_parser("sync"); s.add_argument("--scout", action="store_true", help="also scout capabilities (model calls)")
     s.add_argument("--rescout", action="store_true", help="re-scout repos that already have cached results")

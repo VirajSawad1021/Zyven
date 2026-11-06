@@ -39,7 +39,7 @@ _PROPRIETARY = ("gemini", "gpt-", "gpt4", "o1", "o3", "o4", "claude", "command-r
 
 
 def is_proprietary(model: str) -> bool:
-    """Closed models are allowed only for local experiments; reports and provenance flag them."""
+    """Closed models work like any other; reports and provenance label them so results stay comparable."""
     m = model.lower().split("/")[-1]
     return any(m.startswith(p) or f"/{p}" in model.lower() for p in _PROPRIETARY) and "gemma" not in m
 
@@ -106,8 +106,7 @@ class ModelProvider:
         self.host = httpx.URL(self.url).host
         self.model = model
         if is_proprietary(model):
-            log.warning("PROPRIETARY MODEL %r in use: experiments only, not allowed for the Frogtoberfest "
-                        "submission (open-weight models only).", model)
+            log.info("closed model %r in use; reports and provenance say so", model)
         self.fallback = fallback
         self.cooldown_s = cooldown_s
         self._down_until = 0.0  # while in the future, the primary is skipped (circuit breaker)
@@ -118,7 +117,7 @@ class ModelProvider:
 
     @property
     def label(self) -> str:
-        flag = " [PROPRIETARY - experiment only]" if is_proprietary(self.model) else ""
+        flag = " [closed model]" if is_proprietary(self.model) else ""
         return f"{self.model}@{self.host}{flag}" + (f" (fallback {self.fallback.model}@{self.fallback.host})"
                                                     if self.fallback else "")
 

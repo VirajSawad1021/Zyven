@@ -274,6 +274,29 @@ uv run python eval/run_eval.py --suite stdnum --limit 6 --label compiled --skill
 uv run python eval/run_eval.py --suite global --limit 6 --label compiled --skill skills/<name>/server.py
 ```
 
+### Coding agents as the compiler
+
+Any of the five roles can be done by a coding agent run headless instead of the chat model in `.env`: **Codex**,
+**Claude Code**, **Antigravity** (`agy`), **OpenCode** or the **Qoder CLI**. The agent writes the spec, the adapter, the
+tests or the repair; Zyven's gates still decide what ships. Any agent writes the tools, and Zyven proves they work.
+
+```bash
+uv run zyven compile path/to/repo --capability <name> --agent codex                 # Codex does every role
+uv run zyven compile path/to/repo --capability <name> --compiler claude:opus        # one role only
+uv run zyven compile path/to/repo --capability <name> --compiler codex --tester qoder   # tests from a different vendor
+```
+
+Each agent runs in a fresh empty folder with its tools cut to the minimum (Codex read-only sandbox, Claude Code with no
+tools, OpenCode with every permission denied) and answers in text. Its answer goes through the same schema validation,
+reference resolution, policy check and six sandbox gates as a chat model's. `provenance.json` records who did each role
+(`"roles"`). An agent uses its own sign-in, so the code and prompts go to whichever provider it is signed in to.
+
+First run (2026-11-06, not part of the published numbers): `--agent codex` on pypa/packaging `version_specifiers`
+was **verified on the first attempt in 163 s**: 4 tools, 2,108 upstream tests, 6/6 robustness probes, MCP smoke,
+12/12 differential cases. The run before it failed the policy gate and so found an analyzer bug: a stray
+`tasks/__init__.py` hid packaging's `src/` layout, so imports read `src.packaging...`. The analyzer now prefers
+the package `pyproject.toml` names.
+
 ### Agents and connectors (optional)
 
 Everything here is off by default. In the Control center page (`/app/control/`), select a runtime, press **Turn on**
@@ -319,7 +342,7 @@ npm run dev                                   # http://localhost:3000, proxies /
 | Path | Contents |
 |---|---|
 | `zyven/analysis/` | analyzer, rules-only miner and digests, reference resolution, repo explorer |
-| `zyven/ai/` | model provider (retries, failover), typed schemas, AI roles |
+| `zyven/ai/` | model provider (retries, failover), coding agents as providers (`agent_provider.py`), typed schemas, AI roles |
 | `zyven/compiler/` | server assembly, static policy, verification gates, compile pipeline |
 | `zyven/sandbox/` | Docker runner, image, in-container MCP smoke and differential test runners |
 | `zyven/agent/` | MCP toolbox, tool-using agent loop, gap check, self-extending agent |
@@ -337,8 +360,10 @@ npm run dev                                   # http://localhost:3000, proxies /
 
 ## Models and sources
 
-Only open-weight models, end to end. The endpoint is configurable: Google AI Studio (Gemma), OpenRouter, Groq or a
-local Ollama, with automatic failover to a backup host.
+The published results above use open-weight models only, end to end. The endpoint is configurable: Google AI Studio
+(Gemma), OpenRouter, Groq or a local Ollama, with automatic failover to a backup host. Closed models and coding agents
+work too (see [Coding agents as the compiler](#coding-agents-as-the-compiler)); they are labelled in provenance and kept
+out of the published numbers.
 
 | Repo | Commit | License | Used as |
 |---|---|---|---|
@@ -354,8 +379,8 @@ local Ollama, with automatic failover to a backup host.
 The pinned list lives in `catalog/repos.json`.
 
 The default model is `gemma-4-26b-a4b-it`, distributed under the
-[Gemma Terms of Use](https://ai.google.dev/gemma/terms). The repository enforces the open-weight rule with a
-deterministic, offline check:
+[Gemma Terms of Use](https://ai.google.dev/gemma/terms). The repository keeps committed results open-weight with a
+deterministic, offline check (it flags closed models and coding agents, including one used for a single role):
 
 ```bash
 uv run python scripts/check_open_models.py

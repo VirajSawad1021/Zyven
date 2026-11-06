@@ -42,7 +42,8 @@ class Finding:
 
 def _add(findings: list[Finding], root: Path, path: Path, field: str, model: str) -> None:
     model = model.strip()
-    if model and (is_proprietary(model) or "[PROPRIETARY" in model.upper()):
+    markers = ("[PROPRIETARY", "[CLOSED MODEL", "[CODING AGENT")  # a coding agent's model cannot be checked from here
+    if model and (is_proprietary(model) or any(m in model.upper() for m in markers)):
         findings.append(Finding(path.relative_to(root).as_posix(), field, model))
 
 
@@ -68,6 +69,11 @@ def _scan_provenance(path: Path, root: Path, findings: list[Finding]) -> None:
             value = data.get(key)
             if isinstance(value, str):
                 _add(findings, root, path, key, value)
+        roles = data.get("roles")  # per-role providers (a coding agent may have written only the adapter)
+        if isinstance(roles, dict):
+            for role, value in roles.items():
+                if isinstance(value, str):
+                    _add(findings, root, path, f"roles.{role}", value)
 
 
 def _scan_markdown(path: Path, root: Path, findings: list[Finding]) -> None:
