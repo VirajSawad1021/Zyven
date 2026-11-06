@@ -129,7 +129,9 @@ def test_a_connection_that_never_answers_is_skipped_and_the_next_one_still_loads
     from zyven.connections import runtime
 
     store, cid = demo
-    monkeypatch.setattr(runtime, "CONNECT_TIMEOUT", 3.0)
+    # long enough for the working server to start on a busy machine (a Python MCP server can take 2-5 s), still far
+    # below the hung one's 120 s; 3 s made the working one time out too
+    monkeypatch.setattr(runtime, "CONNECT_TIMEOUT", 10.0)
     hung = store.add(name="Hung", kind="stdio", command=sys.executable, args=["-c", "import time; time.sleep(120)"])
     store.update(hung["id"], tools=[], enabled=True)
     events: list[tuple[str, dict]] = []

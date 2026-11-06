@@ -93,6 +93,7 @@ class RuntimeChange(BaseModel):
 
 class Toggle(BaseModel):
     enabled: bool
+    force: bool = False  # turn on a connection that zyven verify failed, after the user has read why
 
 
 class NewRun(BaseModel):
@@ -595,6 +596,14 @@ def create_app(env_path: Path | None = None, data_dir: Path | None = None,
     @app.post("/api/connections/{cid}/enabled")
     def connection_enable(cid: str, body: Toggle):
         try:
+            conn = state["connections"].get(cid)
+            v = conn.get("verify") or {}
+            if body.enabled and v.get("verdict") == "FAIL" and not body.force:
+                failed = [f"{c['name']}: {c['detail']}" for c in v.get("checks", []) if c["status"] == "FAIL"]
+                raise HTTPException(409, "zyven verify found problems with this server: " + "; ".join(failed)
+                                    + ". Read them before turning it on; use 'Turn on anyway' only if you trust it.")
+            if body.enabled:
+                state["connections"].update(cid, verify_override=bool(body.force and v.get("verdict") == "FAIL"))
             return state["connections"].set_enabled(cid, body.enabled)
         except KeyError:
             raise HTTPException(404, "unknown connection") from None

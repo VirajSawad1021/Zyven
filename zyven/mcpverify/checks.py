@@ -69,6 +69,22 @@ class Report:
         return {**asdict(self), "checks": [asdict(c) for c in self.checks]}
 
 
+class DefinitionsChanged(Exception):
+    """A connected server now offers tool definitions the user did not review (a rug pull, or an update)."""
+
+    def __init__(self, server: str, changed: list[str], added: list[str]) -> None:
+        self.changed, self.added = changed, added
+        parts = ([f"changed: {', '.join(changed)}"] if changed else []) + ([f"new: {', '.join(added)}"] if added else [])
+        super().__init__(f"{server}: its tool definitions differ from the ones you approved ({'; '.join(parts)}). "
+                         "It was not loaded. Open Connections and press Test to review the new definitions.")
+
+
+def pin_diff(tools: list[dict[str, Any]], pins: dict[str, str]) -> tuple[list[str], list[str]]:
+    """(changed, added) against the hashes recorded when the user tested the server; removed tools are harmless."""
+    now = {t.get("name", ""): tool_hash(t) for t in tools}
+    return sorted(n for n in now if n in pins and now[n] != pins[n]), sorted(n for n in now if n not in pins)
+
+
 def tool_hash(tool: dict[str, Any]) -> str:
     """A tool's definition as the model sees it: name, description, schemas, annotations."""
     keep = {k: tool.get(k) for k in ("name", "title", "description", "inputSchema", "outputSchema", "annotations")}
