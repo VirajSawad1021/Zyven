@@ -47,7 +47,7 @@ def invalid_inputs(tool: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
 
 def server_from(command: list[str] | None, url: str | None, headers: dict[str, str] | None = None,
                 env: dict[str, str] | None = None, docker_image: str | None = None,
-                mounts: dict[Path, str] | None = None) -> tuple[Any, bool, str]:
+                mounts: dict[Path, str] | None = None, container: str | None = None) -> tuple[Any, bool, str]:
     """(what Client connects to, sandboxed?, a label for the report)."""
     if url:
         from mcp.client.streamable_http import create_mcp_http_client, streamable_http_client
@@ -59,7 +59,8 @@ def server_from(command: list[str] | None, url: str | None, headers: dict[str, s
         from zyven.sandbox.runner import SandboxPolicy, stdio_command
         mounts = {Path(h).resolve(): c for h, c in (mounts or {}).items()}  # read-only, like the compile gates
         workdir = next(iter(mounts.values()), "/tmp")
-        argv = stdio_command(command, mounts, SandboxPolicy(image=docker_image, extra_env=env or {}), workdir=workdir)
+        argv = stdio_command(command, mounts, SandboxPolicy(image=docker_image, extra_env=env or {}), workdir=workdir,
+                             name=container)
         return StdioServerParameters(command=argv[0], args=argv[1:]), True, f"{label} (in {docker_image})"
     # env=None: the SDK passes only a safe default environment (PATH, HOME, ...), never this shell's secrets
     return StdioServerParameters(command=command[0], args=command[1:], env=env or None), False, label

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -18,11 +19,21 @@ def verify_server(command: list[str] | None = None, url: str | None = None, head
                   mounts: dict[Path, str] | None = None, probe: bool = False, lock_file: Path | None = None,
                   timeout: float = 60.0) -> Report:
     _, sandboxed, label = server_from(command, url, headers, env, docker_image, mounts)
+    containers: list[str] = []
 
-    def make():  # a fresh transport for each connection
-        return server_from(command, url, headers, env, docker_image, mounts)[0]
+    def make():  # a fresh transport (and container name) for each connection
+        name = None
+        if docker_image and command:
+            name = f"zyven-verify-{uuid.uuid4().hex[:12]}"
+            containers.append(name)
+        return server_from(command, url, headers, env, docker_image, mounts, name)[0]
 
-    obs = asyncio.run(observe(make, label, sandboxed, probe=probe, timeout=timeout))
+    try:
+        obs = asyncio.run(observe(make, label, sandboxed, probe=probe, timeout=timeout))
+    finally:  # a server that ignores the end of its input would otherwise keep running
+        from zyven.sandbox.runner import remove_container
+        for name in containers:
+            remove_container(name)
     lock = None
     if lock_file and lock_file.exists():
         lock = json.loads(lock_file.read_text(encoding="utf-8")).get("tools") or {}
