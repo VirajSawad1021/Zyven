@@ -297,6 +297,45 @@ was **verified on the first attempt in 163 s**: 4 tools, 2,108 upstream tests, 6
 `tasks/__init__.py` hid packaging's `src/` layout, so imports read `src.packaging...`. The analyzer now prefers
 the package `pyproject.toml` names.
 
+### Verify any MCP server
+
+`zyven verify` checks an MCP server Zyven did not build, from the outside: a command over stdio or a URL.
+
+```bash
+uv run zyven verify -- npx -y @modelcontextprotocol/server-everything      # a command (runs on this machine)
+uv run zyven verify --url https://example.com/mcp --header "Authorization: Bearer ..."
+uv run zyven verify --probe --lock mcp-lock.json -- python my_server.py    # also send invalid input; pin definitions
+uv run zyven verify --docker zyven-sandbox:py312 --mount ./skill:/skill -- python /skill/server.py   # in the sandbox
+```
+
+| Check | Fails when |
+|---|---|
+| handshake | the server does not start, finish the MCP handshake or list its tools in time |
+| schemas | a tool name is invalid or repeated, or an input/output schema is not valid JSON Schema |
+| descriptions | a name, description or parameter carries **tool poisoning**: invisible Unicode (decoded and shown), `<IMPORTANT>` blocks, "do not tell the user", requests to read `~/.ssh` or send data to a URL |
+| annotations | a tool is marked both read-only and destructive (a missing `readOnlyHint` is a warning) |
+| stability | the tool definitions change between two connections, or differ from the lock file (a **rug pull**) |
+| robustness | with `--probe`: input the tool's own schema forbids is accepted, or the server stops answering |
+| isolation | a warning, not a failure, when the server ran on this machine instead of in the sandbox |
+
+Nothing is called unless `--probe` is given, and probes only send input the schema rejects. A stdio server gets only a
+minimal environment (`--env NAME` passes a variable through), so your shell's secrets are not handed to it. It still
+runs with your permissions, so use `--docker` for code you do not trust. Zyven's own compiled skills pass every check
+with no warnings: they declare themselves read-only and carry parameter descriptions in their schemas.
+
+The official reference servers, checked on 2026-11-06 with `--probe` inside the sandbox (`node:22-slim`, no network).
+Each was installed with `npm install --ignore-scripts` and mounted read-only:
+
+| Server (npm, v1.0.0) | Tools | Verdict | Warnings |
+|---|---|---|---|
+| `@modelcontextprotocol/server-everything` | 13 | PASS | 1 tool with an undocumented parameter |
+| `@modelcontextprotocol/server-filesystem` | 14 | PASS | 12 tools with undocumented parameters (e.g. `read_file.path`) |
+| `@modelcontextprotocol/server-memory` | 9 | PASS | 4 tools with undocumented parameters |
+| `@modelcontextprotocol/server-sequential-thinking` | 1 | PASS | a 2,781-character description (worth reading) |
+
+All of them had valid schemas, no poisoning, correct annotations and the same definitions on a second connection. They
+also rejected every invalid probe: 54 in all.
+
 ### Agents and connectors (optional)
 
 Everything here is off by default. In the Control center page (`/app/control/`), select a runtime, press **Turn on**
@@ -344,6 +383,7 @@ npm run dev                                   # http://localhost:3000, proxies /
 | `zyven/analysis/` | analyzer, rules-only miner and digests, reference resolution, repo explorer |
 | `zyven/ai/` | model provider (retries, failover), coding agents as providers (`agent_provider.py`), typed schemas, AI roles |
 | `zyven/compiler/` | server assembly, static policy, verification gates, compile pipeline |
+| `zyven/mcpverify/` | `zyven verify`: outside-in checks for any MCP server (schemas, tool poisoning, rug pulls, robustness) |
 | `zyven/sandbox/` | Docker runner, image, in-container MCP smoke and differential test runners |
 | `zyven/agent/` | MCP toolbox, tool-using agent loop, gap check, self-extending agent |
 | `zyven/catalog/` | the pinned catalog: clone, scout, curate |

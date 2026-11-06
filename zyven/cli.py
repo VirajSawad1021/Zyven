@@ -3,6 +3,7 @@
   zyven analyze <repo>                         deterministic analysis + rules-only baseline
   zyven scout   <repo>                         AI: list user-level capabilities
   zyven compile <repo> --capability <name>     AI: spec -> adapter -> sandbox verify -> repair -> package
+  zyven verify -- <command...> | --url URL     check ANY MCP server: schemas, tool poisoning, rug pulls, robustness
   zyven sync [--scout]                         clone the pinned catalog repos (and optionally scout them)
   zyven board [--port N] [--board-dir DIR]     task board, site and APIs on one port
 """
@@ -126,6 +127,39 @@ def cmd_compile(args) -> None:
     sys.exit(0 if r.verified else 1)
 
 
+def cmd_verify(args) -> None:
+    from zyven.mcpverify import format_report, verify_server, write_lock
+    command = args.server[1:] if args.server[:1] == ["--"] else args.server
+    if not command and not args.url:
+        sys.exit("give the server command after --, e.g.  zyven verify -- npx -y @modelcontextprotocol/server-memory\n"
+                 "or a URL:  zyven verify --url https://example.com/mcp")
+    headers = dict(h.split(":", 1) for h in args.header or [])
+    headers = {k.strip(): v.strip() for k, v in headers.items()}
+    env = {}
+    for item in args.env_var or []:  # NAME=value, or NAME to pass this shell's value through
+        k, _, v = item.partition("=")
+        env[k] = v if _ else __import__("os").environ.get(k, "")
+    if not args.docker and command:
+        print("note: the server runs on this machine with your permissions; use --docker IMAGE for the sandbox\n")
+    lock = Path(args.lock) if args.lock else None
+    mounts = {}
+    for i, m in enumerate(args.mount or []):  # HOST[:/CONTAINER]; "C:\x" stays a host path (no "/" after the colon)
+        host, sep, cont = m.rpartition(":")
+        if not (sep and cont.startswith("/")):
+            host, cont = m, ("/work" if i == 0 else f"/work{i}")
+        mounts[Path(host)] = cont
+    r = verify_server(command or None, args.url, headers, env or None, args.docker, mounts or None, probe=args.probe,
+                      lock_file=None if args.update_lock else lock, timeout=args.timeout)
+    print(format_report(r, verbose=args.verbose))
+    if args.json:
+        Path(args.json).write_text(json.dumps(r.to_dict(), indent=1, ensure_ascii=False), encoding="utf-8")
+        print(f"report: {args.json}")
+    if lock and (args.update_lock or not lock.exists()) and r.lock:
+        write_lock(r, lock)
+        print(f"lock file written: {lock} ({len(r.lock)} tools)")
+    sys.exit(0 if r.verdict == "PASS" else 1)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="zyven")
     ap.add_argument("--env", default=".env")
@@ -145,6 +179,22 @@ def main() -> None:
     for role in ("architect", "compiler", "tester", "repair"):
         s.add_argument(f"--{role}", help=f"who does the {role} role only: {who}")
     s.set_defaults(fn=cmd_compile)
+    s = sub.add_parser("verify", help="check any MCP server: schemas, tool poisoning, rug pulls, robustness")
+    s.add_argument("--url", help="a streamable HTTP MCP server instead of a command")
+    s.add_argument("--header", action="append", help="HTTP header for --url, 'Name: value'; repeatable")
+    s.add_argument("--env", dest="env_var", action="append",
+                   help="environment for the server, NAME=value or NAME (pass through); nothing else is passed")
+    s.add_argument("--docker", metavar="IMAGE", help="run the command in Zyven's sandbox using this image "
+                   "(no network, read-only, no capabilities); e.g. zyven-sandbox:py312")
+    s.add_argument("--mount", action="append", help="with --docker: HOST[:CONTAINER] folder mounted read-only "
+                   "(default /work); repeatable")
+    s.add_argument("--probe", action="store_true", help="also call each tool with input its schema forbids")
+    s.add_argument("--lock", help="lock file of tool definitions: written if missing, compared if present")
+    s.add_argument("--update-lock", action="store_true", help="rewrite the lock file from this run")
+    s.add_argument("--json", help="write the full report here")
+    s.add_argument("--timeout", type=float, default=60.0)
+    s.add_argument("server", nargs=argparse.REMAINDER, help="-- command args...")
+    s.set_defaults(fn=cmd_verify)
     s = sub.add_parser("sync"); s.add_argument("--scout", action="store_true", help="also scout capabilities (model calls)")
     s.add_argument("--rescout", action="store_true", help="re-scout repos that already have cached results")
     s.set_defaults(fn=cmd_sync)

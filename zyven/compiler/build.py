@@ -15,12 +15,23 @@ from zyven.ai.schemas import AdapterCode, CapabilitySpec, ToolImpl, ToolSpec
 PY_TYPES = {"string": "str", "integer": "int", "number": "float", "boolean": "bool", "array": "list", "object": "dict"}
 
 
+def _typed(p) -> str:
+    """The parameter's type with its description attached, so it lands in the tool's input schema."""
+    t = PY_TYPES[p.type] if p.required else f"{PY_TYPES[p.type]} | None"
+    return f"Annotated[{t}, Field(description={json.dumps(p.description)})]" if p.description else t
+
+
 def signature_line(tool: ToolSpec) -> str:
     required = [p for p in tool.params if p.required]
     optional = [p for p in tool.params if not p.required]
-    parts = [f"{p.name}: {PY_TYPES[p.type]}" for p in required]
-    parts += [f"{p.name}: {PY_TYPES[p.type]} | None = None" for p in optional]
+    parts = [f"{p.name}: {_typed(p)}" for p in required]
+    parts += [f"{p.name}: {_typed(p)} = None" for p in optional]
     return f"def {tool.name}({', '.join(parts)}) -> dict[str, Any]:"
+
+
+# Compiled tools are read-only by construction: the policy gate forbids files, processes and network, and the skill
+# runs in a container with no network and a read-only root. Saying so lets clients run them without asking.
+TOOL_ANNOTATIONS = "ToolAnnotations(read_only_hint=True, destructive_hint=False, open_world_hint=False)"
 
 
 def docstring(tool: ToolSpec) -> str:
@@ -46,9 +57,11 @@ def assemble(spec: CapabilitySpec, code: AdapterCode, provenance: dict) -> str:
         "",
         "from __future__ import annotations",
         "",
-        "from typing import Any",
+        "from typing import Annotated, Any",
         "",
         "from mcp.server.mcpserver import MCPServer",
+        "from mcp.types import ToolAnnotations",
+        "from pydantic import Field",
         *imports,
         "",
         f"server = MCPServer(name={json.dumps(spec.name)}, instructions={json.dumps(spec.summary)})",
@@ -62,7 +75,7 @@ def assemble(spec: CapabilitySpec, code: AdapterCode, provenance: dict) -> str:
         body = "\n".join(local_imports + [textwrap.dedent(body).strip("\n")])
         blocks.append("\n".join([
             "",
-            f"@server.tool(name={json.dumps(tool.name)})",
+            f"@server.tool(name={json.dumps(tool.name)}, annotations={TOOL_ANNOTATIONS})",
             signature_line(tool),
             docstring(tool),
             textwrap.indent(textwrap.dedent(body).strip("\n"), "    "),
