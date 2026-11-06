@@ -40,6 +40,18 @@ def test_a_local_env_file_wins(monkeypatch, tmp_path):
     assert paths.env_file() == tmp_path / "other.env"
 
 
+def test_launch_command_for_uvx_uses_the_environment_not_the_symlinked_python(monkeypatch):
+    from zyven import cli
+    monkeypatch.setattr(paths, "checkout_root", lambda: None)
+    # Linux CI: the environment is in uv's cache, while its python resolves into the shared Python install
+    monkeypatch.setattr(cli.sys, "prefix", "/home/runner/work/_temp/setup-uv-cache/archive-v0/AbC123")
+    monkeypatch.setattr(cli.sys, "executable", "/home/runner/.local/share/uv/python/cpython-3.12/bin/python3.12")
+    assert cli.launch_command()[0] == "uvx"
+    monkeypatch.setattr(cli.sys, "prefix", "/home/me/.local/share/uv/tools/zyven")  # uv tool install: stable
+    monkeypatch.setattr(cli.shutil, "which", lambda name: "/home/me/.local/bin/zyven")
+    assert cli.launch_command() == ["/home/me/.local/bin/zyven"]
+
+
 def test_build_hash_tracks_every_file_baked_into_the_image(monkeypatch, tmp_path):
     for name in setup.BUILD_FILES:
         (tmp_path / name).write_text(name, encoding="utf-8")

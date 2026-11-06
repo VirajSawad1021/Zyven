@@ -171,8 +171,10 @@ def launch_command() -> list[str]:
     `zyven` program on PATH."""
     if paths.checkout_root():
         return [str(Path(sys.executable).resolve()), "-m", "zyven.cli"]
-    exe = Path(sys.executable).resolve().as_posix().lower()
-    if "/uv/cache/" in exe or "/.cache/uv/" in exe or "/archive-v0/" in exe:
+    # the environment folder, not the resolved interpreter: on Linux the venv's python is a symlink into uv's shared
+    # Python install, so resolving it leaves the cache path behind
+    env = Path(sys.prefix).as_posix().lower() + "/"
+    if any(m in env for m in ("/uv/cache/", "/.cache/uv/", "/archive-v", "uv-cache/")):  # not uv/tools: that one is stable
         source = "zyven"  # from the package index
         try:
             from importlib.metadata import distribution
