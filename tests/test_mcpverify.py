@@ -132,6 +132,26 @@ def test_real_poisoned_server_fails(tmp_path):
     assert status(r, "stability") == FAIL  # its description changed on the second start
 
 
+def test_sandbox_containers_are_removed_even_when_the_check_fails(monkeypatch):
+    import zyven.mcpverify as mv
+    import zyven.sandbox.runner as runner
+    removed: list[str] = []
+    started: list[str] = []
+
+    async def boom(make, *a, **k):
+        argv = make()  # one connection's StdioServerParameters
+        started.append(argv.args[argv.args.index("--name") + 1])
+        raise RuntimeError("server crashed")
+
+    monkeypatch.setattr(mv, "observe", boom)
+    monkeypatch.setattr(runner, "remove_container", removed.append)
+    try:
+        verify_server(["node", "server.js"], docker_image="node:22-slim")
+    except RuntimeError:
+        pass
+    assert started and started == removed and started[0].startswith("zyven-verify-")
+
+
 def test_a_missing_command_is_a_clean_failure():
     r = verify_server(["zyven-no-such-program-xyz"], timeout=20)
     assert r.verdict == FAIL and r.checks[0].name == "handshake"

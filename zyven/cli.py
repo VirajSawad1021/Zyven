@@ -5,6 +5,7 @@
   zyven compile <repo> --capability <name>     AI: spec -> adapter -> sandbox verify -> repair -> package
   zyven verify -- <command...> | --url URL     check ANY MCP server: schemas, tool poisoning, rug pulls, robustness
   zyven mcp [--print-config]                   verified skills as a stdio MCP server for Claude Code / Codex / any agent
+  zyven setup | zyven doctor                   build the sandbox image / check what is missing
   zyven sync [--scout]                         clone the pinned catalog repos (and optionally scout them)
   zyven board [--port N] [--board-dir DIR]     task board, site and APIs on one port
 """
@@ -14,9 +15,11 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import shutil
 import sys
 from pathlib import Path
 
+from zyven import paths
 from zyven.ai.provider import ModelProvider
 from zyven.ai.roles import scout
 from zyven.ai.schemas import ScoutResult
@@ -27,7 +30,7 @@ from zyven.compiler.pipeline import compile_capability
 
 
 def _workdir(repo: Path) -> Path:
-    d = Path("workspace") / "runs" / repo.resolve().name
+    d = paths.home() / "runs" / repo.resolve().name
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -61,12 +64,11 @@ def cmd_scout(args) -> None:
 
 
 def cmd_sync(args) -> None:
-    root = Path(__file__).resolve().parents[1]
-    catalog = Catalog(root / "catalog" / "repos.json", root / "workspace")
+    catalog = Catalog(paths.catalog_file(), paths.home())
     provider = ModelProvider.from_env(args.env) if args.scout else None
     for line in catalog.sync(provider, rescout=args.rescout):
         print(line)
-    print(f"{len(catalog.repos)} catalog repos at their pinned commits in {root / 'workspace' / 'repos'}")
+    print(f"{len(catalog.repos)} catalog repos at their pinned commits in {paths.home() / 'repos'}")
 
 
 def _role_providers(args) -> tuple[ModelProvider, dict[str, ModelProvider]]:
@@ -97,9 +99,9 @@ def cmd_compile(args) -> None:
         scout_file.write_text(res.value.model_dump_json(indent=1), encoding="utf-8")
         candidates = res.value.capabilities
     from zyven.catalog.catalog import Catalog  # reviewer-curated entries apply to catalog repos
-    cat_file = Path("catalog/repos.json")
+    cat_file = paths.catalog_file()
     if cat_file.exists():
-        cat = Catalog(cat_file, Path("workspace"))
+        cat = Catalog(cat_file, paths.home())
         for r in cat.repos:
             if cat.checkout_dir(r).resolve() == Path(args.repo).resolve():
                 candidates = cat.capabilities(r)
@@ -122,7 +124,7 @@ def cmd_compile(args) -> None:
         cand = cand.model_copy(update={"tests": args.test})
     if cand is None:
         sys.exit(f"capability {args.capability!r} not found; available: {', '.join(c.name for c in candidates)}")
-    r = compile_capability(p, a, candidate=cand, skills_root=Path(args.out), max_repairs=args.max_repairs, roles=roles)
+    r = compile_capability(p, a, candidate=cand, skills_root=Path(args.out) if args.out else paths.skills_out(), max_repairs=args.max_repairs, roles=roles)
     checks = f" ({', '.join(r.report.to_dict()['verified_for'])})" if r.report else ""
     print(f"\nskill: {r.skill_dir}\nverified: {r.verified}{checks}")
     sys.exit(0 if r.verified else 1)
@@ -150,7 +152,7 @@ def cmd_verify(args) -> None:
             host, cont = m, ("/work" if i == 0 else f"/work{i}")
         mounts[Path(host)] = cont
     r = verify_server(command or None, args.url, headers, env or None, args.docker, mounts or None, probe=args.probe,
-                      lock_file=None if args.update_lock else lock, timeout=args.timeout)
+                      lock_file=None if args.update_lock else lock, timeout=args.timeout, network=args.allow_network)
     print(format_report(r, verbose=args.verbose))
     if args.json:
         Path(args.json).write_text(json.dumps(r.to_dict(), indent=1, ensure_ascii=False), encoding="utf-8")
@@ -161,17 +163,47 @@ def cmd_verify(args) -> None:
     sys.exit(0 if r.verdict == "PASS" else 1)
 
 
+def launch_command() -> list[str]:
+    """How another program should start zyven, so the command still works next week.
+
+    A checkout runs its own Python. A uvx run lives in uv's cache, which can be cleaned at any time, so it is told to
+    run uvx again from the same source zyven came from (PyPI, git or a wheel file). A pipx/pip install has a stable
+    `zyven` program on PATH."""
+    if paths.checkout_root():
+        return [str(Path(sys.executable).resolve()), "-m", "zyven.cli"]
+    # the environment folder, not the resolved interpreter: on Linux the venv's python is a symlink into uv's shared
+    # Python install, so resolving it leaves the cache path behind
+    env = Path(sys.prefix).as_posix().lower() + "/"
+    if any(m in env for m in ("/uv/cache/", "/.cache/uv/", "/archive-v", "uv-cache/")):  # not uv/tools: that one is stable
+        source = "zyven"  # from the package index
+        try:
+            from importlib.metadata import distribution
+            direct = distribution("zyven").read_text("direct_url.json")
+            if direct:
+                info = json.loads(direct)
+                vcs = info.get("vcs_info")
+                source = (f"git+{info['url']}" + (f"@{vcs['commit_id']}" if vcs.get("commit_id") else "")) if vcs \
+                    else info["url"]
+        except Exception:  # noqa: BLE001  metadata missing: the index name is the best guess
+            pass
+        return ["uvx", "--from", source, "zyven"] if source != "zyven" else ["uvx", "zyven"]
+    found = shutil.which("zyven")
+    return [found] if found else [str(Path(sys.executable).resolve()), "-m", "zyven.cli"]
+
+
 def cmd_mcp(args) -> None:
-    root = Path(__file__).resolve().parents[1]
-    board_dir = (args.board_dir or root / "workspace").resolve()
+    root = paths.checkout_root()
+    board_dir = (args.board_dir or paths.home()).resolve()
     if args.print_config:
-        py = Path(sys.executable).resolve()
-        run = [str(py), "-m", "zyven.cli", "mcp", "--board-dir", str(board_dir)] + (["--connections"] if args.connections else [])
+        custom = args.board_dir or __import__("os").environ.get("ZYVEN_HOME")  # the agent will not inherit ZYVEN_HOME
+        tail = ["mcp"] + (["--board-dir", str(board_dir)] if custom else []) + \
+            (["--connections"] if args.connections else [])
+        run = launch_command() + tail
         quoted = " ".join(f'"{a}"' if " " in a else a for a in run)
         print("Claude Code:\n  claude mcp add --scope user zyven -- " + quoted)
         print("\nCodex:\n  codex mcp add zyven -- " + quoted)
         print("\nAny MCP client (JSON):\n  " + json.dumps({"mcpServers": {"zyven": {"command": run[0], "args": run[1:],
-                                                                          "cwd": str(root)}}}))
+                                                                          **({"cwd": str(root)} if root else {})}}}))
         return
     from zyven.hub.stdio import main as serve_stdio
     serve_stdio(board_dir, connections=args.connections, only=args.skill)
@@ -179,13 +211,14 @@ def cmd_mcp(args) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(prog="zyven")
-    ap.add_argument("--env", default=".env")
+    ap.add_argument("--env", default=None, help="settings file (default: ./.env, the checkout's .env, or ~/.zyven/.env)")
     ap.add_argument("-v", "--verbose", action="store_true")
     sub = ap.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("analyze"); s.add_argument("repo"); s.set_defaults(fn=cmd_analyze)
     s = sub.add_parser("scout"); s.add_argument("repo"); s.set_defaults(fn=cmd_scout)
     s = sub.add_parser("compile"); s.add_argument("repo"); s.add_argument("--capability", required=True)
-    s.add_argument("--out", default="skills"); s.add_argument("--max-repairs", type=int, default=2)
+    s.add_argument("--out", default=None, help="where to write the skill (default: skills/ in a checkout, else "
+                   "~/.zyven/library, which `zyven mcp` serves)"); s.add_argument("--max-repairs", type=int, default=2)
     s.add_argument("--rescout", action="store_true")
     s.add_argument("--entry", action="append", help="override entry points (human-edited boundary); repeatable")
     s.add_argument("--description", help="capability description when defining it with --entry")
@@ -205,6 +238,8 @@ def main() -> None:
                    "(no network, read-only, no capabilities); e.g. zyven-sandbox:py312")
     s.add_argument("--mount", action="append", help="with --docker: HOST[:CONTAINER] folder mounted read-only "
                    "(default /work); repeatable")
+    s.add_argument("--allow-network", action="store_true", help="with --docker: give the container network access "
+                   "(for servers that must reach their service to start; the report says so)")
     s.add_argument("--probe", action="store_true", help="also call each tool with input its schema forbids")
     s.add_argument("--lock", help="lock file of tool definitions: written if missing, compared if present")
     s.add_argument("--update-lock", action="store_true", help="rewrite the lock file from this run")
@@ -213,12 +248,16 @@ def main() -> None:
     s.add_argument("server", nargs=argparse.REMAINDER, help="-- command args...")
     s.set_defaults(fn=cmd_verify)
     s = sub.add_parser("mcp", help="serve verified skills over stdio to Claude Code, Codex or any MCP client")
-    s.add_argument("--board-dir", type=Path, help="board folder whose library/ holds the skills (default workspace/)")
+    s.add_argument("--board-dir", type=Path, help="board folder whose library/ holds the skills (default ~/.zyven, or workspace/ in a checkout)")
     s.add_argument("--connections", action="store_true", help="also offer the services connected on the board "
                    "(write tools are then gated only by your agent's permission prompt)")
     s.add_argument("--skill", action="append", help="serve only this skill; repeatable")
     s.add_argument("--print-config", action="store_true", help="print the commands that add Zyven to Claude Code and Codex")
     s.set_defaults(fn=cmd_mcp)
+    s = sub.add_parser("setup", help="build the sandbox image and create the home folder")
+    s.set_defaults(fn=lambda a: sys.exit(__import__("zyven.setup", fromlist=["setup"]).setup()))
+    s = sub.add_parser("doctor", help="check Docker, the sandbox image, settings and coding agents")
+    s.set_defaults(fn=lambda a: sys.exit(__import__("zyven.setup", fromlist=["doctor"]).doctor()))
     s = sub.add_parser("sync"); s.add_argument("--scout", action="store_true", help="also scout capabilities (model calls)")
     s.add_argument("--rescout", action="store_true", help="re-scout repos that already have cached results")
     s.set_defaults(fn=cmd_sync)
@@ -226,6 +265,8 @@ def main() -> None:
     s.add_argument("--board-dir", type=Path, help="keep tasks and skills here instead of workspace/ (a clean board)")
     s.set_defaults(fn=lambda a: __import__("zyven.orchestrator.server", fromlist=["serve"]).serve(port=a.port, board_dir=a.board_dir))
     args = ap.parse_args()
+    if args.env is None:
+        args.env = str(paths.env_file())
     logging.basicConfig(level=logging.INFO if args.verbose else logging.WARNING,
                         format="%(asctime)s %(message)s", datefmt="%H:%M:%S")
     logging.getLogger("httpx").setLevel(logging.WARNING)

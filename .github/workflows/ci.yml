@@ -37,12 +37,51 @@ jobs:
           python-version: "3.12"
       - name: Install (locked)
         run: uv sync --locked
-      - name: Build sandbox image
-        run: docker build -t zyven-sandbox:py312 zyven/sandbox
+      - name: Build sandbox image (the way users do)
+        run: uv run zyven setup
       - name: Sandbox tests (pinned upstream repo, no network inside the container)
         env:
           ZYVEN_DOCKER_TESTS: "1"
         run: uv run pytest -q tests/test_sandbox.py
+
+  package:
+    name: Package (wheel, clean uvx install)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Build the dashboard (shipped inside the wheel)
+        working-directory: web
+        run: npm ci && npm run build
+      - name: Build wheel and sdist
+        run: uv build --wheel && uv build --sdist
+      - name: The wheel carries the sandbox, catalog and dashboard
+        run: |
+          python - <<'EOF'
+          import glob, zipfile
+          names = set(zipfile.ZipFile(glob.glob("dist/*.whl")[0]).namelist())
+          need = ["zyven/sandbox/Dockerfile", "zyven/sandbox/mcp_smoke.py", "zyven/sandbox/diff_check.py",
+                  "zyven/data/catalog/repos.json", "zyven/data/site/index.html", "zyven/orchestrator/legacy.html"]
+          missing = [n for n in need if n not in names]
+          assert not missing, f"missing from the wheel: {missing}"
+          print(f"{len(names)} files; all required files present")
+          EOF
+      - name: Clean install and run, outside the checkout
+        run: |
+          WHL=$(ls "$PWD"/dist/*.whl)
+          cd "$RUNNER_TEMP"
+          export ZYVEN_HOME="$RUNNER_TEMP/zyven-home"
+          uvx --isolated --from "$WHL" zyven --help
+          uvx --isolated --from "$WHL" zyven mcp --print-config | grep -q "uvx --from"
+          uvx --isolated --from "$WHL" zyven verify -- uv run --no-project --with "mcp==2.3.0" \
+            python "$GITHUB_WORKSPACE/tests/fixtures/mcp_servers/good.py"
 
   site:
     name: Site (lint and static export)

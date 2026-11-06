@@ -52,6 +52,9 @@ def docker_args(command: list[str], mounts: dict[Path, str], policy: SandboxPoli
     mounts: host path -> container path. Paths ending in ':rw' in the container side are writable."""
     args = [
         "docker", "run", "--rm", "--name", name, *(["-i"] if interactive else []),
+        # One fixed host name: otherwise each container has a random one, which a server can read (desktop-commander
+        # writes it into a tool description, so two runs looked like a changed tool list to `zyven verify`).
+        "--hostname", "zyven-sandbox",
         "--user", "1000:1000",
         "--read-only", "--tmpfs", "/tmp:rw,size=256m",
         "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
@@ -70,10 +73,21 @@ def docker_args(command: list[str], mounts: dict[Path, str], policy: SandboxPoli
 
 
 def stdio_command(command: list[str], mounts: dict[Path, str], policy: SandboxPolicy | None = None,
-                  workdir: str = "/src") -> list[str]:
-    """argv for a long-lived sandboxed process that talks over stdin/stdout (an MCP stdio server)."""
+                  workdir: str = "/src", name: str | None = None) -> list[str]:
+    """argv for a long-lived sandboxed process that talks over stdin/stdout (an MCP stdio server).
+
+    Pass `name` to be able to remove the container afterwards: a server that ignores the end of its input (some Node
+    servers do) keeps running after the client goes away, and on Windows stopping the docker client does not stop it."""
     return docker_args(command, mounts, policy or SandboxPolicy(), workdir,
-                       f"zyven-skill-{uuid.uuid4().hex[:12]}", interactive=True)
+                       name or f"zyven-skill-{uuid.uuid4().hex[:12]}", interactive=True)
+
+
+def remove_container(name: str) -> None:
+    """Force-remove a sandbox container by name; quiet if it is already gone."""
+    try:
+        subprocess.run(["docker", "rm", "-f", name], capture_output=True, timeout=30)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
 
 
 def run(
