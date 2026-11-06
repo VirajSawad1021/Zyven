@@ -110,6 +110,25 @@ and were developed against these libraries, and the 4096-token cap decides much 
 [`LIMITATIONS.md`](LIMITATIONS.md) section 5). A model-plus-interpreter baseline and a held-out suite are open
 ([#24](https://github.com/VirajSawad1021/Zyven/issues/24), [#25](https://github.com/VirajSawad1021/Zyven/issues/25)).
 
+### Do the gates catch bugs? A mutation test
+
+`eval/mutation_test.py` breaks verified skills on purpose, one small realistic bug at a time: a flipped comparison, an
+off-by-one constant, swapped arguments, a dropped statement or return field. Then it runs the gates with the skill's
+own saved test cases. No model is involved.
+
+On 2026-11-06, with 6 mutants per tool across `graph_algorithms` (networkx) and `version_specifiers` (packaging), the gates
+caught **47 of 56 mutants (84%)**. Four of the nine survivors are *equivalent*: they change nothing observable, such as
+swapping the ends of an edge in an undirected graph. That makes it **47 of 52 real bugs (90%)**.
+
+The differential gate alone would have caught 44 of them. The five real misses are gaps in the Tester's cases, not in
+the gates:
+- a weighted-graph option that no case sets
+- no case comparing two equal versions
+- a display string that is not compared
+
+[Report](eval/results/mutation-20261106-222233.md). The run checks itself: the unmutated skill must pass before and
+after the mutants, and a Docker failure stops the run instead of counting as a catch.
+
 ### What the gates caught during development
 
 - **Differential gate:** merged imports in a generated server made the "Luhn" tool silently run a different
