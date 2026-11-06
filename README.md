@@ -288,6 +288,8 @@ uv run zyven compile path/to/repo --capability <name>
 uv run zyven compile path/to/repo --capability iban --entry stdnum.iban.validate   # reviewer-set boundary
 uv run zyven sync --scout                     # clone the catalog and cache the Scout's capabilities
 uv run zyven board --port 8765                # board, site and APIs
+uv run zyven reassemble --dry-run             # which skills an improved harness would rebuild (no model calls)
+uv run zyven reassemble                       # rebuild them; all six gates rerun, the old server kept on failure
 
 uv run python eval/run_eval.py --suite stdnum --limit 6 --label compiled --skill skills/<name>/server.py
 uv run python eval/run_eval.py --suite global --limit 6 --label compiled --skill skills/<name>/server.py
@@ -504,8 +506,14 @@ It scans committed config, skill provenance and eval reports, and runs in CI on 
 
 ## Status and roadmap
 
-The capability compiler, the self-extending agent and the board work end to end. Open work is tracked in
-[issues](https://github.com/VirajSawad1021/Zyven/issues):
+The capability compiler, the self-extending agent and the board work end to end. Added since the competition:
+- coding agents as compile roles
+- `zyven verify` for any MCP server
+- `zyven mcp` for Claude Code, Codex and other agents
+- install with `uvx`/`pipx`, plus `setup` and `doctor`
+- `zyven reassemble`
+
+Open work is tracked in [issues](https://github.com/VirajSawad1021/Zyven/issues):
 
 - [#7](https://github.com/VirajSawad1021/Zyven/issues/7) Re-run every result with the final open-weight model
   (`scripts/check_open_models.py` now enforces the policy)
