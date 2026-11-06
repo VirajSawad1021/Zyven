@@ -2,19 +2,24 @@
 
 # Zyven
 
-**Agents that compile their own tools.**
+**Agents that compile their own tools, and check every tool they are given.**
 
 Zyven turns open-source code into verified MCP tools that an AI agent learns when it needs them, and keeps
-only after they pass a locked-down sandbox.
+only after they pass a locked-down sandbox. Any model or coding agent can write the tools; the gates decide.
+The same checks work on MCP servers Zyven did not build, before your agent trusts them.
+
+```bash
+uvx --from git+https://github.com/VirajSawad1021/Zyven zyven verify --discover   # check every MCP server you have installed
+```
 
 **Demo video:** [watch it on Google Drive](https://drive.google.com/drive/folders/17Z5dbSa2UQmzx8eyQ6716iMhUfkipIRD)
 
 [![CI](https://github.com/VirajSawad1021/Zyven/actions/workflows/ci.yml/badge.svg)](https://github.com/VirajSawad1021/Zyven/actions/workflows/ci.yml)
-![Open-weight models only](https://img.shields.io/badge/models-open--weight%20only-4a5a3f)
+![Published results: open-weight models](https://img.shields.io/badge/published%20results-open--weight%20models-4a5a3f)
 ![MCP](https://img.shields.io/badge/tools-MCP-e8895a)
 ![License: MIT](https://img.shields.io/badge/license-MIT-141413)
 
-Frogtoberfest 2026 entry
+Winner, Frogtoberfest 2026 (Leapfrog)
 
 ![Zyven landing page](docs/screenshots/landing.jpg)
 
