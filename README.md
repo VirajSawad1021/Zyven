@@ -406,6 +406,14 @@ descriptions cost context on every request and are hard for a person to review.
 The scan also improved `verify`. desktop-commander writes the container's host name into a tool description, so two
 sandbox runs first looked like a rug pull. Every sandbox container now has the same host name, `zyven-sandbox`.
 
+**On the Connections page**, the same checks run every time you press **Test**:
+- **The result is shown on the card.** A server that fails, for example on tool poisoning, offers only a
+  **Turn on anyway** button, which asks you to confirm.
+- **A Test is also an approval of the exact definitions you saw.** Zyven records each tool's hash.
+- **A changed definition is refused.** If a later run, from the board's agent, the hub or `zyven mcp --connections`,
+  finds a definition that changed or a tool that is new, the whole server is not loaded. The run's log says what
+  changed and asks you to test again. That is rug-pull protection at run time, not only at review time.
+
 ### Agents and connectors (optional)
 
 Everything here is off by default. In the Control center page (`/app/control/`), select a runtime, press **Turn on**
