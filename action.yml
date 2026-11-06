@@ -1,0 +1,100 @@
+name: "zyven verify"
+description: "Check an MCP server for tool poisoning, rug pulls, invalid schemas and fragile input handling."
+author: "Zyven"
+branding:
+  icon: "shield"
+  color: "gray-dark"
+
+inputs:
+  command:
+    description: "The server's stdio command, e.g. 'node dist/index.js' or 'python server.py'. Split like a shell would, but never run through one."
+    required: false
+    default: ""
+  url:
+    description: "A streamable HTTP MCP server URL instead of a command."
+    required: false
+    default: ""
+  probe:
+    description: "Also call each tool with input its own schema forbids (true/false)."
+    required: false
+    default: "true"
+  strict:
+    description: "Fail on warnings too, e.g. missing read-only hints or undocumented parameters (true/false)."
+    required: false
+    default: "false"
+  lock-file:
+    description: "Path to a lock file of tool definitions; compared if it exists. Commit it to catch rug pulls between releases."
+    required: false
+    default: ""
+  docker-image:
+    description: "Run the command inside Zyven's sandbox using this image (no network, read-only root, no capabilities)."
+    required: false
+    default: ""
+  mount:
+    description: "With docker-image: HOST[:/CONTAINER] folders mounted read-only, one per line (default container path /work)."
+    required: false
+    default: ""
+  allow-network:
+    description: "With docker-image: give the container network access (true/false)."
+    required: false
+    default: "false"
+  env:
+    description: "Environment variable names to pass to the server, one per line (their values come from this step's env)."
+    required: false
+    default: ""
+  timeout:
+    description: "Seconds to wait for the server."
+    required: false
+    default: "90"
+
+outputs:
+  verdict:
+    description: "PASS or FAIL"
+    value: ${{ steps.verify.outputs.verdict }}
+  report:
+    description: "Path to the JSON report"
+    value: ${{ steps.verify.outputs.report }}
+
+runs:
+  using: "composite"
+  steps:
+    - uses: astral-sh/setup-uv@v5
+    - id: verify
+      shell: bash
+      env:
+        ZV_COMMAND: ${{ inputs.command }}
+        ZV_URL: ${{ inputs.url }}
+        ZV_PROBE: ${{ inputs.probe }}
+        ZV_STRICT: ${{ inputs.strict }}
+        ZV_LOCK: ${{ inputs.lock-file }}
+        ZV_IMAGE: ${{ inputs.docker-image }}
+        ZV_MOUNT: ${{ inputs.mount }}
+        ZV_NET: ${{ inputs.allow-network }}
+        ZV_ENV: ${{ inputs.env }}
+        ZV_TIMEOUT: ${{ inputs.timeout }}
+        ZV_SRC: ${{ github.action_path }}
+      run: |
+        set -uo pipefail
+        report="$RUNNER_TEMP/zyven-verify-$RANDOM.json"
+        args=(verify --json "$report" --markdown "$GITHUB_STEP_SUMMARY" --timeout "$ZV_TIMEOUT")
+        [ "$ZV_PROBE" = "true" ] && args+=(--probe)
+        [ "$ZV_STRICT" = "true" ] && args+=(--strict)
+        [ -n "$ZV_LOCK" ] && args+=(--lock "$ZV_LOCK")
+        [ -n "$ZV_URL" ] && args+=(--url "$ZV_URL")
+        if [ -n "$ZV_IMAGE" ]; then
+          args+=(--docker "$ZV_IMAGE")
+          [ "$ZV_NET" = "true" ] && args+=(--allow-network)
+          while IFS= read -r m; do [ -n "$m" ] && args+=(--mount "$m"); done <<< "$ZV_MOUNT"
+        fi
+        while IFS= read -r e; do [ -n "$e" ] && args+=(--env "$e"); done <<< "$ZV_ENV"
+        if [ -n "$ZV_COMMAND" ]; then
+          # shlex, not eval: the command is split into words and never interpreted by a shell
+          mapfile -d '' cmd < <(python3 -c 'import os, shlex, sys; sys.stdout.write("\0".join(shlex.split(os.environ["ZV_COMMAND"])) + "\0")')
+          args+=(-- "${cmd[@]}")
+        fi
+        uvx --from "$ZV_SRC" zyven "${args[@]}"
+        code=$?
+        verdict=$([ -f "$report" ] && python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["verdict"])' "$report" || echo FAIL)
+        echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
+        echo "report=$report" >> "$GITHUB_OUTPUT"
+        exit $code

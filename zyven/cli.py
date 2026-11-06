@@ -132,7 +132,7 @@ def cmd_compile(args) -> None:
 
 
 def cmd_verify(args) -> None:
-    from zyven.mcpverify import format_report, verify_server, write_lock
+    from zyven.mcpverify import format_markdown, format_report, verify_server, write_lock
     command = args.server[1:] if args.server[:1] == ["--"] else args.server
     if not command and not args.url:
         sys.exit("give the server command after --, e.g.  zyven verify -- npx -y @modelcontextprotocol/server-memory\n"
@@ -158,9 +158,16 @@ def cmd_verify(args) -> None:
     if args.json:
         Path(args.json).write_text(json.dumps(r.to_dict(), indent=1, ensure_ascii=False), encoding="utf-8")
         print(f"report: {args.json}")
+    if args.markdown:  # e.g. $GITHUB_STEP_SUMMARY: appended, so several servers can share one summary
+        with open(args.markdown, "a", encoding="utf-8") as f:
+            f.write(format_markdown(r) + "\n")
     if lock and (args.update_lock or not lock.exists()) and r.lock:
         write_lock(r, lock)
         print(f"lock file written: {lock} ({len(r.lock)} tools)")
+    warned = any(c.status == "WARN" and c.name != "isolation" for c in r.checks)
+    if args.strict and r.verdict == "PASS" and warned:
+        print("strict: warnings count as failures")
+        sys.exit(1)
     sys.exit(0 if r.verdict == "PASS" else 1)
 
 
@@ -256,6 +263,9 @@ def main() -> None:
     s.add_argument("--lock", help="lock file of tool definitions: written if missing, compared if present")
     s.add_argument("--update-lock", action="store_true", help="rewrite the lock file from this run")
     s.add_argument("--json", help="write the full report here")
+    s.add_argument("--markdown", help="append a Markdown report to this file (e.g. $GITHUB_STEP_SUMMARY)")
+    s.add_argument("--strict", action="store_true", help="warnings fail too (except isolation, which is about "
+                   "where the check ran)")
     s.add_argument("--timeout", type=float, default=60.0)
     s.add_argument("server", nargs=argparse.REMAINDER, help="-- command args...")
     s.set_defaults(fn=cmd_verify)
