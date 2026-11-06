@@ -290,6 +290,8 @@ uv run zyven sync --scout                     # clone the catalog and cache the 
 uv run zyven board --port 8765                # board, site and APIs
 uv run zyven reassemble --dry-run             # which skills an improved harness would rebuild (no model calls)
 uv run zyven reassemble                       # rebuild them; all six gates rerun, the old server kept on failure
+uv run zyven export skills/<name>             # a standalone MCP server: Dockerfile, library pinned to the verified
+                                              # commit, README with the gate results and agent config (no Zyven needed)
 
 uv run python eval/run_eval.py --suite stdnum --limit 6 --label compiled --skill skills/<name>/server.py
 uv run python eval/run_eval.py --suite global --limit 6 --label compiled --skill skills/<name>/server.py

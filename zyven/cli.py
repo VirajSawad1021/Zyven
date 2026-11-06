@@ -5,6 +5,7 @@
   zyven compile <repo> --capability <name>     AI: spec -> adapter -> sandbox verify -> repair -> package
   zyven verify -- <command...> | --url URL     check ANY MCP server: schemas, tool poisoning, rug pulls, robustness
   zyven mcp [--print-config]                   verified skills as a stdio MCP server for Claude Code / Codex / any agent
+  zyven export <skill> [--to DIR]              a verified skill as a standalone MCP server (no Zyven needed)
   zyven reassemble [skill|library ...]         rebuild skills with the current harness, rerun the gates (no model)
   zyven setup | zyven doctor                   build the sandbox image / check what is missing
   zyven sync [--scout]                         clone the pinned catalog repos (and optionally scout them)
@@ -216,6 +217,18 @@ def cmd_verify(args) -> None:
     sys.exit(0 if r.verdict == "PASS" else 1)
 
 
+def cmd_export(args) -> None:
+    from zyven.export import export
+    skill = Path(args.skill)
+    to = Path(args.to) if args.to else Path("exported") / skill.name
+    try:
+        out = export(skill, to)
+    except (FileNotFoundError, ValueError) as e:
+        sys.exit(str(e))
+    print(f"exported to {out}:\n  " + "\n  ".join(sorted(p.name for p in out.iterdir())))
+    print(f"\nnext: cd {out} && docker build -t zyven-skill-{skill.name.replace('_', '-')} .   (see README.md)")
+
+
 def cmd_reassemble(args) -> None:
     from zyven.compiler.reassemble import reassemble
     targets = [Path(p) for p in args.paths] or [paths.home() / "library", paths.skills_out()]
@@ -324,6 +337,10 @@ def main() -> None:
     s.add_argument("--skill", action="append", help="serve only this skill; repeatable")
     s.add_argument("--print-config", action="store_true", help="print the commands that add Zyven to Claude Code and Codex")
     s.set_defaults(fn=cmd_mcp)
+    s = sub.add_parser("export", help="a verified skill as a standalone MCP server (Dockerfile, pinned library, README)")
+    s.add_argument("skill", help="the skill folder")
+    s.add_argument("--to", help="output folder (default exported/<skill>)")
+    s.set_defaults(fn=cmd_export)
     s = sub.add_parser("reassemble", help="rebuild compiled skills with the current harness and rerun the gates "
                        "(no model calls)")
     s.add_argument("paths", nargs="*", help="skill folders or libraries (default: the library and skills/)")

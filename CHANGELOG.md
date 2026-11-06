@@ -27,6 +27,11 @@ build, and installs without a clone.
 - **The repository is a GitHub Action** (`uses: VirajSawad1021/Zyven@...`) that writes the verify report to the job summary. (#60)
 - **A mutation test of the gates** (`eval/mutation_test.py`): it breaks verified skills on purpose and counts what the
   gates catch.
+- **`zyven export`**: a verified skill as a standalone MCP server, with a Dockerfile, the library pinned to the verified
+  commit, and a README with the gate results and client config. The exported networkx skill was built, verified and
+  called with no Zyven at run time.
+- **`zyven verify --config` / `--discover`**: checks every server in Claude Desktop/Code, Cursor, Windsurf, VS Code,
+  Gemini CLI or Codex configs. `env` values are passed to the server, never printed.
 
 ### Changed
 - Compiled skills declare `read_only_hint` / `destructive_hint=False` / `open_world_hint=False`. Their input schemas carry
