@@ -17,8 +17,8 @@ __all__ = ["verify_server", "format_report", "Report"]
 def verify_server(command: list[str] | None = None, url: str | None = None, headers: dict[str, str] | None = None,
                   env: dict[str, str] | None = None, docker_image: str | None = None,
                   mounts: dict[Path, str] | None = None, probe: bool = False, lock_file: Path | None = None,
-                  timeout: float = 60.0) -> Report:
-    _, sandboxed, label = server_from(command, url, headers, env, docker_image, mounts)
+                  timeout: float = 60.0, network: bool = False) -> Report:
+    _, sandboxed, label = server_from(command, url, headers, env, docker_image, mounts, network=network)
     containers: list[str] = []
 
     def make():  # a fresh transport (and container name) for each connection
@@ -26,10 +26,11 @@ def verify_server(command: list[str] | None = None, url: str | None = None, head
         if docker_image and command:
             name = f"zyven-verify-{uuid.uuid4().hex[:12]}"
             containers.append(name)
-        return server_from(command, url, headers, env, docker_image, mounts, name)[0]
+        return server_from(command, url, headers, env, docker_image, mounts, name, network)[0]
 
     try:
         obs = asyncio.run(observe(make, label, sandboxed, probe=probe, timeout=timeout))
+        obs["network"] = bool(network and docker_image)
     finally:  # a server that ignores the end of its input would otherwise keep running
         from zyven.sandbox.runner import remove_container
         for name in containers:

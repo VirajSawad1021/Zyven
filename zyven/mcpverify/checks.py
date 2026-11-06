@@ -222,8 +222,11 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None) -> Repor
             warn.append(f"tools in the lock file but no longer offered: {removed}")
         if added:
             warn.append(f"new tools since the lock file: {added}")
+    if again is None and obs.get("second_connection_error"):  # say why, instead of a silent skip
+        warn.append(f"a second connection failed, so stability was not checked: {obs['second_connection_error']}")
     detail = ("tool definitions differ" if bad else
-              ("same definitions on a second connection" if again is not None else "not checked twice")
+              ("same definitions on a second connection" if again is not None else
+               ("second connection failed" if obs.get("second_connection_error") else "not checked twice"))
               + ("; matches the lock file" if lock and not bad and not warn else ""))
     checks.append(Check("stability", FAIL if bad else (WARN if warn else (PASS if again is not None else SKIP)),
                         detail, bad + warn))
@@ -244,10 +247,14 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None) -> Repor
                             detail + ("; server still answering" if alive else ""), failed))
 
     # isolation
-    checks.append(Check("isolation", PASS if obs.get("sandboxed") else WARN,
-                        "ran in Zyven's sandbox: no network, read-only root, no capabilities, non-root"
-                        if obs.get("sandboxed") else
-                        "ran on this machine with your permissions (use --docker IMAGE to run it in the sandbox)"))
+    if obs.get("sandboxed") and obs.get("network"):
+        checks.append(Check("isolation", WARN, "ran in Zyven's sandbox (read-only root, no capabilities, non-root) "
+                                               "but WITH network access (--allow-network)"))
+    else:
+        checks.append(Check("isolation", PASS if obs.get("sandboxed") else WARN,
+                            "ran in Zyven's sandbox: no network, read-only root, no capabilities, non-root"
+                            if obs.get("sandboxed") else
+                            "ran on this machine with your permissions (use --docker IMAGE to run it in the sandbox)"))
 
     verdict = FAIL if any(c.status == FAIL for c in checks) else PASS
     return Report(obs.get("target", ""), verdict, checks, srv, names, hashes)

@@ -52,6 +52,9 @@ def docker_args(command: list[str], mounts: dict[Path, str], policy: SandboxPoli
     mounts: host path -> container path. Paths ending in ':rw' in the container side are writable."""
     args = [
         "docker", "run", "--rm", "--name", name, *(["-i"] if interactive else []),
+        # One fixed host name: otherwise each container has a random one, which a server can read (desktop-commander
+        # writes it into a tool description, so two runs looked like a changed tool list to `zyven verify`).
+        "--hostname", "zyven-sandbox",
         "--user", "1000:1000",
         "--read-only", "--tmpfs", "/tmp:rw,size=256m",
         "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
