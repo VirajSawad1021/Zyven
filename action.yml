@@ -74,6 +74,7 @@ runs:
         ZV_TIMEOUT: ${{ inputs.timeout }}
         ZV_SRC: ${{ github.action_path }}
       run: |
+        set +e            # GitHub runs this with -e; a FAIL must still write the outputs before the step fails
         set -uo pipefail
         report="$RUNNER_TEMP/zyven-verify-$RANDOM.json"
         args=(verify --json "$report" --markdown "$GITHUB_STEP_SUMMARY" --timeout "$ZV_TIMEOUT")
