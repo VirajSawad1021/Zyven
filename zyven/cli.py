@@ -4,6 +4,7 @@
   zyven scout   <repo>                         AI: list user-level capabilities
   zyven compile <repo> --capability <name>     AI: spec -> adapter -> sandbox verify -> repair -> package
   zyven verify -- <command...> | --url URL     check ANY MCP server: schemas, tool poisoning, rug pulls, robustness
+  zyven mcp [--print-config]                   verified skills as a stdio MCP server for Claude Code / Codex / any agent
   zyven sync [--scout]                         clone the pinned catalog repos (and optionally scout them)
   zyven board [--port N] [--board-dir DIR]     task board, site and APIs on one port
 """
@@ -160,6 +161,22 @@ def cmd_verify(args) -> None:
     sys.exit(0 if r.verdict == "PASS" else 1)
 
 
+def cmd_mcp(args) -> None:
+    root = Path(__file__).resolve().parents[1]
+    board_dir = (args.board_dir or root / "workspace").resolve()
+    if args.print_config:
+        py = Path(sys.executable).resolve()
+        run = [str(py), "-m", "zyven.cli", "mcp", "--board-dir", str(board_dir)] + (["--connections"] if args.connections else [])
+        quoted = " ".join(f'"{a}"' if " " in a else a for a in run)
+        print("Claude Code:\n  claude mcp add --scope user zyven -- " + quoted)
+        print("\nCodex:\n  codex mcp add zyven -- " + quoted)
+        print("\nAny MCP client (JSON):\n  " + json.dumps({"mcpServers": {"zyven": {"command": run[0], "args": run[1:],
+                                                                          "cwd": str(root)}}}))
+        return
+    from zyven.hub.stdio import main as serve_stdio
+    serve_stdio(board_dir, connections=args.connections, only=args.skill)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="zyven")
     ap.add_argument("--env", default=".env")
@@ -195,6 +212,13 @@ def main() -> None:
     s.add_argument("--timeout", type=float, default=60.0)
     s.add_argument("server", nargs=argparse.REMAINDER, help="-- command args...")
     s.set_defaults(fn=cmd_verify)
+    s = sub.add_parser("mcp", help="serve verified skills over stdio to Claude Code, Codex or any MCP client")
+    s.add_argument("--board-dir", type=Path, help="board folder whose library/ holds the skills (default workspace/)")
+    s.add_argument("--connections", action="store_true", help="also offer the services connected on the board "
+                   "(write tools are then gated only by your agent's permission prompt)")
+    s.add_argument("--skill", action="append", help="serve only this skill; repeatable")
+    s.add_argument("--print-config", action="store_true", help="print the commands that add Zyven to Claude Code and Codex")
+    s.set_defaults(fn=cmd_mcp)
     s = sub.add_parser("sync"); s.add_argument("--scout", action="store_true", help="also scout capabilities (model calls)")
     s.add_argument("--rescout", action="store_true", help="re-scout repos that already have cached results")
     s.set_defaults(fn=cmd_sync)

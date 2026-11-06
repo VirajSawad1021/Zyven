@@ -297,6 +297,26 @@ was **verified on the first attempt in 163 s**: 4 tools, 2,108 upstream tests, 6
 `tasks/__init__.py` hid packaging's `src/` layout, so imports read `src.packaging...`. The analyzer now prefers
 the package `pyproject.toml` names.
 
+### Use verified skills from Claude Code, Codex or any agent
+
+`zyven mcp` serves the verified skills in your library as a plain stdio MCP server. The coding agent starts it
+itself, so the board does not have to be running:
+
+```bash
+uv run zyven mcp --print-config            # prints the exact commands below for this machine
+claude mcp add --scope user zyven -- <python> -m zyven.cli mcp --board-dir <board>/      # Claude Code
+codex mcp add zyven -- <python> -m zyven.cli mcp --board-dir <board>/                    # Codex
+```
+
+Each skill runs in its Docker sandbox, as on the board. The tools are marked read-only, so agents can call them without
+asking. `--skill NAME` limits what is offered. `--connections` also offers the services connected on the board (Notion,
+GitHub, ...); with no board there are no approval cards, so a tool that changes something is then guarded only by your
+agent's own permission prompt.
+
+Tested with Codex headless and no board running. Asked "does 1.0.0rc1 satisfy `>=1.0`, and which of 2.0.0, 2.0.0b3,
+1.9.12 is newest?", it called `check_version_requirement` and `sort_versions` and answered correctly. The first answer
+is *no*: PEP 440 leaves pre-releases out by default.
+
 ### Verify any MCP server
 
 `zyven verify` checks an MCP server Zyven did not build, from the outside: a command over stdio or a URL.
