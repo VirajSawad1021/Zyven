@@ -57,6 +57,28 @@ def format_report(r: Report, verbose: bool = False) -> str:
     return "\n".join(lines)
 
 
+_ICON = {PASS: "✅", WARN: "⚠️", FAIL: "❌", SKIP: "➖"}
+
+
+def format_markdown(r: Report) -> str:
+    """The report as Markdown, e.g. for a GitHub Actions job summary or a PR comment."""
+    warns = sum(c.status == WARN for c in r.checks)
+    head = (f"### {_ICON[r.verdict]} `zyven verify`: {r.verdict}" + (f" with {warns} warning(s)" if r.verdict == PASS and warns else ""))
+    srv = " ".join(x for x in (r.server.get("name"), r.server.get("version")) if x)
+    lines = [head, "", f"**Server:** {srv or r.target} · **tools:** {len(r.tools)}", "",
+             "| | Check | Result |", "|---|---|---|"]
+    for c in r.checks:
+        lines.append(f"| {_ICON[c.status]} | {c.name} | {c.detail.replace('|', '/')} |")
+    detailed = [c for c in r.checks if c.findings and c.status in (FAIL, WARN)]
+    for c in detailed:
+        lines += ["", f"<details{' open' if c.status == FAIL else ''}><summary><b>{c.name}</b>: {len(c.findings)} finding(s)"
+                      "</summary>", ""]
+        lines += [f"- `{f.replace('`', chr(39))}`" for f in c.findings[:40]]
+        lines += ["", "</details>"]
+    lines += ["", "<sub>Outside-in checks by [Zyven](https://github.com/VirajSawad1021/Zyven); not a security audit.</sub>"]
+    return "\n".join(lines) + "\n"
+
+
 def write_lock(r: Report, path: Path) -> None:
     data: dict[str, Any] = {"target": r.target, "server": r.server, "tools": r.lock}
     path.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")

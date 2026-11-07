@@ -1,0 +1,694 @@
+{
+ "mutants": 56,
+ "killed": 47,
+ "score": 0.839,
+ "errors": 0,
+ "by_gate": {
+  "input_robustness": 2,
+  "differential": 12,
+  "mcp_smoke": 33
+ },
+ "failed_at_all": {
+  "input_robustness": 2,
+  "mcp_smoke": 34,
+  "differential": 44
+ },
+ "by_operator": {
+  "drop_statement": {
+   "killed": 24,
+   "total": 24
+  },
+  "flip_bool": {
+   "killed": 1,
+   "total": 1
+  },
+  "swap_args": {
+   "killed": 5,
+   "total": 6
+  },
+  "negate_condition": {
+   "killed": 3,
+   "total": 5
+  },
+  "off_by_one": {
+   "killed": 5,
+   "total": 6
+  },
+  "compare": {
+   "killed": 2,
+   "total": 5
+  },
+  "drop_return_field": {
+   "killed": 4,
+   "total": 4
+  },
+  "arithmetic": {
+   "killed": 1,
+   "total": 1
+  },
+  "boolean": {
+   "killed": 2,
+   "total": 4
+  }
+ },
+ "upstream_gate": false,
+ "seed": 1,
+ "seconds": 1059,
+ "skills": [
+  "graph_algorithms",
+  "version_specifiers"
+ ],
+ "results": [
+  {
+   "skill": "graph_algorithms",
+   "tool": "shortest_path_weight",
+   "operator": "drop_statement",
+   "where": "line 21: statement dropped: weight = None",
+   "killed_by": "input_robustness",
+   "detail": "0/0 equivalent-input probes gave identical results",
+   "failed_gates": [
+    "input_robustness",
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "shortest_path_weight",
+   "operator": "drop_statement",
+   "where": "line 22: statement dropped: path_exists = False",
+   "killed_by": "differential",
+   "detail": "17/18 cases match the library",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "shortest_path_weight",
+   "operator": "flip_bool",
+   "where": "line 22: False -> True",
+   "killed_by": "differential",
+   "detail": "17/18 cases match the library; first mismatch: shortest_path_weight({\"edges\": [[\"A\", \"B\", 5], [\"C\", \"D\", 10]], \"source\": \"A\", \"target\": \"D\"}).path_exists return",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "shortest_path_weight",
+   "operator": "swap_args",
+   "where": "line 14: first two arguments swapped",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "shortest_path_weight",
+   "operator": "drop_statement",
+   "where": "line 19: statement dropped: display = f'Shortest path weight from {source} to {target} i",
+   "killed_by": "mcp_smoke",
+   "detail": "shortest_path_weight: missing return fields ['weight', 'path_exists', 'display']; output=\"Error executing tool shortest_path_weight\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "shortest_path_weight",
+   "operator": "negate_condition",
+   "where": "line 9: condition negated",
+   "killed_by": "mcp_smoke",
+   "detail": "shortest_path_weight: missing return fields ['weight', 'path_exists', 'display']; output=\"Error executing tool shortest_path_weight\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_connected_components",
+   "operator": "off_by_one",
+   "where": "line 5: 1 -> 2",
+   "killed_by": "differential",
+   "detail": "17/18 cases match the library; first mismatch: count_connected_components({\"edges\": [[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"A\"]]}).is_connected returned false, library ",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_connected_components",
+   "operator": "drop_statement",
+   "where": "line 2: statement dropped: G = nx.Graph()",
+   "killed_by": "mcp_smoke",
+   "detail": "count_connected_components: missing return fields ['count', 'display', 'is_connected']; output=\"Error executing tool count_connected_components\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_connected_components",
+   "operator": "compare",
+   "where": "line 5: Eq -> NotEq",
+   "killed_by": "differential",
+   "detail": "17/18 cases match the library; first mismatch: count_connected_components({\"edges\": [[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"A\"]]}).is_connected returned false, library ",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_connected_components",
+   "operator": "drop_statement",
+   "where": "line 5: statement dropped: is_connected = count == 1",
+   "killed_by": "mcp_smoke",
+   "detail": "count_connected_components: missing return fields ['count', 'display', 'is_connected']; output=\"Error executing tool count_connected_components\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_connected_components",
+   "operator": "drop_statement",
+   "where": "line 3: statement dropped: G.add_edges_from(edges)",
+   "killed_by": "differential",
+   "detail": "16/18 cases match the library; first mismatch: count_connected_components({\"edges\": [[\"A\", \"B\"], [\"C\", \"D\"]]}).count returned 0, library gives 2",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_connected_components",
+   "operator": "drop_statement",
+   "where": "line 4: statement dropped: count = nx.number_connected_components(G)",
+   "killed_by": "mcp_smoke",
+   "detail": "count_connected_components: missing return fields ['count', 'display', 'is_connected']; output=\"Error executing tool count_connected_components\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "mst_total_weight",
+   "operator": "drop_statement",
+   "where": "line 6: statement dropped: G.add_edge(edge[0], edge[1], weight=edge[2])",
+   "killed_by": "differential",
+   "detail": "15/18 cases match the library; first mismatch: mst_total_weight({\"edges\": [[\"A\", \"B\", 1], [\"B\", \"C\", 2], [\"A\", \"C\", 3]]}).total_weight returned 0, library gives",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "mst_total_weight",
+   "operator": "drop_statement",
+   "where": "line 10: statement dropped: mst_edges = [[u, v, w] for u, v, w in T.edges(data='weight')",
+   "killed_by": "mcp_smoke",
+   "detail": "mst_total_weight: missing return fields ['total_weight', 'mst_edges', 'display']; output=\"Error executing tool mst_total_weight\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "mst_total_weight",
+   "operator": "off_by_one",
+   "where": "line 4: 3 -> 4",
+   "killed_by": "mcp_smoke",
+   "detail": "mst_total_weight: missing return fields ['total_weight', 'mst_edges', 'display']; output=\"Error executing tool mst_total_weight\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "mst_total_weight",
+   "operator": "drop_statement",
+   "where": "line 11: statement dropped: display = f'The total weight of the MST is {total_weight}'",
+   "killed_by": "mcp_smoke",
+   "detail": "mst_total_weight: missing return fields ['total_weight', 'mst_edges', 'display']; output=\"Error executing tool mst_total_weight\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "mst_total_weight",
+   "operator": "off_by_one",
+   "where": "line 6: 0 -> 1",
+   "killed_by": "differential",
+   "detail": "15/18 cases match the library; first mismatch: mst_total_weight({\"edges\": [[\"A\", \"B\", 1], [\"B\", \"C\", 2], [\"A\", \"C\", 3]]}).total_weight returned 0, library gives",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "mst_total_weight",
+   "operator": "negate_condition",
+   "where": "line 4: condition negated",
+   "killed_by": "mcp_smoke",
+   "detail": "mst_total_weight: missing return fields ['total_weight', 'mst_edges', 'display']; output=\"Error executing tool mst_total_weight\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "max_flow_value",
+   "operator": "off_by_one",
+   "where": "line 8: 1 -> 2",
+   "killed_by": "mcp_smoke",
+   "detail": "max_flow_value: missing return fields ['flow_value', 'display']; output=\"Error executing tool max_flow_value\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "max_flow_value",
+   "operator": "drop_return_field",
+   "where": "line 16: return field 'display' dropped",
+   "killed_by": "mcp_smoke",
+   "detail": "max_flow_value: missing return fields ['display']; output={\"flow_value\": 5}",
+   "failed_gates": [
+    "mcp_smoke"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "max_flow_value",
+   "operator": "drop_statement",
+   "where": "line 12: statement dropped: display = f'The maximum flow from {source} to {target} is {f",
+   "killed_by": "mcp_smoke",
+   "detail": "max_flow_value: missing return fields ['flow_value', 'display']; output=\"Error executing tool max_flow_value\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "max_flow_value",
+   "operator": "swap_args",
+   "where": "line 8: first two arguments swapped",
+   "killed_by": "differential",
+   "detail": "15/18 cases match the library; first mismatch: max_flow_value({\"edges\": [[\"S\", \"A\", 10], [\"A\", \"T\", 5]], \"source\": \"S\", \"target\": \"T\"}).flow_value returned 0, l",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "max_flow_value",
+   "operator": "drop_statement",
+   "where": "line 8: statement dropped: G.add_edge(edge[0], edge[1], capacity=edge[2])",
+   "killed_by": "mcp_smoke",
+   "detail": "max_flow_value: missing return fields ['flow_value', 'display']; output=\"Error executing tool max_flow_value\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "max_flow_value",
+   "operator": "drop_statement",
+   "where": "line 2: statement dropped: source = source.strip()",
+   "killed_by": "input_robustness",
+   "detail": "3/4 equivalent-input probes gave identical results: max_flow_value {\"edges\": [[\"S\", \"A\", 10], [\"A\", \"T\", 5]], \"source\": \"  S \", \"target\": \"T\"}",
+   "failed_gates": [
+    "input_robustness"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "highest_betweenness_centrality_node",
+   "operator": "drop_statement",
+   "where": "line 16: statement dropped: centrality_value = centralities[node]",
+   "killed_by": "mcp_smoke",
+   "detail": "highest_betweenness_centrality_node: missing return fields ['node', 'centrality_value', 'display']; output=\"Error executing tool highest_betweenness_centrality_",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "highest_betweenness_centrality_node",
+   "operator": "drop_statement",
+   "where": "line 11: statement dropped: centralities = nx.betweenness_centrality(G, weight=weight_at",
+   "killed_by": "mcp_smoke",
+   "detail": "highest_betweenness_centrality_node: missing return fields ['node', 'centrality_value', 'display']; output=\"Error executing tool highest_betweenness_centrality_",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "highest_betweenness_centrality_node",
+   "operator": "negate_condition",
+   "where": "line 5: condition negated",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "highest_betweenness_centrality_node",
+   "operator": "drop_statement",
+   "where": "line 17: statement dropped: display = f'Node {node} has the highest betweenness centrali",
+   "killed_by": "mcp_smoke",
+   "detail": "highest_betweenness_centrality_node: missing return fields ['node', 'centrality_value', 'display']; output=\"Error executing tool highest_betweenness_centrality_",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "highest_betweenness_centrality_node",
+   "operator": "compare",
+   "where": "line 5: NotEq -> Eq",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "highest_betweenness_centrality_node",
+   "operator": "off_by_one",
+   "where": "line 5: 3 -> 4",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_triangles",
+   "operator": "arithmetic",
+   "where": "line 5: FloorDiv -> Mult",
+   "killed_by": "differential",
+   "detail": "16/18 cases match the library; first mismatch: count_triangles({\"edges\": [[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"A\"]]}).total_triangles returned 9, library gives 1",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_triangles",
+   "operator": "drop_statement",
+   "where": "line 3: statement dropped: G.add_edges_from(edges)",
+   "killed_by": "differential",
+   "detail": "16/18 cases match the library; first mismatch: count_triangles({\"edges\": [[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"A\"]]}).total_triangles returned 0, library gives 1",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_triangles",
+   "operator": "drop_statement",
+   "where": "line 2: statement dropped: G = nx.Graph()",
+   "killed_by": "mcp_smoke",
+   "detail": "count_triangles: missing return fields ['total_triangles', 'display']; output=\"Error executing tool count_triangles\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_triangles",
+   "operator": "negate_condition",
+   "where": "line 7: condition negated",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_triangles",
+   "operator": "off_by_one",
+   "where": "line 5: 3 -> 4",
+   "killed_by": "differential",
+   "detail": "16/18 cases match the library; first mismatch: count_triangles({\"edges\": [[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"A\"]]}).total_triangles returned 0, library gives 1",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_triangles",
+   "operator": "drop_statement",
+   "where": "line 5: statement dropped: total_triangles = sum(tri_dict.values()) // 3",
+   "killed_by": "mcp_smoke",
+   "detail": "count_triangles: missing return fields ['total_triangles', 'display']; output=\"Error executing tool count_triangles\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "compare_versions",
+   "operator": "drop_return_field",
+   "where": "line 10: return field 'a_is_greater' dropped",
+   "killed_by": "mcp_smoke",
+   "detail": "compare_versions: missing return fields ['a_is_greater']; output={\"version_a\": \"1.0rc1\", \"version_b\": \"1.0\", \"comparison\": \"less_than\", \"a_is_less\": true, \"a_is",
+   "failed_gates": [
+    "mcp_smoke"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "compare_versions",
+   "operator": "drop_statement",
+   "where": "line 4: statement dropped: a = Version(version_a)",
+   "killed_by": "mcp_smoke",
+   "detail": "compare_versions: missing return fields ['version_a', 'version_b', 'comparison', 'a_is_less', 'a_is_equal', 'a_is_greater']; output=\"Error executing tool compar",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "compare_versions",
+   "operator": "boolean",
+   "where": "line 2: Or -> And",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "compare_versions",
+   "operator": "compare",
+   "where": "line 6: Lt -> LtE",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "compare_versions",
+   "operator": "swap_args",
+   "where": "line 2: first two arguments swapped",
+   "killed_by": "mcp_smoke",
+   "detail": "compare_versions: missing return fields ['version_a', 'version_b', 'comparison', 'a_is_less', 'a_is_equal', 'a_is_greater']; output=\"Error executing tool compar",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "compare_versions",
+   "operator": "drop_statement",
+   "where": "line 5: statement dropped: b = Version(version_b)",
+   "killed_by": "mcp_smoke",
+   "detail": "compare_versions: missing return fields ['version_a', 'version_b', 'comparison', 'a_is_less', 'a_is_equal', 'a_is_greater']; output=\"Error executing tool compar",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "check_version_requirement",
+   "operator": "swap_args",
+   "where": "line 2: first two arguments swapped",
+   "killed_by": "mcp_smoke",
+   "detail": "check_version_requirement: missing return fields ['version', 'specifier', 'matches']; output=\"Error executing tool check_version_requirement\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "check_version_requirement",
+   "operator": "compare",
+   "where": "line 8: Is -> IsNot",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "check_version_requirement",
+   "operator": "negate_condition",
+   "where": "line 4: condition negated",
+   "killed_by": "mcp_smoke",
+   "detail": "check_version_requirement: missing return fields ['version', 'specifier', 'matches']; output=\"Error executing tool check_version_requirement\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "check_version_requirement",
+   "operator": "boolean",
+   "where": "line 4: And -> Or",
+   "killed_by": "mcp_smoke",
+   "detail": "check_version_requirement: missing return fields ['version', 'specifier', 'matches']; output=\"Error executing tool check_version_requirement\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "check_version_requirement",
+   "operator": "drop_statement",
+   "where": "line 7: statement dropped: specifier_set = SpecifierSet(specifier)",
+   "killed_by": "mcp_smoke",
+   "detail": "check_version_requirement: missing return fields ['version', 'specifier', 'matches']; output=\"Error executing tool check_version_requirement\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "check_version_requirement",
+   "operator": "boolean",
+   "where": "line 2: Or -> And",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "sort_versions",
+   "operator": "drop_statement",
+   "where": "line 6: statement dropped: items = versions.split(',')",
+   "killed_by": "mcp_smoke",
+   "detail": "sort_versions: missing return fields ['versions']; output=\"Error executing tool sort_versions\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "sort_versions",
+   "operator": "drop_statement",
+   "where": "line 7: statement dropped: parsed = [Version(item.strip()) for item in items]",
+   "killed_by": "mcp_smoke",
+   "detail": "sort_versions: missing return fields ['versions']; output=\"Error executing tool sort_versions\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "sort_versions",
+   "operator": "boolean",
+   "where": "line 4: And -> Or",
+   "killed_by": "mcp_smoke",
+   "detail": "sort_versions: missing return fields ['versions']; output=\"Error executing tool sort_versions\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "sort_versions",
+   "operator": "drop_return_field",
+   "where": "line 8: return field 'versions' dropped",
+   "killed_by": "mcp_smoke",
+   "detail": "sort_versions: missing return fields ['versions']; output={}",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "sort_versions",
+   "operator": "compare",
+   "where": "line 4: IsNot -> Is",
+   "killed_by": "differential",
+   "detail": "10/12 cases match the library",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "sort_versions",
+   "operator": "swap_args",
+   "where": "line 4: first two arguments swapped",
+   "killed_by": "mcp_smoke",
+   "detail": "sort_versions: missing return fields ['versions']; output=\"Error executing tool sort_versions\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "normalize_project_name",
+   "operator": "drop_return_field",
+   "where": "line 4: return field 'normalized_name' dropped",
+   "killed_by": "mcp_smoke",
+   "detail": "normalize_project_name: missing return fields ['normalized_name']; output={}",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "version_specifiers",
+   "tool": "normalize_project_name",
+   "operator": "swap_args",
+   "where": "line 2: first two arguments swapped",
+   "killed_by": "mcp_smoke",
+   "detail": "normalize_project_name: missing return fields ['normalized_name']; output=\"Error executing tool normalize_project_name\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  }
+ ]
+}

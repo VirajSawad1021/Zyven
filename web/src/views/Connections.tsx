@@ -6,9 +6,47 @@ import { Badge, Button, Card, Empty, Eyebrow, Hero } from "../components/ui";
 import { api, post } from "../lib/api";
 
 interface Tool { name: string; description: string; needs_approval: boolean }
+interface Check { name: string; status: "PASS" | "WARN" | "FAIL" | "SKIP"; detail: string; findings: string[] }
+interface Verify { verdict: "PASS" | "FAIL"; checks: Check[] }
 interface Conn {
   id: string; name: string; kind: "http" | "stdio"; url?: string; command?: string; args?: string[];
   enabled: boolean; tools: Tool[] | null; error: string | null; secret_names: string[]; oauth?: boolean; signed_in?: boolean; signing_in?: boolean;
+  verify?: Verify; verify_override?: boolean;
+}
+
+const TONE: Record<Check["status"], "good" | "bad" | "neutral"> = { PASS: "good", FAIL: "bad", WARN: "neutral", SKIP: "neutral" };
+
+function VerifyPanel({ v, override }: { v: Verify; override?: boolean }) {
+  const [open, setOpen] = useState(v.verdict === "FAIL");
+  const warns = v.checks.filter((c) => c.status === "WARN").length;
+  return (
+    <div className={`mt-3 rounded-xl border px-3 py-2.5 ${v.verdict === "FAIL" ? "border-bad/40 bg-bad-bg" : "border-line bg-panel-2/40"}`}>
+      <button onClick={() => setOpen(!open)} className="flex w-full items-center justify-between gap-2 text-left">
+        <span className="text-[12.5px]">
+          <b>zyven verify</b>{" "}
+          {v.verdict === "FAIL"
+            ? <span className="text-bad">found problems{override ? " (turned on anyway)" : ""}</span>
+            : <span className="text-body">passed{warns ? ` with ${warns} warning${warns > 1 ? "s" : ""}` : ""}</span>}
+          <span className="text-muted"> · approving this Test pins these tool definitions; a later change is refused until you test again</span>
+        </span>
+        <span className="text-[11px] text-muted">{open ? "hide" : "details"}</span>
+      </button>
+      {open && (
+        <ul className="mt-2 space-y-1.5">
+          {v.checks.map((c) => (
+            <li key={c.name} className="text-[12px]">
+              <Badge tone={TONE[c.status]}>{c.status}</Badge> <b>{c.name}</b> <span className="text-body">{c.detail}</span>
+              {c.findings.length > 0 && (
+                <ul className="ml-5 mt-0.5 list-disc text-[11.5px] text-body">
+                  {c.findings.map((f, i) => <li key={i} className="break-words font-mono">{f}</li>)}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 interface Template { id: string; label: string; kind: "http" | "stdio"; oauth?: boolean; hint: string; url: string; command: string; args: string[]; secrets: string[] }
 interface Data { connections: Conn[]; templates: Template[]; stdio_allowed: boolean }
@@ -118,12 +156,19 @@ function ConnCard({ c, onChange }: { c: Conn; onChange: () => void }) {
           {c.oauth && !c.signed_in && <Button size="sm" loading={busy || !!c.signing_in} onClick={signIn}>{c.signing_in ? "Waiting for you…" : "Sign in"}</Button>}
           {c.oauth && c.signed_in && <Button size="sm" variant="secondary" onClick={() => run(() => post(`/api/connections/${c.id}/signout`))}>Sign out</Button>}
           {(!c.oauth || c.signed_in) && <Button size="sm" variant="secondary" loading={busy} onClick={() => run(() => post(`/api/connections/${c.id}/test`))}>Test</Button>}
-          {c.tools && <Button size="sm" onClick={() => run(() => post(`/api/connections/${c.id}/enabled`, { enabled: !c.enabled }))}>{c.enabled ? "Turn off" : "Turn on"}</Button>}
+          {c.tools && (c.enabled || c.verify?.verdict !== "FAIL") && <Button size="sm" onClick={() => run(() => post(`/api/connections/${c.id}/enabled`, { enabled: !c.enabled }))}>{c.enabled ? "Turn off" : "Turn on"}</Button>}
+          {c.tools && !c.enabled && c.verify?.verdict === "FAIL" && (
+            <Button size="sm" variant="secondary" onClick={() => {
+              if (window.confirm(`zyven verify found problems with ${c.name}. Turn it on anyway? Only do this if you trust the server.`))
+                run(() => post(`/api/connections/${c.id}/enabled`, { enabled: true, force: true }));
+            }}>Turn on anyway</Button>
+          )}
           <button aria-label="Remove" onClick={() => run(() => api(`/api/connections/${c.id}`, { method: "DELETE" }))} className="rounded-lg p-1.5 text-muted hover:bg-panel-2"><Trash2 className="h-4 w-4" /></button>
         </div>
       </div>
       {c.signing_in && <p className="mt-2 text-[12px] text-body">Finish signing in on the page that opened. If you pressed Sign in more than once, use the newest tab and close the others.</p>}
       {(err || c.error) && <p className="mt-2 break-words rounded-lg bg-bad-bg px-3 py-2 font-mono text-[11.5px] text-bad">{err ?? c.error}</p>}
+      {c.verify && <VerifyPanel v={c.verify} override={c.verify_override} />}
       {c.tools && (
         <div className="mt-3 border-t border-line pt-3">
           <p className="text-[12px] text-body">{c.tools.length} tools. <b>{asks}</b> will ask for your approval before they run; the rest only read.</p>

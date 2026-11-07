@@ -23,5 +23,12 @@
  "attempts": 2,
  "dropped_tools": {},
  "model_calls": 5,
- "lint_warnings": 4
+ "lint_warnings": 4,
+ "reassembled": [
+  {
+   "generator": "zyven 0.1.0",
+   "at": "2026-11-06",
+   "gates_rerun": true
+  }
+ ]
 }
