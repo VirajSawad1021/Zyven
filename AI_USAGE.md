@@ -103,9 +103,9 @@ This document details every file and function in the repository where artificial
 
 All AI operations in Zyven are built around open-weight models. The default model configuration uses **Gemma 4** (`gemma-4-26b-a4b-it`) hosted via Google AI Studio or open inference endpoints (e.g., Groq, OpenRouter, or local Ollama).
 
-The policy is a project rule, not a hard block: `is_proprietary()` in `zyven/ai/provider.py` recognises proprietary model IDs (`gemini`, `gpt-`, `gpt4`, `o1`, `o3`, `o4`, `claude`, `command-r`; Gemma is excepted). When one is configured, the provider logs a warning, and its label, the skill provenance and evaluation reports carry `[PROPRIETARY - experiment only]`, so such runs cannot be mistaken for submission results.
+Since the competition ended (November 2026), closed models and coding agents are supported features, not experiments. What has not changed is the labelling: `is_proprietary()` in `zyven/ai/provider.py` recognises closed model IDs (`gemini`, `gpt-`, `gpt4`, `o1`, `o3`, `o4`, `claude`, `command-r`; Gemma is excepted). Their label, and so the skill provenance and evaluation reports, carries `[closed model]`. A coding agent's label carries `[coding agent]`, because Zyven cannot see which model the agent used.
 
-The committed surfaces are also checked mechanically: `scripts/check_open_models.py` scans config, skill provenance and evaluation reports for proprietary model identifiers and exits non-zero on a violation. It runs in CI on every pull request.
+The **published** results stay open-weight, and that is checked mechanically. `scripts/check_open_models.py` scans config, skill provenance (including the per-role `"roles"` entries, so a closed model in a single role is caught) and evaluation reports, and exits non-zero on a closed model, `[closed model]`, `[coding agent]` or the older `[PROPRIETARY ...]` marker. It runs in CI on every pull request.
 
 ---
 
@@ -129,8 +129,32 @@ program is signed in to.
 - When given Zyven's tools through the hub, an agent can read from and (after approval) write to the services the user has
   connected, such as Notion. The model that decides what to read or write is the agent's, not an open-weight Zyven role.
 
+## 5. Coding Agents as Compile Roles
+
+`zyven/ai/agent_provider.py` lets a coding agent (Codex, Claude Code, Antigravity, OpenCode, Qoder CLI) play any compile
+role. **Zyven sends it the role's prompt.** For the compiler and repair roles, that prompt includes the library digest and the
+spec, so that text goes to the agent's provider.
+
+**Zyven consumes its last message exactly like a chat model's.** The JSON object is extracted and validated against the
+role's Pydantic schema. References are resolved, and code is policy-checked and run only inside the sandbox gates.
+
+| Consumed in | From the agent | Validated by |
+|---|---|---|
+| `architect()` | `CapabilitySpec` | schema, `RefResolver`, interface lint |
+| `compiler()` / `repair()` | `AdapterCode` (imports and bodies) | schema, AST policy, six gates |
+| `tester()` | `DiffTests` (reference programs) | schema, AST policy on every program, sandboxed evaluation |
+
+What came from an agent is recorded per role in `provenance.json` (`"roles"`) and in the start events of the compile log.
+The first run (`--agent codex` on pypa/packaging) is described in the README. It is not a published result, and the
+open-model check keeps such skills out of the committed results.
+
+## 6. What Never Uses a Model
+
+`zyven verify`, `zyven mcp`, `zyven reassemble`, `zyven setup` and `zyven doctor` make no model calls. `verify` reads
+tool descriptions only as text, to scan them for instructions aimed at a model.
+
 ### Development assistance
 
-Parts of this repository's code, tests and documentation were written with an AI coding assistant (Claude Code, Sonnet 5.5; its
-co-authorship is recorded in the commit messages). Live checks with a stronger proprietary model (`gemini-3.5-flash`) were made
+Parts of this repository's code, tests and documentation were written with an AI coding assistant (Claude Code, with Sonnet 5.5
+and later Opus 5.5; its co-authorship is recorded in the commit messages). Live checks with a stronger proprietary model (`gemini-3.5-flash`) were made
 only to test the pipeline, were not saved in the repository, and are not used for any result.
