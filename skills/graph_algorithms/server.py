@@ -7,14 +7,16 @@ Model-written code is limited to tool bodies and imports; the harness writes the
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
 from mcp.server.mcpserver import MCPServer
+from mcp.types import ToolAnnotations
+from pydantic import Field
 
 server = MCPServer(name="graph_algorithms", instructions="Provides tools to analyze graphs given as edge lists, computing shortest paths, connectivity, minimum spanning trees, maximum flow, centrality, and triangle counts.")
 
-@server.tool(name="shortest_path_weight")
-def shortest_path_weight(edges: list, source: str, target: str) -> dict[str, Any]:
+@server.tool(name="shortest_path_weight", annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, open_world_hint=False))
+def shortest_path_weight(edges: Annotated[list, Field(description="A list of edges, where each edge is represented as [node1, node2, weight]. If weight is omitted, it defaults to 1.")], source: Annotated[str, Field(description="The starting node for the path.")], target: Annotated[str, Field(description="The ending node for the path.")]) -> dict[str, Any]:
     """Computes the shortest weighted path length between two nodes in a graph.
 
     edges: A list of edges, where each edge is represented as [node1, node2, weight]. If weight is omitted, it defaults to 1.
@@ -52,8 +54,8 @@ def shortest_path_weight(edges: list, source: str, target: str) -> dict[str, Any
     return {"weight": weight, "path_exists": path_exists, "display": display}
 
 
-@server.tool(name="count_connected_components")
-def count_connected_components(edges: list) -> dict[str, Any]:
+@server.tool(name="count_connected_components", annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, open_world_hint=False))
+def count_connected_components(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2].")]) -> dict[str, Any]:
     """Returns the number of connected components in an undirected graph.
 
     edges: A list of edges, where each edge is [node1, node2].
@@ -70,8 +72,8 @@ def count_connected_components(edges: list) -> dict[str, Any]:
     return {"count": count, "display": display, "is_connected": is_connected}
 
 
-@server.tool(name="mst_total_weight")
-def mst_total_weight(edges: list) -> dict[str, Any]:
+@server.tool(name="mst_total_weight", annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, open_world_hint=False))
+def mst_total_weight(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2, weight].")]) -> dict[str, Any]:
     """Computes the total weight of the minimum spanning tree (or forest) of an undirected graph.
 
     edges: A list of edges, where each edge is [node1, node2, weight].
@@ -93,8 +95,8 @@ def mst_total_weight(edges: list) -> dict[str, Any]:
     return {"total_weight": total_weight, "mst_edges": mst_edges, "display": display}
 
 
-@server.tool(name="max_flow_value")
-def max_flow_value(edges: list, source: str, target: str) -> dict[str, Any]:
+@server.tool(name="max_flow_value", annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, open_world_hint=False))
+def max_flow_value(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2, capacity].")], source: Annotated[str, Field(description="The source node.")], target: Annotated[str, Field(description="The sink node.")]) -> dict[str, Any]:
     """Computes the maximum flow value between a source and a sink node in a capacitated graph.
 
     edges: A list of edges, where each edge is [node1, node2, capacity].
@@ -121,8 +123,8 @@ def max_flow_value(edges: list, source: str, target: str) -> dict[str, Any]:
     return {"flow_value": flow_value, "display": display}
 
 
-@server.tool(name="highest_betweenness_centrality_node")
-def highest_betweenness_centrality_node(edges: list, weight_attribute: str | None = None) -> dict[str, Any]:
+@server.tool(name="highest_betweenness_centrality_node", annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, open_world_hint=False))
+def highest_betweenness_centrality_node(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2].")], weight_attribute: Annotated[str | None, Field(description="The attribute name for edge weights. If omitted, weights are assumed to be 1.")] = None) -> dict[str, Any]:
     """Identifies the node with the highest betweenness centrality in a graph.
 
     edges: A list of edges, where each edge is [node1, node2].
@@ -151,8 +153,8 @@ def highest_betweenness_centrality_node(edges: list, weight_attribute: str | Non
     return {"node": node, "centrality_value": centrality_value, "display": display}
 
 
-@server.tool(name="count_triangles")
-def count_triangles(edges: list) -> dict[str, Any]:
+@server.tool(name="count_triangles", annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, open_world_hint=False))
+def count_triangles(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2].")]) -> dict[str, Any]:
     """Computes the total number of unique triangles in an undirected graph.
 
     edges: A list of edges, where each edge is [node1, node2].

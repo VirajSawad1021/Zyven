@@ -5,6 +5,7 @@
   zyven compile <repo> --capability <name>     AI: spec -> adapter -> sandbox verify -> repair -> package
   zyven verify -- <command...> | --url URL     check ANY MCP server: schemas, tool poisoning, rug pulls, robustness
   zyven mcp [--print-config]                   verified skills as a stdio MCP server for Claude Code / Codex / any agent
+  zyven reassemble [skill|library ...]         rebuild skills with the current harness, rerun the gates (no model)
   zyven setup | zyven doctor                   build the sandbox image / check what is missing
   zyven sync [--scout]                         clone the pinned catalog repos (and optionally scout them)
   zyven board [--port N] [--board-dir DIR]     task board, site and APIs on one port
@@ -163,6 +164,17 @@ def cmd_verify(args) -> None:
     sys.exit(0 if r.verdict == "PASS" else 1)
 
 
+def cmd_reassemble(args) -> None:
+    from zyven.compiler.reassemble import reassemble
+    targets = [Path(p) for p in args.paths] or [paths.home() / "library", paths.skills_out()]
+    results = reassemble(list(dict.fromkeys(targets)), verify_gates=not args.no_verify, dry_run=args.dry_run)
+    if not results:
+        print("no compiled skills found in: " + ", ".join(str(t) for t in targets))
+    for r in results:
+        print(f"  {r.status:<20} {r.skill}" + (f"  ({r.detail})" if r.detail else ""))
+    sys.exit(1 if any(r.status.startswith("kept") for r in results) else 0)
+
+
 def launch_command() -> list[str]:
     """How another program should start zyven, so the command still works next week.
 
@@ -254,6 +266,12 @@ def main() -> None:
     s.add_argument("--skill", action="append", help="serve only this skill; repeatable")
     s.add_argument("--print-config", action="store_true", help="print the commands that add Zyven to Claude Code and Codex")
     s.set_defaults(fn=cmd_mcp)
+    s = sub.add_parser("reassemble", help="rebuild compiled skills with the current harness and rerun the gates "
+                       "(no model calls)")
+    s.add_argument("paths", nargs="*", help="skill folders or libraries (default: the library and skills/)")
+    s.add_argument("--dry-run", action="store_true", help="only say which skills would change")
+    s.add_argument("--no-verify", action="store_true", help="skip the gates (the skill is then marked as such)")
+    s.set_defaults(fn=cmd_reassemble)
     s = sub.add_parser("setup", help="build the sandbox image and create the home folder")
     s.set_defaults(fn=lambda a: sys.exit(__import__("zyven.setup", fromlist=["setup"]).setup()))
     s = sub.add_parser("doctor", help="check Docker, the sandbox image, settings and coding agents")
