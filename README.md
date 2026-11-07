@@ -288,6 +288,8 @@ uv run zyven compile path/to/repo --capability <name>
 uv run zyven compile path/to/repo --capability iban --entry stdnum.iban.validate   # reviewer-set boundary
 uv run zyven sync --scout                     # clone the catalog and cache the Scout's capabilities
 uv run zyven board --port 8765                # board, site and APIs
+uv run zyven reassemble --dry-run             # which skills an improved harness would rebuild (no model calls)
+uv run zyven reassemble                       # rebuild them; all six gates rerun, the old server kept on failure
 
 uv run python eval/run_eval.py --suite stdnum --limit 6 --label compiled --skill skills/<name>/server.py
 uv run python eval/run_eval.py --suite global --limit 6 --label compiled --skill skills/<name>/server.py
@@ -404,6 +406,30 @@ descriptions cost context on every request and are hard for a person to review.
 The scan also improved `verify`. desktop-commander writes the container's host name into a tool description, so two
 sandbox runs first looked like a rug pull. Every sandbox container now has the same host name, `zyven-sandbox`.
 
+**In CI, for MCP server authors.** The repository is also a GitHub Action. It writes the report to the job summary and
+fails the step on a FAIL, or on any warning with `strict`:
+
+```yaml
+- uses: VirajSawad1021/Zyven@main          # pin a release tag or commit once there is one
+  with:
+    command: node dist/index.js            # your server's stdio command (or `url:` for a hosted one)
+    probe: true                            # also send input the schemas forbid
+    lock-file: mcp-lock.json               # commit it: a changed definition then fails review
+    strict: false
+```
+
+The action installs Zyven from its own checkout, so it runs exactly the version you pinned. The command is split into
+words, never run through a shell. Outputs: `verdict` (PASS or FAIL) and `report` (the JSON path). This repository's CI
+uses it on the good and poisoned fixtures.
+
+**On the Connections page**, the same checks run every time you press **Test**:
+- **The result is shown on the card.** A server that fails, for example on tool poisoning, offers only a
+  **Turn on anyway** button, which asks you to confirm.
+- **A Test is also an approval of the exact definitions you saw.** Zyven records each tool's hash.
+- **A changed definition is refused.** If a later run, from the board's agent, the hub or `zyven mcp --connections`,
+  finds a definition that changed or a tool that is new, the whole server is not loaded. The run's log says what
+  changed and asks you to test again. That is rug-pull protection at run time, not only at review time.
+
 ### Agents and connectors (optional)
 
 Everything here is off by default. In the Control center page (`/app/control/`), select a runtime, press **Turn on**
@@ -504,8 +530,14 @@ It scans committed config, skill provenance and eval reports, and runs in CI on 
 
 ## Status and roadmap
 
-The capability compiler, the self-extending agent and the board work end to end. Open work is tracked in
-[issues](https://github.com/VirajSawad1021/Zyven/issues):
+The capability compiler, the self-extending agent and the board work end to end. Added since the competition:
+- coding agents as compile roles
+- `zyven verify` for any MCP server
+- `zyven mcp` for Claude Code, Codex and other agents
+- install with `uvx`/`pipx`, plus `setup` and `doctor`
+- `zyven reassemble`
+
+Open work is tracked in [issues](https://github.com/VirajSawad1021/Zyven/issues):
 
 - [#7](https://github.com/VirajSawad1021/Zyven/issues/7) Re-run every result with the final open-weight model
   (`scripts/check_open_models.py` now enforces the policy)

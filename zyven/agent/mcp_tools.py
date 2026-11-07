@@ -72,15 +72,36 @@ class ToolBox:
         params = StdioServerParameters(command=spec.command, args=spec.args, cwd=spec.cwd, env=spec.env)
         return await self.add_transport(spec.name, params)
 
-    async def add_transport(self, name: str, server: Any, prefix: str = "", gate: Gate | None = None) -> list[str]:
+    async def add_transport(self, name: str, server: Any, prefix: str = "", gate: Gate | None = None,
+                            pins: dict[str, str] | None = None) -> list[str]:
         """Connect any MCP server (stdio parameters, or a transport). With a gate, every tool the server does not
         mark read-only asks the gate before each call; a tool with no hint counts as not read-only. `prefix` keeps
-        tool names from different servers apart."""
+        tool names from different servers apart. With `pins` (definition hashes recorded when the user tested the
+        server), a changed or new tool definition refuses the whole server (DefinitionsChanged) before any tool is
+        offered to the model."""
         from zyven.connections.probe import needs_approval
 
-        client = await self._stack.enter_async_context(Client(server, read_timeout_seconds=60))
+        if pins is None:
+            client = await self._stack.enter_async_context(Client(server, read_timeout_seconds=60))
+            listing = await client.list_tools()
+        else:  # check before the server joins this toolbox, so a refused one is disconnected at once
+            from contextlib import AsyncExitStack
+
+            from zyven.mcpverify.checks import DefinitionsChanged, pin_diff
+            own = AsyncExitStack()
+            client = await own.enter_async_context(Client(server, read_timeout_seconds=60))
+            try:
+                listing = await client.list_tools()
+                changed, added = pin_diff([t.model_dump(by_alias=True, exclude_none=True, mode="json")
+                                           for t in listing.tools], pins)
+            except BaseException:
+                await own.aclose()
+                raise
+            if changed or added:
+                await own.aclose()
+                raise DefinitionsChanged(name.removeprefix("connection:"), changed, added)
+            self._stack.push_async_exit(own)  # accepted: closed with the rest of the toolbox
         self._clients[name] = client
-        listing = await client.list_tools()
         added = []
         for tool in listing.tools:
             public = (prefix + tool.name)[:64]

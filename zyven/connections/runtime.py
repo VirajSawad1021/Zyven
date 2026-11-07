@@ -9,6 +9,7 @@ from typing import Any, Awaitable, Callable
 from zyven.agent.mcp_tools import Gate, ToolBox
 from zyven.connections.probe import server_for
 from zyven.connections.store import ConnectionStore
+from zyven.mcpverify.checks import DefinitionsChanged
 
 CONNECT_TIMEOUT = 30.0  # seconds; a service that does not answer is skipped, not waited for
 Emit = Callable[..., None]
@@ -48,9 +49,12 @@ async def load_enabled(tb: ToolBox, store: ConnectionStore, emit: Emit, ask: Ask
         try:
             names = await asyncio.wait_for(
                 tb.add_transport(f"connection:{c['id']}", server_for(store, c["id"], c),
-                                 prefix=prefix, gate=make_gate(c["name"], emit, ask)), CONNECT_TIMEOUT)
+                                 prefix=prefix, gate=make_gate(c["name"], emit, ask), pins=c.get("pins")), CONNECT_TIMEOUT)
         except asyncio.TimeoutError:
             emit("CONNECTION_FAILED", detail=f"{c['name']}: no answer within {CONNECT_TIMEOUT:.0f} s, skipped")
+            continue
+        except DefinitionsChanged as e:  # a rug pull, or an update the user has not reviewed: never offered
+            emit("CONNECTION_FAILED", detail=str(DefinitionsChanged(c["name"], e.changed, e.added)))
             continue
         except Exception as e:  # noqa: BLE001 - a broken connection must not break the agent
             from zyven.connections.oauth import SignInNeeded, expire_sign_in, leaf_error

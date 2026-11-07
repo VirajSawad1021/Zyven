@@ -51,6 +51,14 @@ Rather than having human developers hand-craft MCP servers for every domain or l
 |  |  - Health Tracking |    |  - SSE Streaming   |    |  - Interactive Graph        |  |
 |  |  - Provenance Log  |    |  - Approval Engine |    |  - Static Export (web/out)  |  |
 |  +--------------------+    +--------------------+    +-----------------------------+  |
+|                                                                                       |
+|  +--------------------+    +--------------------+    +-----------------------------+  |
+|  |  zyven/mcpverify/  |    |    zyven/hub/      |    | zyven/paths.py, setup.py    |  |
+|  |  - Outside-in MCP  |    |  - Board hub (HTTP)|    |  - Checkout vs ~/.zyven     |  |
+|  |    server checks   |    |  - zyven mcp       |    |  - setup / doctor           |  |
+|  |  - Poisoning, rug  |    |    (stdio, no      |    |  - reassemble (compiler/)   |  |
+|  |    pulls, probes   |    |     board)         |    |                             |  |
+|  +--------------------+    +--------------------+    +-----------------------------+  |
 +---------------------------------------------------------------------------------------+
 ```
 
@@ -199,6 +207,67 @@ and a denial returns "Denied ... do not retry". A `zyven_status` tool lets the a
 Codex is configured by `-c` flags (approve mode so it does not ask a second time, a long tool timeout, the token in the
 environment); OpenCode by its project config; Claude Code by a config file in the task folder.
 
+### 4.9 Coding agents as compile roles (`zyven/ai/agent_provider.py`)
+Any of the four compile roles (architect, compiler, tester, repair) can be served by a coding agent instead of the chat
+model: `zyven compile ... --agent codex`, or one role at a time (`--compiler claude:opus --tester qoder`).
+`AgentProvider` is a `ModelProvider` whose `chat()` is one headless run of the CLI. It reuses the Control center
+adapter's command line and output parser, narrowed to "answer in text, change nothing":
+- a fresh, empty temporary folder, deleted afterwards
+- Codex in its `read-only` sandbox; Claude Code with `--tools ""`; OpenCode with every permission denied; Qoder with
+  `Read` only
+
+The conversation is flattened into one prompt, with the JSON Schema appended for structured calls. The last agent message
+is the reply, and the JSON object is cut out of any prose around it. The reply is trusted exactly as much as a chat
+model's, which is not at all: the same schema validation, reference resolution, policy check and six gates apply.
+`compile_capability(..., roles={...})` routes each role. `provenance.json` records each role's provider under
+`"roles"`, and `scripts/check_open_models.py` scans those entries, so a committed result cannot hide a closed model in a
+single role. Agents refuse `chat(tools=...)`, because they bring their own tools and cannot drive Zyven's agent loop.
+
+### 4.10 `zyven verify`: checks for any MCP server (`zyven/mcpverify/`)
+The compile gates need the library and a spec. A third-party server has neither, so `verify` checks it from the outside,
+from what the server itself says and does. `probe.py` connects to it (a stdio command, a streamable HTTP URL, or a
+command run in the sandbox with `--docker IMAGE --mount HOST:/PATH`) and records:
+- the handshake and the tool list
+- a second listing on a fresh connection
+- with `--probe`, calls with input that the tool's own schema forbids: missing required parameters, or a wrong type
+
+`checks.py` is pure and turns that record into seven checks:
+
+| Check | Fails when |
+|---|---|
+| handshake | the server does not start, finish the handshake or list its tools in time |
+| schemas | a tool name is invalid or repeated, or a schema is not valid JSON Schema (Draft 2020-12) |
+| descriptions | names, descriptions, parameters or server instructions carry tool poisoning (see the list below) |
+| annotations | a tool is marked both read-only and destructive (a missing hint is a warning) |
+| stability | definitions differ between two connections or from a lock file (a rug pull) |
+| robustness | (`--probe`) input the schema forbids is accepted, or the server stops answering |
+| isolation | a warning, not a failure, when the server ran on the host, or in the sandbox with `--allow-network` |
+
+The poisoning patterns: invisible Unicode tag characters (decoded back to readable text in the report), bidi overrides,
+`<IMPORTANT>` blocks, "do not tell the user", requests to read credential files, and URLs to send data to.
+
+A stdio server gets the SDK's minimal environment, never the caller's secrets; `--env NAME` passes a variable through.
+Sandbox containers are named, force-removed after each connection (some Node servers outlive their input), and all get the
+host name `zyven-sandbox`, so a server cannot tell runs apart by it. desktop-commander writes the host name into a tool
+description, which first looked like a rug pull.
+
+### 4.11 `zyven mcp`: verified skills over stdio (`zyven/hub/stdio.py`)
+The same tools as the board's hub, as a plain stdio MCP server that a coding agent starts itself, with no board running:
+`claude mcp add zyven -- ... zyven mcp`, or `codex mcp add ...`; `zyven mcp --print-config` prints both. It reuses
+`HubSession`: every verified skill in the library runs in its sandbox, plus `zyven_status`. The tools are annotated
+read-only, which is true by construction (policy plus sandbox). Connected services are added only with `--connections`.
+Without the board there are no approval cards, so the agent's own permission prompt is the gate.
+
+### 4.12 Install layout, setup and reassembly (`zyven/paths.py`, `zyven/setup.py`, `zyven/compiler/reassemble.py`)
+A git checkout keeps `workspace/`, `.env`, `skills/` and `catalog/`. An installed copy (pipx, uvx, pip) keeps everything
+under `~/.zyven`, or `ZYVEN_HOME`. The wheel ships the sandbox files, the catalog and, when built, the dashboard
+(`hatch_build.py`).
+- **`zyven setup`** builds the sandbox image, labelled with a hash of the files it bakes in.
+- **`zyven doctor`** reports when the image is stale, because gates on an old image give wrong results.
+- **The board starts without a model key.** `NoModel` makes only the chat-model features explain what is missing.
+- **`zyven reassemble`** rebuilds old skills with the current harness, with no model calls. It reuses the saved spec,
+  bodies and differential cases, reruns all six gates, and puts the old `server.py` back on any failure or crash.
+
 ---
 
 ## 5. Trust Boundaries & Threat Model
@@ -213,6 +282,9 @@ environment); OpenCode by its project config; Claude Code by a config file in th
 | **Connected Services** | Agent → Third-party MCP server | Enabled by the user after a Test shows the tool list. Tools not marked read-only wait for an approval card. The read-only hint comes from the server itself and is not verified by Zyven. Tool output is untrusted text. |
 | **Coding Agents** | Control center → Codex / OpenCode / Qoder CLI / Claude Code / Antigravity | Optional, off by default, each in its own containment (see 4.6). Task text goes to the provider each program is signed in to. |
 | **Zyven Hub** | Coding agent → `/hub/mcp` | Per-run bearer token, revoked at run end; only that run's connections and skills; approvals for non-read-only tools. |
+| **`zyven mcp` (stdio)** | Coding agent → verified skills | The agent starts the process; skills run sandboxed and are read-only by construction. Connected services only with `--connections`, then gated by the agent's own permission prompt. |
+| **Coding agent as compile role** | Pipeline → agent CLI → pipeline | Empty temp folder, minimal tools; the reply is parsed and gated like any model output. Code and prompts go to the agent's provider. |
+| **`zyven verify` target** | Unknown MCP server → Zyven | No tool calls without `--probe` (probes send only schema-invalid input); minimal environment; `--docker` for untrusted code; containers removed afterwards. |
 | **Full PC Access** | User → Agent without a sandbox | Two deliberate steps (environment switch, per-task confirmation); never for repeating tasks; not through the web page alone. |
 | **Local Board API** | Browser / other sites → Board | No login: only this machine's `Host`, and changing requests from other origins are refused. |
 | **Model Verification Overclaim** | Failed Compile → Agent | If verification fails, the agent is explicitly instructed that the capability is unverified, tools are withheld, and cards enter `UNVERIFIED` state. |
