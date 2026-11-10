@@ -71,7 +71,8 @@ Users and evaluators should be aware of what Zyven's verification process does n
 ## 4. Control Center, Connections and Coding Agents (optional extras)
 
 These features are separate from the verification pipeline above. **Zyven's six gates verify skills compiled from
-repositories; they say nothing about third-party MCP servers or coding agents.**
+repositories. They say nothing about coding agents. For third-party MCP servers, `zyven verify` does narrower,
+outside-in checks (section 6), which are not the same as the six gates.**
 
 - **Connected services are trusted as far as the user chose to trust them.** Whether a tool is read-only comes from the
   server's own hint. A server that marks a destructive tool read-only would run without an approval card. An unknown hint
@@ -114,3 +115,39 @@ repositories; they say nothing about third-party MCP servers or coding agents.**
 - **Qoder results are development checks only** (a 5-question run), not part of any published number.
 - **Verification is narrow** (sections 1 and 2). A verified tool matches the library on sampled cases; it does not make the library
   correct.
+
+---
+
+## 6. `zyven verify`, `zyven mcp` and Agents as Compile Roles
+
+- **`zyven verify` is not a security audit.**
+  - **It never reads the server's code.** It checks what the server *says* (names, schemas, descriptions, annotations) and,
+    with `--probe`, how it treats input its own schema forbids. A server whose tools do harm *with valid input* passes.
+  - **The poisoning scan is a list of known patterns.** A carefully written malicious description can avoid all of them.
+    Ordinary descriptions were checked for false positives ("send a message", "read a file"), but the list will need tuning.
+  - **The stability check only sees changes between two connections a few seconds apart, or against your lock file.** A
+    server that changes its definitions after a week, or only for some clients, is caught only by a later run against the
+    lock file.
+  - **A PASS on the host still ran the server with your permissions.** Use `--docker` for code you do not trust. Servers
+    that must reach their service to start need `--allow-network`, and the report says so.
+- **The community scan in the README is a snapshot** (one day, one version per package, dummy keys, mostly no network). Some
+  servers behave differently when they are signed in.
+- **`zyven mcp` with `--connections` has no approval cards.** Write tools are then guarded only by the agent's own permission
+  prompt. Codex was tested live with `zyven mcp`, and Claude Code was not.
+- **Agents as compile roles:**
+  - **The code and prompts go to the agent's provider.**
+  - **Zyven cannot tell which model the agent used.** This is why the open-model check refuses committed skills with a
+    `[coding agent]` role.
+  - **Live runs so far:**
+    - Codex compiled and verified one capability (packaging `version_specifiers`, 6/6 gates, first attempt).
+    - Qoder answered a structured question.
+    - OpenCode hit its free-usage limit.
+    - Antigravity hung in this environment.
+    - Claude Code was not run.
+  - One verified compile is an example, not a comparison between agents.
+- **`zyven reassemble` trusts the saved differential cases.** It reruns the six gates with the cases the Tester wrote when the
+  skill was first compiled. It does not write new ones. A weak original test set stays weak.
+- **Installed copies:**
+  - **Only Windows was tested by hand**, in a clean `uvx` room. Linux is covered by the CI package job, and macOS was not tried.
+  - **A git install has no dashboard build.** The board then serves its single-file page. Wheels built by the release
+    workflow include the dashboard.
