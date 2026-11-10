@@ -189,30 +189,37 @@ def verify(skill_dir: Path, spec: CapabilitySpec, repo: Path, package_roots: set
     return VerificationReport(gates, failing)
 
 
+def reference_problem(c, package_roots: set[str]) -> str | None:
+    """Why a Tester case's reference program cannot be used, or None if it can.
+
+    A reference is a short program: setup statements (for example building a graph), then a last line that is the
+    expression computing the value. Every line goes through the same static policy as the adapter. The pipeline uses
+    this too, right after the Tester answers, so a tool left without a usable case is asked about again."""
+    try:
+        body = ast.parse(c.reference_expr).body
+    except SyntaxError as e:
+        return f"syntax error: {e.msg}"
+    last = body[-1] if body else None
+    if not isinstance(last, ast.Expr):
+        return "the last line must be the expression that computes the value"
+    if isinstance(last.value, ast.Call) and isinstance(last.value.func, ast.Name) and last.value.func.id == "print":
+        # print(...) evaluates to None, so the "library value" would be null and every tool would look wrong
+        return "the last line must be the value itself, not print(...) of it"
+    program = [ast.unparse(st) for st in body[:-1]] + [f"_ = ({ast.unparse(last.value)})"]
+    res = check_adapter("\n".join(c.reference_imports + program), package_roots)
+    return None if res.ok else "; ".join(res.violations)[:110]
+
+
 def _differential_gate(skill_dir, spec, diff_tests, mounts, env_policy, package_roots, failing) -> Gate:
     """Tool output must equal the library computed directly (Tester-written reference, adapter unseen)."""
     allowed, rejected = [], []
     tools = {t.name: t for t in spec.tools}
     for c in diff_tests.cases:  # reference code obeys the same static policy as adapter code
-        # a reference is a short program: setup statements (for example building a graph), then a last line that is
-        # the expression computing the value. Every line goes through the same policy as the adapter.
-        try:
-            body = ast.parse(c.reference_expr).body
-            last = body[-1] if body else None
-            if not isinstance(last, ast.Expr):
-                raise SyntaxError("the last line must be the expression that computes the value")
-            if isinstance(last.value, ast.Call) and isinstance(last.value.func, ast.Name) and last.value.func.id == "print":
-                # print(...) evaluates to None, so the "library value" would be null and every tool would look wrong
-                raise SyntaxError("the last line must be the value itself, not print(...) of it")
-            program = [ast.unparse(s) for s in body[:-1]] + [f"_ = ({ast.unparse(last.value)})"]
-        except SyntaxError as e:
-            rejected.append(f"{c.tool}: {e.msg if hasattr(e, 'msg') else e}")
-            continue
-        res = check_adapter("\n".join(c.reference_imports + program), package_roots)
-        if res.ok:
+        why = reference_problem(c, package_roots)
+        if why is None:
             allowed.append(c)
         else:
-            rejected.append(f"{c.tool}: {'; '.join(res.violations)[:110]}")
+            rejected.append(f"{c.tool}: {why}")
     cases = [{**c.model_dump(), "args": typed_args(tools[c.tool].params, c.args) if c.tool in tools else c.args}
              for c in allowed]
     (skill_dir / "diff_tests.json").write_text(json.dumps({"cases": cases}, indent=1, ensure_ascii=False), encoding="utf-8")

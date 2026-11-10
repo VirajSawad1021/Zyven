@@ -505,3 +505,59 @@ def test_a_reference_ending_in_print_is_rejected(tmp_path, monkeypatch):
     kept = json.loads((tmp_path / "diff_tests.json").read_text(encoding="utf-8"))["cases"]
     assert [c["reference_expr"] for c in kept] == ["int({number}) * 2"]
     assert "not print" in gate.detail
+
+
+def test_tools_left_without_a_runnable_case_are_asked_about_again(analysis, monkeypatch):
+    import zyven.compiler.pipeline as pl
+    from zyven.ai.schemas import DiffCase, DiffTests
+    spec = _spec(_tool("first"), _tool("second"))
+    good = DiffCase(**_case({"number": "12"}, "value"))
+    broken = DiffCase(tool="second", args={"number": "3"}, field="value", reference_imports=[],
+                      reference_expr="calc._core.checksum({number}")  # syntax error: never closed
+    seen = {}
+
+    def fake_tester(provider, a, sub, feedback="", followups=True):
+        seen.update(tools=[t.name for t in sub.tools], feedback=feedback, followups=followups)
+        return DiffTests(cases=[good.model_copy(update={"tool": "second"})])
+
+    monkeypatch.setattr(pl, "tester", fake_tester)
+    events = []
+    out = pl._reask_unusable(None, analysis, spec, DiffTests(cases=[good, broken]), {"calc"},
+                             lambda kind, **d: events.append((kind, d)))
+    assert seen["tools"] == ["second"] and seen["followups"] is False
+    assert "second" in seen["feedback"] and "syntax error" in seen["feedback"]
+    assert [c.tool for c in out.cases] == ["first", "second", "second"]
+    assert [k for k, _ in events] == ["tester.retry", "tester.retry.done"]
+    assert "1 usable case(s) added for 1/1" in events[-1][1]["detail"]
+
+
+def test_no_reask_when_every_tool_has_a_runnable_case(analysis, monkeypatch):
+    import zyven.compiler.pipeline as pl
+    from zyven.ai.schemas import DiffCase, DiffTests
+    monkeypatch.setattr(pl, "tester", lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not be called")))
+    cases = DiffTests(cases=[DiffCase(**_case({"number": "12"}, "value"))])
+    assert pl._reask_unusable(None, analysis, _spec(_tool("first")), cases, {"calc"}, lambda *a, **k: None) is cases
+
+
+def test_a_broken_case_does_not_count_as_coverage(analysis, monkeypatch):
+    import zyven.compiler.pipeline as pl
+    from zyven.ai.schemas import DiffCase, DiffTests
+    spec = _spec(_cov_tool())
+    ok = [DiffCase(**_case({"number": "12"}, "value")), DiffCase(**_case({"number": "4"}, "display"))]
+    sets_strict_but_broken = DiffCase(tool="first", args={"number": "5", "strict": True}, field="value",
+                                      reference_imports=[], reference_expr="calc._core.checksum({number}")
+    seen = {}
+    monkeypatch.setattr(pl, "tester", lambda p, a, sub, feedback="", followups=True:
+                        seen.update(feedback=feedback) or DiffTests(cases=[]))
+    pl._reask_unusable(None, analysis, spec, DiffTests(cases=ok + [sets_strict_but_broken]), {"calc"},
+                       lambda *a, **k: None)
+    assert "'strict'" in seen["feedback"] and "syntax error" in seen["feedback"]
+
+
+def test_an_optional_parameter_must_also_be_left_out_once():
+    from zyven.ai.roles import coverage_gaps
+    from zyven.ai.schemas import DiffCase
+    always_set = [DiffCase(**_case({"number": "12", "strict": False}, "value")),
+                  DiffCase(**_case({"number": "3", "strict": True}, "display"))]
+    gaps = coverage_gaps(_spec(_cov_tool()), always_set)
+    assert gaps == {"first": ["leave the optional parameter 'strict' out in at least one case (its default behaviour)"]}

@@ -32,6 +32,31 @@ had no usable case. Two different models wrote the two sets, so this compares mo
 - **What the first attempt exposed.** Gemma's quota had run out and the missed-tools request returned nothing, yet the
   first version of `coverage_gaps` reported "full coverage", because it skipped tools with no cases. That is fixed.
 
+## Follow-up: re-ask after the sandbox's own checks, and "leave it out once" (same day)
+- **Why the first attempt stalled.** The one survivor the new cases added was `sort_versions IsNot -> Is`. That mutant
+  raises an error whenever `descending` is *omitted*, and the only usable case *set* `descending=False`. The case that left
+  it out had a syntax error, and it still counted as coverage.
+- **The fixes.**
+  - Coverage is judged only on cases that pass the sandbox's reference checks (`reference_problem`, shared with `verify`).
+  - Every optional parameter must also be **left out** in at least one case.
+  - Tools that still have gaps are asked about again, with the rejection reasons quoted.
+- **The new cases.** Gemma 26B wrote 17 cases. Calibration dropped one, again `str(a < b)` for a field holding `"less_than"`:
+  `mutation_test.py --calibrate` removes cases that fail on the unmutated skill and reports each one.
+
+| Cases | Written by | Killed (same 20 mutants) |
+|---|---|---|
+| old | Codex | 18/20 |
+| new, first attempt | Gemma 26B | 17/20 |
+| **new, with the follow-up** | **Gemma 26B** | **18/20** |
+
+**What is left.**
+- **`Gt -> GtE`.** Catching it needs `a_is_greater` checked on equal versions. The prompt now asks for that, and the model
+  has not done it yet.
+- **An equivalent `Or -> And`.**
+
+So the follow-up brings a smaller open model to parity with Codex here, and closes the gap it targeted. It has not gone
+beyond Codex yet.
+
 ## What this changes
 - **Kept: deterministic, and clear improvements.**
   - Tools with no case count as gaps.

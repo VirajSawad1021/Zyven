@@ -418,16 +418,22 @@ def coverage_gaps(spec: CapabilitySpec, cases: list) -> dict[str, list[str]]:
             gaps[t.name] = ["write test cases for this tool: it has none"]  # while 4 of 6 tools had no case)
             continue
         set_params = {k for c in mine for k, v in c.args.items() if v is not None}
+        left_out = {p.name for p in t.params for c in mine if c.args.get(p.name) is None}
         checked = {c.field for c in mine}
         need = [f"set the optional parameter '{p.name}' (to a value other than its default) in at least one case"
                 for p in t.params if not p.required and p.name not in set_params]
+        # the default path is a branch of its own: a mutant that broke "descending omitted" in sort_versions survived
+        # because its only case set descending=False
+        need += [f"leave the optional parameter '{p.name}' out in at least one case (its default behaviour)"
+                 for p in t.params if not p.required and p.name not in left_out]
         need += [f"check the return field '{r.name}' in at least one case" for r in t.returns if r.name not in checked]
         if need:
             gaps[t.name] = need
     return gaps
 
 
-def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool: int = 3) -> DiffTests:
+def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool: int = 3,
+           feedback: str = "", followups: bool = True) -> DiffTests:
     """Write differential tests from the spec and the library only. The Tester never sees the adapter code,
     so its reference expressions are an independent check that the tools compute what the library computes."""
     system = ("You are the Tester role of a capability compiler. For each tool in the spec, write "
@@ -440,13 +446,16 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
               "type and format the spec describes (e.g. wrap in str(...), format dates as 'YYYY-MM-DD'). "
               "Prefer fields with a deterministic, library-computed value. Only import the library and pure stdlib. "
               "COVERAGE (a bug hides wherever no case looks): across a tool's cases, (1) give every optional "
-              "parameter a non-default value in at least one case; (2) check every return field in at least one "
-              "case, including display or text fields when the spec says exactly how they are formed; (3) include "
+              "parameter a non-default value in at least one case AND leave it out in another; (2) check every "
+              "return field in at least one case, including display or text fields when the spec says exactly how "
+              "they are formed, and for comparisons check each boolean field on the EQUAL case too; (3) include "
               "boundary inputs that separate close outcomes: two EQUAL values for comparisons, an empty or "
               "one-element input, zero, and the value right at a threshold. Write more cases than "
               f"{per_tool} if that is what coverage takes. "
               f"{UNTRUSTED_NOTE}")
     user = f"CAPABILITY SPEC\n{spec.model_dump_json(indent=1)}\n\nLIBRARY EVIDENCE\n{_impl_evidence(a, spec)}"
+    if feedback:  # earlier cases for these tools could not be used, and why
+        user = f"{feedback}\n\n{user}"
     tests = provider.generate_structured([{"role": "system", "content": system}, {"role": "user", "content": user}],
                                          DiffTests)
     names = {t.name: {r.name for r in t.returns} for t in spec.tools}
@@ -481,7 +490,7 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
     # for just the tools that are missing.
     covered = {c.tool for c in tests.cases}
     missing = [t for t in spec.tools if t.name not in covered]
-    if missing:
+    if missing and followups:
         sub_spec = spec.model_copy(update={"tools": missing})
         sub_user = (f"CAPABILITY SPEC (WRITE TEST CASES FOR THESE MISSED TOOLS ONLY)\n"
                     f"{sub_spec.model_dump_json(indent=1)}\n\nLIBRARY EVIDENCE\n{_impl_evidence(a, sub_spec)}")
@@ -494,7 +503,7 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
             log.warning("tester re-query for %s failed: %s", sorted(t.name for t in missing), str(e)[:200])
 
     # Coverage: one targeted request for what the cases leave out (optional parameters, unchecked fields).
-    gaps = coverage_gaps(spec, tests.cases)
+    gaps = coverage_gaps(spec, tests.cases) if followups else {}
     if gaps:
         gap_spec = spec.model_copy(update={"tools": [t for t in spec.tools if t.name in gaps]})
         gap_user = ("ADD TEST CASES THAT COVER WHAT THE EXISTING ONES MISS. Write only the new cases.\n"
