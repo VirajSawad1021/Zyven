@@ -408,13 +408,14 @@ def repair(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, current: 
 
 
 def coverage_gaps(spec: CapabilitySpec, cases: list) -> dict[str, list[str]]:
-    """What the differential cases leave unexercised, per tool: optional parameters never given a value, and return
-    fields never checked. A mutation test found exactly these holes: bugs in an optional branch, or in a field no case
-    compared, passed every gate. Tools with no case at all are handled separately."""
+    """What the differential cases leave unexercised, per tool: no case at all, optional parameters never given a
+    value, and return fields never checked. A mutation test found exactly these holes: bugs in an optional branch, or
+    in a field no case compared, passed every gate."""
     gaps: dict[str, list[str]] = {}
     for t in spec.tools:
         mine = [c for c in cases if c.tool == t.name]
-        if not mine:
+        if not mine:  # the worst gap of all: counted, never skipped (skipping it once reported "full coverage"
+            gaps[t.name] = ["write test cases for this tool: it has none"]  # while 4 of 6 tools had no case)
             continue
         set_params = {k for c in mine for k, v in c.args.items() if v is not None}
         checked = {c.field for c in mine}

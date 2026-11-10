@@ -482,3 +482,26 @@ def test_tester_asks_once_more_for_what_the_cases_miss(analysis, monkeypatch):
     assert "'strict'" in prompts[1] and "'display'" in prompts[1]
     from zyven.ai.roles import coverage_gaps
     assert coverage_gaps(_spec(_cov_tool()), out.cases) == {}
+
+
+def test_a_tool_with_no_case_is_a_coverage_gap():
+    from zyven.ai.roles import coverage_gaps
+    from zyven.ai.schemas import DiffCase
+    spec = _spec(_cov_tool(), _tool("second"))
+    gaps = coverage_gaps(spec, [DiffCase(**_case({"number": "12", "strict": True}, "value")),
+                                DiffCase(**_case({"number": "3"}, "display"))])
+    assert gaps == {"second": ["write test cases for this tool: it has none"]}
+
+
+def test_a_reference_ending_in_print_is_rejected(tmp_path, monkeypatch):
+    import zyven.compiler.verify as v
+    from zyven.ai.schemas import DiffCase, DiffTests
+    from types import SimpleNamespace
+    monkeypatch.setattr(v, "run", lambda *a, **k: SimpleNamespace(stdout="", stderr="no sandbox in this test", ok=False))
+    good = DiffCase(tool="first", args={"number": "12"}, field="value", reference_imports=[],
+                    reference_expr="int({number}) * 2")
+    printed = good.model_copy(update={"reference_expr": "x = int({number}) * 2\nprint(x)"})
+    gate = v._differential_gate(tmp_path, _spec(_tool("first")), DiffTests(cases=[good, printed]), {}, None, set(), {})
+    kept = json.loads((tmp_path / "diff_tests.json").read_text(encoding="utf-8"))["cases"]
+    assert [c["reference_expr"] for c in kept] == ["int({number}) * 2"]
+    assert "not print" in gate.detail

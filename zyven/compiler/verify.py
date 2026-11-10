@@ -201,6 +201,9 @@ def _differential_gate(skill_dir, spec, diff_tests, mounts, env_policy, package_
             last = body[-1] if body else None
             if not isinstance(last, ast.Expr):
                 raise SyntaxError("the last line must be the expression that computes the value")
+            if isinstance(last.value, ast.Call) and isinstance(last.value.func, ast.Name) and last.value.func.id == "print":
+                # print(...) evaluates to None, so the "library value" would be null and every tool would look wrong
+                raise SyntaxError("the last line must be the value itself, not print(...) of it")
             program = [ast.unparse(s) for s in body[:-1]] + [f"_ = ({ast.unparse(last.value)})"]
         except SyntaxError as e:
             rejected.append(f"{c.tool}: {e.msg if hasattr(e, 'msg') else e}")
