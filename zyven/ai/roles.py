@@ -407,6 +407,25 @@ def repair(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, current: 
                                         AdapterCode)
 
 
+def coverage_gaps(spec: CapabilitySpec, cases: list) -> dict[str, list[str]]:
+    """What the differential cases leave unexercised, per tool: optional parameters never given a value, and return
+    fields never checked. A mutation test found exactly these holes: bugs in an optional branch, or in a field no case
+    compared, passed every gate. Tools with no case at all are handled separately."""
+    gaps: dict[str, list[str]] = {}
+    for t in spec.tools:
+        mine = [c for c in cases if c.tool == t.name]
+        if not mine:
+            continue
+        set_params = {k for c in mine for k, v in c.args.items() if v is not None}
+        checked = {c.field for c in mine}
+        need = [f"set the optional parameter '{p.name}' (to a value other than its default) in at least one case"
+                for p in t.params if not p.required and p.name not in set_params]
+        need += [f"check the return field '{r.name}' in at least one case" for r in t.returns if r.name not in checked]
+        if need:
+            gaps[t.name] = need
+    return gaps
+
+
 def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool: int = 3) -> DiffTests:
     """Write differential tests from the spec and the library only. The Tester never sees the adapter code,
     so its reference expressions are an independent check that the tools compute what the library computes."""
@@ -419,6 +438,12 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
               "statement, and make the LAST line one expression that evaluates to the value, with no semicolons, converted to the same JSON "
               "type and format the spec describes (e.g. wrap in str(...), format dates as 'YYYY-MM-DD'). "
               "Prefer fields with a deterministic, library-computed value. Only import the library and pure stdlib. "
+              "COVERAGE (a bug hides wherever no case looks): across a tool's cases, (1) give every optional "
+              "parameter a non-default value in at least one case; (2) check every return field in at least one "
+              "case, including display or text fields when the spec says exactly how they are formed; (3) include "
+              "boundary inputs that separate close outcomes: two EQUAL values for comparisons, an empty or "
+              "one-element input, zero, and the value right at a threshold. Write more cases than "
+              f"{per_tool} if that is what coverage takes. "
               f"{UNTRUSTED_NOTE}")
     user = f"CAPABILITY SPEC\n{spec.model_dump_json(indent=1)}\n\nLIBRARY EVIDENCE\n{_impl_evidence(a, spec)}"
     tests = provider.generate_structured([{"role": "system", "content": system}, {"role": "user", "content": user}],
@@ -466,6 +491,21 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
             tests.cases.extend(c for c in extra.cases if c.tool in wanted and usable(c))
         except Exception as e:  # best effort: the differential gate reports the tools that still lack cases
             log.warning("tester re-query for %s failed: %s", sorted(t.name for t in missing), str(e)[:200])
+
+    # Coverage: one targeted request for what the cases leave out (optional parameters, unchecked fields).
+    gaps = coverage_gaps(spec, tests.cases)
+    if gaps:
+        gap_spec = spec.model_copy(update={"tools": [t for t in spec.tools if t.name in gaps]})
+        gap_user = ("ADD TEST CASES THAT COVER WHAT THE EXISTING ONES MISS. Write only the new cases.\n"
+                    + "\n".join(f"- {tool}: " + "; ".join(need) for tool, need in gaps.items())
+                    + f"\n\nCAPABILITY SPEC (THESE TOOLS)\n{gap_spec.model_dump_json(indent=1)}"
+                    f"\n\nLIBRARY EVIDENCE\n{_impl_evidence(a, gap_spec)}")
+        try:
+            extra = provider.generate_structured(
+                [{"role": "system", "content": system}, {"role": "user", "content": gap_user}], DiffTests)
+            tests.cases.extend(c for c in extra.cases if c.tool in gaps and usable(c))
+        except Exception as e:  # best effort: the gaps are reported in the compile log either way
+            log.warning("tester coverage re-query for %s failed: %s", sorted(gaps), str(e)[:200])
 
     for c in tests.cases:
         c.reference_imports = [fix_import(ln) for ln in c.reference_imports if ln.strip()]

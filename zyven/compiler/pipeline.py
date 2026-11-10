@@ -14,7 +14,7 @@ from pathlib import Path
 
 from zyven import __version__
 from zyven.ai.provider import ModelProvider, ProviderError
-from zyven.ai.roles import architect, compiler, lint_interface, repair, tester
+from zyven.ai.roles import architect, compiler, coverage_gaps, lint_interface, repair, tester
 from zyven.ai.schemas import AdapterCode, CandidateCapability, CapabilitySpec, DiffTests
 from zyven.analysis.analyzer import Analysis
 from zyven.compiler.build import assemble
@@ -111,7 +111,10 @@ def compile_capability(
                                 f"{by('tester').label})")
     try:
         diff_tests = tester(by("tester"), a, spec)
-        emit("tester.done", detail=f"{len(diff_tests.cases)} cases for {len({c.tool for c in diff_tests.cases})} tools")
+        gaps = coverage_gaps(spec, diff_tests.cases)
+        emit("tester.done", detail=f"{len(diff_tests.cases)} cases for {len({c.tool for c in diff_tests.cases})} tools"
+             + (f"; still uncovered: " + "; ".join(f"{t}: {len(n)}" for t, n in gaps.items()) if gaps else "; full coverage"),
+             coverage_gaps=gaps)
     except ProviderError as e:
         diff_tests = None
         emit("tester.error", detail=f"no differential tests: {str(e)[:200]}")

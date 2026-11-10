@@ -435,3 +435,50 @@ def test_too_deep_generated_module_is_skipped_not_fatal(tmp_path):
     assert "pkg.ok.add" in {s.id for s in a.symbols}
     assert "pkg.generated" not in {m.name for m in a.modules}
     assert any("generated.py" in w and "too deeply" in w for w in a.warnings)
+
+
+# ---- Tester coverage: optional parameters and every return field (gaps a mutation test found) -------------
+
+def _cov_tool():
+    return ToolSpec(name="first", description="d",
+                    params=[ToolParam(name="number", type="string", description="x"),
+                            ToolParam(name="strict", type="boolean", description="y", required=False)],
+                    returns=[ReturnField(name="value", type="integer", description="v"),
+                             ReturnField(name="display", type="string", description="text")],
+                    implementation_symbols=[], implementation_notes="", example_args={"number": "12"})
+
+
+def _case(args, field):
+    return {"tool": "first", "args": args, "field": field, "reference_imports": ["calc._core"],
+            "reference_expr": "calc._core.checksum({number})"}
+
+
+def test_coverage_gaps_names_unset_optionals_and_unchecked_fields():
+    from zyven.ai.roles import coverage_gaps
+    from zyven.ai.schemas import DiffCase
+    spec = _spec(_cov_tool())
+    gaps = coverage_gaps(spec, [DiffCase(**_case({"number": "12"}, "value"))])
+    assert len(gaps["first"]) == 2
+    assert "'strict'" in gaps["first"][0] and "'display'" in gaps["first"][1]
+    full = [DiffCase(**_case({"number": "12", "strict": True}, "value")), DiffCase(**_case({"number": "3"}, "display"))]
+    assert coverage_gaps(spec, full) == {}
+
+
+def test_tester_asks_once_more_for_what_the_cases_miss(analysis, monkeypatch):
+    monkeypatch.setattr(prov.time, "sleep", lambda s: None)
+    first = {"cases": [_case({"number": "12"}, "value")]}
+    gap_fill = {"cases": [_case({"number": "12", "strict": True}, "value"), _case({"number": "7"}, "display")]}
+    responses, prompts = [first, gap_fill], []
+
+    def answer(r):
+        prompts.append(json.loads(r.content)["messages"][-1]["content"])
+        return httpx.Response(200, json={"choices": [{"message": {"role": "assistant",
+                              "content": json.dumps(responses.pop(0))}, "finish_reason": "stop"}]})
+
+    p = ModelProvider("https://example.invalid/v1", "m", "k")
+    p._client = httpx.Client(transport=httpx.MockTransport(answer))
+    out = run_tester(p, analysis, _spec(_cov_tool()))
+    assert len(out.cases) == 3 and not responses
+    assert "'strict'" in prompts[1] and "'display'" in prompts[1]
+    from zyven.ai.roles import coverage_gaps
+    assert coverage_gaps(_spec(_cov_tool()), out.cases) == {}
