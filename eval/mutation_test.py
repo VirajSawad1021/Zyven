@@ -1,4 +1,4 @@
-"""Mutation test of the verification gates: break verified skills on purpose and count what the gates catch.
+﻿"""Mutation test of the verification gates: break verified skills on purpose and count what the gates catch.
 
 For each verified skill, every tool body is parsed and small, realistic bugs are injected one at a time (a mutant):
 a flipped comparison, an arithmetic swap, an off-by-one constant, a negated condition, swapped call arguments, a
@@ -21,6 +21,7 @@ import ast
 import copy
 import json
 import random
+import re
 import shutil
 import sys
 import tempfile
@@ -161,6 +162,28 @@ def _unwrap(text: str) -> str:
     return "\n".join(ast.unparse(st) for st in fn.body)
 
 
+CALIBRATE = False
+CALIBRATION_LOG: list[str] = []
+
+
+def _same_args(case_args: dict, reported: dict) -> bool:
+    """The gate reports typed arguments (lists), the saved case may hold them as JSON text."""
+    if set(case_args) != set(reported):
+        return False
+    for k, v in case_args.items():
+        r = reported[k]
+        if v == r:
+            continue
+        if isinstance(v, str):
+            try:
+                if json.loads(v) == r:
+                    continue
+            except ValueError:
+                pass
+        return False
+    return True
+
+
 def run_skill(skill_dir: Path, per_tool: int, rng: random.Random, with_upstream: bool) -> list[Mutant]:
     from zyven.analysis.analyzer import analyze
     from zyven.compiler.verify import verify
@@ -192,6 +215,30 @@ def run_skill(skill_dir: Path, per_tool: int, rng: random.Random, with_upstream:
     # Control: the unmutated skill through exactly this path must pass, or every "kill" below would be an artifact.
     # Bodies go through the same parse/unparse round trip as the mutants.
     control = gates_for([i.model_copy(update={"body": _unwrap(_wrap(i.body))}) for i in code.tools])
+    calibrated: list[str] = []
+    while CALIBRATE and not control.passed and len(calibrated) < 10:
+        # Standard mutation-testing rule: a test must pass on the original program. Only differential mismatches are
+        # calibrated away (a Tester case whose expected value is wrong); any other failing gate still aborts.
+        failing = [g.name for g in control.gates if not g.passed]
+        if failing != ["differential"]:
+            break
+        drop = []
+        for msg in control.failing_tools.values():
+            mt = re.match(r"for args (\{.*?\}), field '([^']+)' returned", msg)
+            if mt:
+                drop.append((json.loads(mt.group(1)), mt.group(2)))
+        if not drop:
+            break
+        before = len(diff.cases)
+        diff.cases = [c for c in diff.cases if not any(_same_args(c.args, a_) and c.field == f for a_, f in drop)]
+        if len(diff.cases) == before:
+            break
+        calibrated += [f"{f} for {json.dumps(a_)[:80]}" for a_, f in drop]
+        control = gates_for([i.model_copy(update={"body": _unwrap(_wrap(i.body))}) for i in code.tools])
+    if calibrated:
+        print(f"  calibration: dropped {len(calibrated)} case(s) that fail on the UNMUTATED skill: {calibrated}",
+              flush=True)
+        CALIBRATION_LOG.extend(f"{skill_dir.name}: {c}" for c in calibrated)
     if not control.passed:
         failed = "; ".join(f"{g.name}: {g.detail[:120]}" for g in control.gates if not g.passed)
         raise SystemExit(f"{skill_dir.name}: the UNMUTATED skill fails here ({failed}); results would be meaningless")
@@ -254,7 +301,8 @@ def report(muts: list[Mutant], args, seconds: float) -> tuple[dict, str]:
     data = {"mutants": len(scored), "killed": len(killed), "score": round(score, 3), "errors": len(errors),
             "by_gate": by_gate, "failed_at_all": alone, "by_operator": {k: {"killed": v[0], "total": v[1]} for k, v in by_op.items()},
             "upstream_gate": args.with_upstream, "seed": args.seed, "seconds": round(seconds),
-            "skills": sorted({m.skill for m in muts}), "results": [asdict(m) for m in muts]}
+            "skills": sorted({m.skill for m in muts}), "calibrated": CALIBRATION_LOG,
+            "results": [asdict(m) for m in muts]}
     md = [f"# Mutation test of the gates ({time.strftime('%Y-%m-%d')})", "",
           f"**{len(killed)}/{len(scored)} mutants killed ({score:.0%})** across {', '.join(data['skills'])}; "
           f"seed {args.seed}; upstream-tests gate {'included' if args.with_upstream else 'skipped (it tests the library, not the adapter)'}"
@@ -268,6 +316,9 @@ def report(muts: list[Mutant], args, seconds: float) -> tuple[dict, str]:
     if surv:
         md += ["", "## Survivors (a gap in the gates, or an equivalent mutant: read each)", ""]
         md += [f"- `{m.skill}.{m.tool}` {m.operator}: {m.where}" for m in surv]
+    if CALIBRATION_LOG:
+        md += ["", f"Calibration (--calibrate): {len(CALIBRATION_LOG)} Tester case(s) failed on the UNMUTATED "
+               "skill and were dropped before the mutants ran:"] + [f"- {c}" for c in CALIBRATION_LOG]
     if errors:
         md += ["", f"{len(errors)} mutant(s) could not be run (harness errors, not counted):"]
         md += [f"- `{m.tool}` {m.operator}: {m.detail}" for m in errors[:10]]
@@ -280,8 +331,12 @@ def main() -> None:
     ap.add_argument("--max", type=int, default=8, help="mutants per tool")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--with-upstream", action="store_true", help="also run the upstream-tests gate (slow, cannot kill)")
+    ap.add_argument("--calibrate", action="store_true", help="drop Tester cases that fail on the unmutated skill "
+                    "(reported); without it such a skill aborts the run")
     ap.add_argument("--out", type=Path, default=ROOT / "eval" / "results")
     args = ap.parse_args()
+    global CALIBRATE
+    CALIBRATE = args.calibrate
     rng = random.Random(args.seed)
     skills = []
     for p in args.paths:
