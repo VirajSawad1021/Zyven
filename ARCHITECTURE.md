@@ -300,6 +300,29 @@ The Tester's coverage is checked deterministically (`coverage_gaps`):
 Coverage is judged only on cases that pass the sandbox's own reference checks (`reference_problem`). Tools with gaps
 are asked about once more, with the rejection reasons quoted.
 
+### 4.15 Network allowlist (`zyven/sandbox/egress.py`, `egress_proxy.py`)
+By default the sandbox has no network (`--network none`). With a host allowlist:
+- **The container** joins a Docker network created with `--internal`, which has no route out.
+- **An egress proxy container** is on that network and on the default one. It uses the standard library only and runs
+  read-only, with no capabilities, as non-root.
+- **The proxy forwards only to allowlisted hosts:**
+  - HTTPS `CONNECT` tunnels, with TLS untouched
+  - plain-HTTP absolute URIs
+  - ports 443 and 80 only
+  - exact names or `*.subdomain` rules
+  - IP literals refused
+- **The container gets `HTTPS_PROXY` / `HTTP_PROXY`.** A program that ignores them has no route at all.
+- **Every decision is logged.**
+
+Two uses:
+- **`zyven verify --docker ... --allow-host H`** runs a third-party server this way. The isolation check lists the hosts
+  it reached and any host it was refused.
+- **`zyven compile --allow-host H`** is a reviewer's decision; a model never sets it.
+  - Every `verify` call gets its own `Egress`, and the gates run on its network.
+  - The hosts are recorded in provenance as `network_hosts`.
+  - At run time, `skill_server_spec` reads them, and `ToolBox.add_server` starts the proxy before connecting. The exit
+    stack closes the client first, then removes the proxy and network.
+
 ---
 
 ## 5. Trust Boundaries & Threat Model
@@ -310,6 +333,7 @@ are asked about once more, with the rejection reasons quoted.
 | **Model Generation** | Inbound from LLM | Parsed with strict Pydantic schemas. Symbols verified by `RefResolver`. Code checked by AST policy before sandbox execution. |
 | **Sandbox Execution** | Adapter & Tests → Container | Docker container with `--network none`, read-only roots, non-root user, CPU/memory limits, dropped capabilities. |
 | **Skill Runtime** | Agent → Skill Server | Verified skills run in the same container when the agent calls them; a sandbox test checks that a skill has no network and can write only to `/tmp` at runtime. |
+| **Skill network allowlist** | Skill → named hosts | Only with a reviewer-set `--allow-host`: an internal network plus an egress proxy that forwards only to those hosts; gates and run time use the same allowlist. |
 | **Human Approval** | Agent → Human Reviewer | The agent cannot compile or load outside code without explicit user approval via UI/API (`/api/cards/{id}/decision`). |
 | **Connected Services** | Agent → Third-party MCP server | Enabled by the user after a Test shows the tool list. Tools not marked read-only wait for an approval card. The read-only hint comes from the server itself and is not verified by Zyven. Tool output is untrusted text. |
 | **Coding Agents** | Control center → Codex / OpenCode / Qoder CLI / Claude Code / Antigravity | Optional, off by default, each in its own containment (see 4.6). Task text goes to the provider each program is signed in to. |
