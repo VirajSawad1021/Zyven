@@ -150,6 +150,17 @@ outside-in checks (section 6), which are not the same as the six gates.**
   - One verified compile is an example, not a comparison between agents.
 - **`zyven reassemble` trusts the saved differential cases.** It reruns the six gates with the cases the Tester wrote when the
   skill was first compiled. It does not write new ones. A weak original test set stays weak.
+- **`zyven export` copies the evidence; it does not re-verify.** The exported Docker image installs the library from git
+  at the verified commit. If that commit or repository disappears upstream, the image cannot be rebuilt.
+- **`zyven outdated` maps symbols to files by module path.** A symbol re-exported from another module, or code moved
+  between files, can be missed or over-reported. "Touched" means the file changed, not that the behaviour the skill uses
+  changed.
+- **The mutation score measures the Tester's cases as much as the gates.** The differential gate can only catch what a
+  case looks at. Equivalent mutants are classified by hand. Each score is one run with one seed; model-written cases
+  vary between runs.
+- **Calibration removes wrong cases, which can also hide real bugs.** A case that fails on the unmutated skill is assumed
+  to have a wrong expected value. Each dropped case is listed so it can be checked: every one dropped so far was a wrong
+  expectation, not a bug in the skill.
 - **Installed copies:**
   - **Only Windows was tested by hand**, in a clean `uvx` room. Linux is covered by the CI package job, and macOS was not tried.
   - **A git install has no dashboard build.** The board then serves its single-file page. Wheels built by the release

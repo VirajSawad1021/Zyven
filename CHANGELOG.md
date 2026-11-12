@@ -32,6 +32,10 @@ build, and installs without a clone.
   called with no Zyven at run time.
 - **`zyven verify --config` / `--discover`**: checks every server in Claude Desktop/Code, Cursor, Windsurf, VS Code,
   Gemini CLI or Codex configs. `env` values are passed to the server, never printed.
+- **`zyven outdated`**: lists skills built from a library commit that upstream has moved past. With `--fetch` it
+  also counts the commits behind and lists the changed files inside the modules each skill uses. The committed
+  networkx skill was 29 commits behind, with 3 changed files in modules it uses. Nothing is recompiled
+  automatically.
 
 ### Changed
 - Compiled skills declare `read_only_hint` / `destructive_hint=False` / `open_world_hint=False`. Their input schemas carry

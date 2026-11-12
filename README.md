@@ -316,6 +316,8 @@ uv run zyven reassemble --dry-run             # which skills an improved harness
 uv run zyven reassemble                       # rebuild them; all six gates rerun, the old server kept on failure
 uv run zyven export skills/<name>             # a standalone MCP server: Dockerfile, library pinned to the verified
                                               # commit, README with the gate results and agent config (no Zyven needed)
+uv run zyven outdated --fetch                 # skills whose library moved on since they were verified, and
+                                              # whether the changes touch modules the skill uses
 
 uv run python eval/run_eval.py --suite stdnum --limit 6 --label compiled --skill skills/<name>/server.py
 uv run python eval/run_eval.py --suite global --limit 6 --label compiled --skill skills/<name>/server.py

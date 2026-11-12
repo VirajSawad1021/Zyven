@@ -268,6 +268,38 @@ under `~/.zyven`, or `ZYVEN_HOME`. The wheel ships the sandbox files, the catalo
 - **`zyven reassemble`** rebuilds old skills with the current harness, with no model calls. It reuses the saved spec,
   bodies and differential cases, reruns all six gates, and puts the old `server.py` back on any failure or crash.
 
+### 4.13 Export, client configs, upstream drift (`zyven/export.py`, `zyven/mcpverify/configs.py`, `zyven/outdated.py`)
+- **`zyven export`** writes a verified skill as a standalone MCP server:
+  - `server.py`, unchanged
+  - a `pyproject.toml` and a `Dockerfile` that install the library at the exact verified commit. A pip
+    `#subdirectory` is worked out from the checkout when the package is not at the repository root.
+  - the evidence files, copied, plus a README with the gate results and client config
+
+  Only skills whose `validation-report.json` passed can be exported.
+- **`zyven verify --config` / `--discover`** reads the MCP server lists of common clients (JSON `mcpServers` / `servers`
+  blocks, including per-project blocks in `~/.claude.json`, and Codex's `config.toml`) and runs the outside-in checks on
+  each server. `env` values reach their server only. URL labels drop the query string and user info.
+- **`zyven outdated`** compares each skill's verified commit with upstream HEAD (`git ls-remote`). With `--fetch` it also
+  counts the commits behind and lists the changed files inside the modules the skill uses, mapped from the spec's
+  `included_symbols`.
+
+### 4.14 Measuring the gates (`eval/mutation_test.py`)
+The mutation harness injects small bugs into a verified skill's tool bodies and reruns the gates with the skill's own
+differential cases (section 6 of the README has the numbers). Two guards keep it honest:
+- **Controls.** The unmutated skill must pass the same path before and after the mutants.
+- **Docker failures.** A failure caused by Docker itself stops the run. It is never counted as a catch.
+
+`--calibrate` drops, and lists, Tester cases that fail on the unmutated skill: the standard rule that a test must pass
+on the original program.
+
+The Tester's coverage is checked deterministically (`coverage_gaps`):
+- tools with no case
+- optional parameters never set, and never left out
+- return fields never checked
+
+Coverage is judged only on cases that pass the sandbox's own reference checks (`reference_problem`). Tools with gaps
+are asked about once more, with the rejection reasons quoted.
+
 ---
 
 ## 5. Trust Boundaries & Threat Model
