@@ -42,7 +42,7 @@ jobs:
       - name: Sandbox tests (pinned upstream repo, no network inside the container)
         env:
           ZYVEN_DOCKER_TESTS: "1"
-        run: uv run pytest -q tests/test_sandbox.py
+        run: uv run pytest -q tests/test_sandbox.py tests/test_egress.py
 
   package:
     name: Package (wheel, clean uvx install)

@@ -40,6 +40,7 @@ class SandboxPolicy:
     pids_limit: int = 256
     timeout_s: int = 300
     extra_env: dict[str, str] = field(default_factory=dict)
+    network_name: str = ""  # join this Docker network instead (an --internal one behind the egress proxy)
 
 
 def _docker_path(p: Path) -> str:
@@ -62,7 +63,9 @@ def docker_args(command: list[str], mounts: dict[Path, str], policy: SandboxPoli
         "-e", "PYTHONDONTWRITEBYTECODE=1", "-e", "HOME=/tmp",
         "-w", workdir,
     ]
-    if not policy.network:
+    if policy.network_name:  # an internal network whose only way out is the egress proxy (sandbox/egress.py)
+        args += ["--network", policy.network_name]
+    elif not policy.network:
         args += ["--network", "none"]
     for k, v in policy.extra_env.items():
         args += ["-e", f"{k}={v}"]

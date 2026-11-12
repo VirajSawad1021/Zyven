@@ -150,6 +150,13 @@ outside-in checks (section 6), which are not the same as the six gates.**
   - One verified compile is an example, not a comparison between agents.
 - **`zyven reassemble` trusts the saved differential cases.** It reruns the six gates with the cases the Tester wrote when the
   skill was first compiled. It does not write new ones. A weak original test set stays weak.
+- **The network allowlist works through a proxy.**
+  - **Programs that ignore `HTTPS_PROXY` cannot reach anything.** Node's built-in `fetch` is one of them, unless told to
+    use the proxy. That fails closed: safe, but such a server may not work with an allowlist.
+  - **The check is on host names.** The proxy resolves the names and refuses IP literals. Only ports 443 and 80 are
+    allowed.
+  - **TLS is not inspected,** so what is sent to an allowed host is not seen.
+  - **It applies to `zyven verify --docker` so far,** not yet to compiled skills at run time.
 - **`zyven export` copies the evidence; it does not re-verify.** The exported Docker image installs the library from git
   at the verified commit. If that commit or repository disappears upstream, the image cannot be rebuilt.
 - **`zyven outdated` maps symbols to files by module path.** A symbol re-exported from another module, or code moved

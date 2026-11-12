@@ -200,7 +200,8 @@ def cmd_verify(args) -> None:
             host, cont = m, ("/work" if i == 0 else f"/work{i}")
         mounts[Path(host)] = cont
     r = verify_server(command or None, args.url, headers, env or None, args.docker, mounts or None, probe=args.probe,
-                      lock_file=None if args.update_lock else lock, timeout=args.timeout, network=args.allow_network)
+                      lock_file=None if args.update_lock else lock, timeout=args.timeout, network=args.allow_network,
+                      allow_hosts=args.allow_host)
     print(format_report(r, verbose=args.verbose))
     if args.json:
         Path(args.json).write_text(json.dumps(r.to_dict(), indent=1, ensure_ascii=False), encoding="utf-8")
@@ -343,6 +344,7 @@ def main() -> None:
                    "(no network, read-only, no capabilities); e.g. zyven-sandbox:py312")
     s.add_argument("--mount", action="append", help="with --docker: HOST[:CONTAINER] folder mounted read-only "
                    "(default /work); repeatable")
+    s.add_argument("--allow-host", action="append", help="with --docker: let the server reach only this host (through an egress proxy; *.example.com for subdomains); repeatable. Anything else it tries is refused and reported")
     s.add_argument("--allow-network", action="store_true", help="with --docker: give the container network access "
                    "(for servers that must reach their service to start; the report says so)")
     s.add_argument("--probe", action="store_true", help="also call each tool with input its schema forbids")
