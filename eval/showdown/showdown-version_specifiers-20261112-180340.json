@@ -1,0 +1,83 @@
+{
+ "repo": "packaging",
+ "capability": "version_specifiers",
+ "agents": "model,codex,qoder",
+ "mutants": 6,
+ "seed": 1,
+ "timeout": 1800,
+ "rows": [
+  {
+   "contender": "model",
+   "seconds": 520,
+   "verified": true,
+   "attempts": 3,
+   "tools": 2,
+   "dropped": [
+    "parse_version"
+   ],
+   "who": "gemma-4-26b-a4b-it@generativelanguage.googleapis.com",
+   "gates": {
+    "policy": true,
+    "import": true,
+    "upstream_tests": true,
+    "input_robustness": true,
+    "mcp_smoke": true,
+    "differential": true
+   },
+   "cases": 4,
+   "log_tail": "[zyven] gate.differential: PASS 3/3 cases match the library; 1 reference expressions invalid (ignored); 2 rejected by policy (e.g. compare_versions: the last line must be the expression that computes the value)\n[zyven] done: VERIFIED after 3 attempt(s) in 511.9s (2 tools; dropped unverifiable: parse_version)\n\nverified: True (policy, import, upstream_tests, input_robustness, mcp_smoke, differential)\n17:48:49 model call failed (timeout after 240s: ReadTimeout('The read operation timed out')); retry 1 in 1s",
+   "mutation": {
+    "killed": 4,
+    "mutants": 10,
+    "calibrated": 0,
+    "survivors": [
+     "compare_versions compare (line 18: GtE -> Gt)",
+     "compare_versions drop_statement (line 55: statement dropped: op = '>=')",
+     "compare_versions negate_condition (line 18: condition negated)",
+     "compare_versions negate_condition (line 72: condition negated)",
+     "compare_versions negate_condition (line 69: condition negated)",
+     "compare_versions negate_condition (line 9: condition negated)"
+    ]
+   }
+  },
+  {
+   "contender": "codex",
+   "seconds": 224,
+   "verified": true,
+   "attempts": 3,
+   "tools": 3,
+   "dropped": [
+    "sort_versions"
+   ],
+   "who": "Codex (its default model) [coding agent]",
+   "gates": {
+    "policy": true,
+    "import": true,
+    "upstream_tests": true,
+    "input_robustness": true,
+    "mcp_smoke": true,
+    "differential": true
+   },
+   "cases": 9,
+   "log_tail": "[zyven] gate.mcp_smoke: PASS 3 tools called with example args; invalid input rejected\n[zyven] gate.differential: PASS 9/9 cases match the library\n[zyven] done: VERIFIED after 3 attempt(s) in 221.3s (3 tools; dropped unverifiable: sort_versions)\n\nverified: True (policy, import, upstream_tests, input_robustness, mcp_smoke, differential)",
+   "mutation": {
+    "killed": 16,
+    "mutants": 16,
+    "calibrated": 0,
+    "survivors": []
+   }
+  },
+  {
+   "contender": "qoder",
+   "seconds": 48,
+   "verified": false,
+   "attempts": null,
+   "tools": 0,
+   "dropped": [],
+   "who": "",
+   "gates": {},
+   "cases": 0,
+   "log_tail": "[zyven] architect.start: Python Versions and Specifiers (Qoder CLI (its default model) [coding agent])\n[zyven] done: NOT VERIFIED: architect: structured output invalid after 2 repairs: 1 validation error for CapabilitySpec\n  Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value=\"You've reached your cred...Issue (input /feedback)\", input_type=s\n\nverified: False"
+  }
+ ]
+}

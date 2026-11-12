@@ -59,6 +59,17 @@ def _adapter(name: str):
     raise ProviderError(f"unknown coding agent {name!r}; choose one of {', '.join(AGENT_NAMES)}")
 
 
+_LIMIT_RE = re.compile(r"(reached|exceeded|out of) (your |the )?(credit|usage|quota|rate|free|monthly|daily)"
+                       r"|insufficient (credit|quota|balance)|usage limit|rate limit|upgrade your plan", re.IGNORECASE)
+
+
+def is_limit_reply(text: str) -> bool:
+    """An agent that has run out of credit prints a short account message instead of an answer (Qoder: "You've
+    reached your credit limit..."). A real answer is JSON, so only a short, JSON-free reply is judged."""
+    t = text.strip()
+    return len(t) < 600 and "{" not in t and bool(_LIMIT_RE.search(t))
+
+
 def extract_json(text: str) -> str:
     """The JSON object inside an agent's reply (agents sometimes add a sentence or a code fence around it)."""
     t = _FENCE_RE.sub("", text.strip()).strip()
@@ -215,6 +226,8 @@ class AgentProvider(ModelProvider):
             if not replies:
                 why = "; ".join(errors) or " ".join(err.split())[-300:] or f"exit code {p.returncode}"
                 raise ProviderError(f"no reply ({why[:400]})")
+            if is_limit_reply(replies[-1]):  # an account message, not an answer: say so instead of "invalid JSON"
+                raise ProviderError(f"{self.adapter.label} reports a usage limit: {' '.join(replies[-1].split())[:200]}")
             return replies[-1], totals, latency
         finally:
             shutil.rmtree(cwd, ignore_errors=True)
