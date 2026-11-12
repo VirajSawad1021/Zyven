@@ -573,3 +573,38 @@ def test_a_failed_compile_keeps_its_events_and_reason(tmp_path):
     assert saved[-1]["event"] == "done" and "429" in saved[-1]["detail"]
     assert "HTTP 429" in json.loads((r.skill_dir / "failure.json").read_text(encoding="utf-8"))["reason"]
     assert not (r.skill_dir / "server.py").exists()
+
+
+class _ScriptedProvider:
+    """Answers generate_structured calls from a list; an Exception in the list is raised instead."""
+    def __init__(self, answers):
+        self.answers, self.prompts = list(answers), []
+
+    def generate_structured(self, messages, schema, **kw):
+        self.prompts.append(messages[-1]["content"])
+        a = self.answers.pop(0)
+        if isinstance(a, Exception):
+            raise a
+        return schema.model_validate(a)
+
+
+def test_compiler_falls_back_to_one_call_per_tool(analysis):
+    from zyven.ai.provider import ProviderError
+    from zyven.ai.roles import compiler
+    timeout = ProviderError("model call failed after retries: timeout after 240s")
+    body = lambda n: {"tools": [{"tool": n, "imports": [], "body": "return {'value': 1}"}]}  # noqa: E731
+    p = _ScriptedProvider([timeout, body("first"), timeout])
+    out = compiler(p, analysis, _spec(_tool("first"), _tool("second")))
+    assert [i.tool for i in out.tools] == ["first"]  # second failed alone too: left out, partial verification drops it
+    assert '"first"' in p.prompts[1] and '"second"' not in p.prompts[1]
+
+
+def test_compiler_raises_when_nothing_comes_back(analysis):
+    import pytest
+    from zyven.ai.provider import ProviderError
+    from zyven.ai.roles import compiler
+    err = ProviderError("timeout")
+    with pytest.raises(ProviderError):
+        compiler(_ScriptedProvider([err, err, err]), analysis, _spec(_tool("first"), _tool("second")))
+    with pytest.raises(ProviderError):  # a single tool has nothing to split
+        compiler(_ScriptedProvider([err]), analysis, _spec(_tool("first")))
