@@ -314,6 +314,20 @@ def _provider(env_path: Path) -> ModelProvider:
         return NoModel(str(e))
 
 
+def nested_segment(site: Path, url_path: str) -> Path | None:
+    """`/app/skills/__next.app.skills.__PAGE__.txt` -> `<site>/app/skills/__next.app/skills/__PAGE__.txt`, if that
+    file exists inside the site. None when the request is not such a segment or the file is not there."""
+    folder, _, name = url_path.lstrip("/").rpartition("/")
+    parts = name[len("__next."):-len(".txt")].split(".")
+    if len(parts) < 2 or any(p in ("", "..") or "/" in p or "\\" in p for p in parts):
+        return None
+    root = site.resolve()
+    candidate = (root / folder / f"__next.{parts[0]}" / Path(*parts[1:-1]) / f"{parts[-1]}.txt").resolve()
+    if not candidate.is_relative_to(root) or not candidate.is_file():
+        return None
+    return candidate
+
+
 def create_app(env_path: Path | None = None, data_dir: Path | None = None,
                board_dir: Path | None = None) -> FastAPI:
     """data_dir holds catalog checkouts and analysis caches; board_dir (default: data_dir) holds the board's own
@@ -716,6 +730,19 @@ def create_app(env_path: Path | None = None, data_dir: Path | None = None,
         return StreamingResponse(gen(), media_type="text/event-stream")
 
     if (SITE / "index.html").exists():
+        @app.middleware("http")
+        async def next_segment_files(request: Request, call_next):
+            """Next.js 16 prefetches page data as `__next.app.skills.__PAGE__.txt` but its static export writes
+            `__next.app/skills/__PAGE__.txt`; hosts are expected to map one to the other (without this, every page
+            load logged a row of 404s)."""
+            path = request.url.path
+            name = path.rsplit("/", 1)[-1]
+            if request.method == "GET" and name.startswith("__next.") and name.endswith(".txt"):
+                file = nested_segment(SITE, path)
+                if file is not None:
+                    return FileResponse(file, media_type="text/plain")
+            return await call_next(request)
+
         app.mount("/", StaticFiles(directory=SITE, html=True), name="site")
     else:
         @app.get("/")
