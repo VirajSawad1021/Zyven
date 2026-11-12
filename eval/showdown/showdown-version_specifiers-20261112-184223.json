@@ -1,0 +1,47 @@
+{
+ "capability": "version_specifiers",
+ "agents": "model,codex",
+ "mutants": 6,
+ "seed": 1,
+ "timeout": 1800,
+ "repo": "packaging",
+ "rows": [
+  {
+   "contender": "model",
+   "seconds": 555,
+   "verified": false,
+   "attempts": null,
+   "tools": 3,
+   "dropped": [],
+   "who": "",
+   "gates": {},
+   "cases": 0,
+   "log_tail": "[zyven] compiler.start: writing 3 tool bodies (gemma-4-26b-a4b-it@generativelanguage.googleapis.com)\n[zyven] done: NOT VERIFIED: compiler: model call failed after retries: timeout after 240s: ReadTimeout('The read operation timed out')\n\nverified: False\n18:33:16 model call failed (timeout after 240s: ReadTimeout('The read operation timed out')); retry 1 in 1s"
+  },
+  {
+   "contender": "codex",
+   "seconds": 135,
+   "verified": true,
+   "attempts": 1,
+   "tools": 3,
+   "dropped": [],
+   "who": "Codex (its default model) [coding agent]",
+   "gates": {
+    "policy": true,
+    "import": true,
+    "upstream_tests": true,
+    "input_robustness": true,
+    "mcp_smoke": true,
+    "differential": true
+   },
+   "cases": 17,
+   "log_tail": "[zyven] gate.mcp_smoke: PASS 3 tools called with example args; invalid input rejected\n[zyven] gate.differential: PASS 17/17 cases match the library\n[zyven] done: VERIFIED after 1 attempt(s) in 131.4s\n\nverified: True (policy, import, upstream_tests, input_robustness, mcp_smoke, differential)",
+   "mutation": {
+    "killed": 12,
+    "mutants": 12,
+    "calibrated": 0,
+    "survivors": []
+   }
+  }
+ ]
+}
