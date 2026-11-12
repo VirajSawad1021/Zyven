@@ -2,19 +2,24 @@
 
 # Zyven
 
-**Agents that compile their own tools.**
+**Agents that compile their own tools, and check every tool they are given.**
 
 Zyven turns open-source code into verified MCP tools that an AI agent learns when it needs them, and keeps
-only after they pass a locked-down sandbox.
+only after they pass a locked-down sandbox. Any model or coding agent can write the tools; the gates decide.
+The same checks work on MCP servers Zyven did not build, before your agent trusts them.
+
+```bash
+uvx --from git+https://github.com/VirajSawad1021/Zyven zyven verify --discover   # check every MCP server you have installed
+```
 
 **Demo video:** [watch it on Google Drive](https://drive.google.com/drive/folders/17Z5dbSa2UQmzx8eyQ6716iMhUfkipIRD)
 
 [![CI](https://github.com/VirajSawad1021/Zyven/actions/workflows/ci.yml/badge.svg)](https://github.com/VirajSawad1021/Zyven/actions/workflows/ci.yml)
-![Open-weight models only](https://img.shields.io/badge/models-open--weight%20only-4a5a3f)
+![Published results: open-weight models](https://img.shields.io/badge/published%20results-open--weight%20models-4a5a3f)
 ![MCP](https://img.shields.io/badge/tools-MCP-e8895a)
 ![License: MIT](https://img.shields.io/badge/license-MIT-141413)
 
-Frogtoberfest 2026 entry
+Winner, Frogtoberfest 2026 (Leapfrog)
 
 ![Zyven landing page](docs/screenshots/landing.jpg)
 
@@ -104,6 +109,25 @@ Without tools, the model tries to compute checksums and calendars by hand and us
 and were developed against these libraries, and the 4096-token cap decides much of the baseline (see
 [`LIMITATIONS.md`](LIMITATIONS.md) section 5). A model-plus-interpreter baseline and a held-out suite are open
 ([#24](https://github.com/VirajSawad1021/Zyven/issues/24), [#25](https://github.com/VirajSawad1021/Zyven/issues/25)).
+
+### Do the gates catch bugs? A mutation test
+
+`eval/mutation_test.py` breaks verified skills on purpose, one small realistic bug at a time: a flipped comparison, an
+off-by-one constant, swapped arguments, a dropped statement or return field. Then it runs the gates with the skill's
+own saved test cases. No model is involved.
+
+On 2026-11-06, with 6 mutants per tool across `graph_algorithms` (networkx) and `version_specifiers` (packaging), the gates
+caught **47 of 56 mutants (84%)**. Four of the nine survivors are *equivalent*: they change nothing observable, such as
+swapping the ends of an edge in an undirected graph. That makes it **47 of 52 real bugs (90%)**.
+
+The differential gate alone would have caught 44 of them. The five real misses are gaps in the Tester's cases, not in
+the gates:
+- a weighted-graph option that no case sets
+- no case comparing two equal versions
+- a display string that is not compared
+
+[Report](eval/results/mutation-20261106-222233.md). The run checks itself: the unmutated skill must pass before and
+after the mutants, and a Docker failure stops the run instead of counting as a catch.
 
 ### What the gates caught during development
 
@@ -290,6 +314,8 @@ uv run zyven sync --scout                     # clone the catalog and cache the 
 uv run zyven board --port 8765                # board, site and APIs
 uv run zyven reassemble --dry-run             # which skills an improved harness would rebuild (no model calls)
 uv run zyven reassemble                       # rebuild them; all six gates rerun, the old server kept on failure
+uv run zyven export skills/<name>             # a standalone MCP server: Dockerfile, library pinned to the verified
+                                              # commit, README with the gate results and agent config (no Zyven needed)
 
 uv run python eval/run_eval.py --suite stdnum --limit 6 --label compiled --skill skills/<name>/server.py
 uv run python eval/run_eval.py --suite global --limit 6 --label compiled --skill skills/<name>/server.py
@@ -347,7 +373,17 @@ uv run zyven verify -- npx -y @modelcontextprotocol/server-everything      # a c
 uv run zyven verify --url https://example.com/mcp --header "Authorization: Bearer ..."
 uv run zyven verify --probe --lock mcp-lock.json -- python my_server.py    # also send invalid input; pin definitions
 uv run zyven verify --docker zyven-sandbox:py312 --mount ./skill:/skill -- python /skill/server.py   # in the sandbox
+uv run zyven verify --discover                    # every server in your Claude Desktop/Code, Cursor, Codex... configs
+uv run zyven verify --config ~/.cursor/mcp.json   # or name the config files yourself
 ```
+
+`--discover` reads the usual config files:
+- Claude Desktop and Claude Code (`~/.claude.json`, `.mcp.json`)
+- Cursor, Windsurf, VS Code (`.vscode/mcp.json`), Gemini CLI, and Codex (`~/.codex/config.toml`)
+
+It checks every server it finds and ends with one table. Each server runs as its client would run it. The `env` values
+from the config are passed to that server and never printed. Query strings and user info are dropped from URLs in
+reports.
 
 | Check | Fails when |
 |---|---|

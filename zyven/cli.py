@@ -5,6 +5,7 @@
   zyven compile <repo> --capability <name>     AI: spec -> adapter -> sandbox verify -> repair -> package
   zyven verify -- <command...> | --url URL     check ANY MCP server: schemas, tool poisoning, rug pulls, robustness
   zyven mcp [--print-config]                   verified skills as a stdio MCP server for Claude Code / Codex / any agent
+  zyven export <skill> [--to DIR]              a verified skill as a standalone MCP server (no Zyven needed)
   zyven reassemble [skill|library ...]         rebuild skills with the current harness, rerun the gates (no model)
   zyven setup | zyven doctor                   build the sandbox image / check what is missing
   zyven sync [--scout]                         clone the pinned catalog repos (and optionally scout them)
@@ -131,8 +132,53 @@ def cmd_compile(args) -> None:
     sys.exit(0 if r.verified else 1)
 
 
+def cmd_verify_configs(args) -> None:
+    """zyven verify --config FILE / --discover: every server a client is configured with, then one summary."""
+    from zyven.mcpverify import format_markdown, verify_server
+    from zyven.mcpverify.configs import known_locations, read_config
+    files = [Path(p) for p in args.config or []]
+    if args.discover:
+        found = known_locations()
+        print("config files found: " + (", ".join(str(p) for p in found) or "none"))
+        files += found
+    entries = []
+    for f in dict.fromkeys(files):
+        try:
+            entries += read_config(f)
+        except (OSError, ValueError) as e:
+            print(f"  cannot read {f}: {e}")
+    if not entries:
+        sys.exit("no MCP servers found in those files")
+    print(f"{len(entries)} server(s). Each runs on this machine as its client would run it"
+          + (" (inside the sandbox)" if args.docker else "") + "; env values from the config are passed, never shown.\n")
+    rows, reports = [], []
+    for e in entries:
+        if e.disabled:
+            rows.append((e.name, "skipped", "disabled in its config", e.source))
+            continue
+        r = verify_server(e.command or None, e.url or None, e.headers or None, e.env or None, args.docker,
+                          None, probe=args.probe, timeout=args.timeout, network=args.allow_network)
+        reports.append({"name": e.name, "source": e.source, **r.to_dict()})
+        if args.markdown:
+            with open(args.markdown, "a", encoding="utf-8") as f:
+                f.write(f"## {e.name}\n\n" + format_markdown(r) + "\n")
+        bad = [c.name for c in r.checks if c.status == "FAIL"]
+        warn = [c.name for c in r.checks if c.status == "WARN" and c.name != "isolation"]
+        rows.append((e.name, r.verdict, ("failed: " + ", ".join(bad)) if bad else
+                     (("warnings: " + ", ".join(warn)) if warn else f"{len(r.tools)} tools, clean"), e.source))
+        print(f"  {r.verdict:4}  {e.name}  ({rows[-1][2]})", flush=True)
+    width = max(len(r[0]) for r in rows)
+    print("\n" + "\n".join(f"  {n:<{width}}  {v:<7}  {d}" for n, v, d, _ in rows))
+    if args.json:
+        Path(args.json).write_text(json.dumps(reports, indent=1, ensure_ascii=False), encoding="utf-8")
+        print(f"report: {args.json}")
+    sys.exit(1 if any(v == "FAIL" for _, v, _, _ in rows) else 0)
+
+
 def cmd_verify(args) -> None:
     from zyven.mcpverify import format_markdown, format_report, verify_server, write_lock
+    if args.config or args.discover:
+        return cmd_verify_configs(args)
     command = args.server[1:] if args.server[:1] == ["--"] else args.server
     if not command and not args.url:
         sys.exit("give the server command after --, e.g.  zyven verify -- npx -y @modelcontextprotocol/server-memory\n"
@@ -169,6 +215,18 @@ def cmd_verify(args) -> None:
         print("strict: warnings count as failures")
         sys.exit(1)
     sys.exit(0 if r.verdict == "PASS" else 1)
+
+
+def cmd_export(args) -> None:
+    from zyven.export import export
+    skill = Path(args.skill)
+    to = Path(args.to) if args.to else Path("exported") / skill.name
+    try:
+        out = export(skill, to)
+    except (FileNotFoundError, ValueError) as e:
+        sys.exit(str(e))
+    print(f"exported to {out}:\n  " + "\n  ".join(sorted(p.name for p in out.iterdir())))
+    print(f"\nnext: cd {out} && docker build -t zyven-skill-{skill.name.replace('_', '-')} .   (see README.md)")
 
 
 def cmd_reassemble(args) -> None:
@@ -250,6 +308,9 @@ def main() -> None:
     s.set_defaults(fn=cmd_compile)
     s = sub.add_parser("verify", help="check any MCP server: schemas, tool poisoning, rug pulls, robustness")
     s.add_argument("--url", help="a streamable HTTP MCP server instead of a command")
+    s.add_argument("--config", action="append", help="check every server in a client config (Claude Desktop/Code, "
+                   "Cursor, VS Code mcp.json, Codex config.toml); repeatable")
+    s.add_argument("--discover", action="store_true", help="find the usual client config files and check them all")
     s.add_argument("--header", action="append", help="HTTP header for --url, 'Name: value'; repeatable")
     s.add_argument("--env", dest="env_var", action="append",
                    help="environment for the server, NAME=value or NAME (pass through); nothing else is passed")
@@ -276,6 +337,10 @@ def main() -> None:
     s.add_argument("--skill", action="append", help="serve only this skill; repeatable")
     s.add_argument("--print-config", action="store_true", help="print the commands that add Zyven to Claude Code and Codex")
     s.set_defaults(fn=cmd_mcp)
+    s = sub.add_parser("export", help="a verified skill as a standalone MCP server (Dockerfile, pinned library, README)")
+    s.add_argument("skill", help="the skill folder")
+    s.add_argument("--to", help="output folder (default exported/<skill>)")
+    s.set_defaults(fn=cmd_export)
     s = sub.add_parser("reassemble", help="rebuild compiled skills with the current harness and rerun the gates "
                        "(no model calls)")
     s.add_argument("paths", nargs="*", help="skill folders or libraries (default: the library and skills/)")
