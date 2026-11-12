@@ -37,6 +37,10 @@ build, and installs without a clone.
   networkx skill was 29 commits behind, with 3 changed files in modules it uses. Nothing is recompiled
   automatically.
 
+- **Network allowlist for the sandbox** (`zyven verify --docker ... --allow-host HOST`): an internal Docker network
+  plus an egress proxy that forwards only to allowlisted hosts. Direct connections have no route. The report
+  lists every refused host.
+
 ### Changed
 - Compiled skills declare `read_only_hint` / `destructive_hint=False` / `open_world_hint=False`. Their input schemas carry
   parameter descriptions (`pydantic` joined the policy's framework list). Zyven's own skills now pass `zyven verify` with

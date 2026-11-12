@@ -375,9 +375,16 @@ uv run zyven verify -- npx -y @modelcontextprotocol/server-everything      # a c
 uv run zyven verify --url https://example.com/mcp --header "Authorization: Bearer ..."
 uv run zyven verify --probe --lock mcp-lock.json -- python my_server.py    # also send invalid input; pin definitions
 uv run zyven verify --docker zyven-sandbox:py312 --mount ./skill:/skill -- python /skill/server.py   # in the sandbox
+uv run zyven verify --docker node:22-slim --mount ./srv:/work --allow-host api.example.com -- node /work/index.js
+                                                  # in the sandbox, reaching only api.example.com
 uv run zyven verify --discover                    # every server in your Claude Desktop/Code, Cursor, Codex... configs
 uv run zyven verify --config ~/.cursor/mcp.json   # or name the config files yourself
 ```
+
+`--allow-host` limits a sandboxed server's network to named hosts. The container sits on a Docker network with
+no route out, and an egress proxy forwards only to the allowlist. HTTPS is tunnelled, never decrypted. Anything
+else the server tries is refused and listed in the report, which also shows whether a server tries to contact
+anything you did not expect.
 
 `--discover` reads the usual config files:
 - Claude Desktop and Claude Code (`~/.claude.json`, `.mcp.json`)

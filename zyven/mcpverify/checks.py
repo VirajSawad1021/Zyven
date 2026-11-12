@@ -263,7 +263,16 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None) -> Repor
                             detail + ("; server still answering" if alive else ""), failed))
 
     # isolation
-    if obs.get("sandboxed") and obs.get("network"):
+    eg = obs.get("egress")
+    if obs.get("sandboxed") and eg:
+        refused = sorted({f"{d.get('host')}:{d.get('port')}" for d in eg.get("decisions", []) if not d.get("allowed")})
+        used = sorted({d.get("host") for d in eg.get("decisions", []) if d.get("allowed")})
+        checks.append(Check("isolation", WARN if refused else PASS,
+                            f"ran in Zyven's sandbox with network limited to {', '.join(eg['hosts'])} (egress proxy)"
+                            + (f"; reached {', '.join(used)}" if used else "; no connection made")
+                            + (f"; REFUSED {len(refused)} other host(s)" if refused else ""),
+                            [f"tried to reach {h}, which is not on the allowlist (refused)" for h in refused]))
+    elif obs.get("sandboxed") and obs.get("network"):
         checks.append(Check("isolation", WARN, "ran in Zyven's sandbox (read-only root, no capabilities, non-root) "
                                                "but WITH network access (--allow-network)"))
     else:

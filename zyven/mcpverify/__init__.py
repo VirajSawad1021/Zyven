@@ -17,8 +17,11 @@ __all__ = ["verify_server", "format_report", "Report"]
 def verify_server(command: list[str] | None = None, url: str | None = None, headers: dict[str, str] | None = None,
                   env: dict[str, str] | None = None, docker_image: str | None = None,
                   mounts: dict[Path, str] | None = None, probe: bool = False, lock_file: Path | None = None,
-                  timeout: float = 60.0, network: bool = False) -> Report:
+                  timeout: float = 60.0, network: bool = False, allow_hosts: list[str] | None = None) -> Report:
     _, sandboxed, label = server_from(command, url, headers, env, docker_image, mounts, network=network)
+    if allow_hosts and not (docker_image and command):
+        raise ValueError("--allow-host needs --docker and a server command: the allowlist is enforced by the sandbox")
+    egress = None
     containers: list[str] = []
 
     def make():  # a fresh transport (and container name) for each connection
@@ -26,15 +29,22 @@ def verify_server(command: list[str] | None = None, url: str | None = None, head
         if docker_image and command:
             name = f"zyven-verify-{uuid.uuid4().hex[:12]}"
             containers.append(name)
-        return server_from(command, url, headers, env, docker_image, mounts, name, network)[0]
+        return server_from(command, url, headers, env, docker_image, mounts, name, network, egress)[0]
 
     try:
+        if allow_hosts:
+            from zyven.sandbox.egress import Egress
+            egress = Egress(allow_hosts).__enter__()
         obs = asyncio.run(observe(make, label, sandboxed, probe=probe, timeout=timeout))
         obs["network"] = bool(network and docker_image)
+        if egress is not None:
+            obs["egress"] = {"hosts": egress.hosts, "decisions": egress.decisions()}
     finally:  # a server that ignores the end of its input would otherwise keep running
         from zyven.sandbox.runner import remove_container
         for name in containers:
             remove_container(name)
+        if egress is not None:
+            egress.__exit__(None, None, None)
     lock = None
     if lock_file and lock_file.exists():
         lock = json.loads(lock_file.read_text(encoding="utf-8")).get("tools") or {}
