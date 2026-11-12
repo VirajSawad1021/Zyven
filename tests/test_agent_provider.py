@@ -97,3 +97,15 @@ def test_provider_for_parses_choices():
     assert isinstance(p, AgentProvider) and p.agent == "claude" and p.model == "opus"
     with pytest.raises(ProviderError, match="unknown provider"):
         provider_for("chatgpt")
+
+
+def test_a_usage_limit_message_is_reported_as_such(fake_codex, monkeypatch):
+    from zyven.ai.agent_provider import is_limit_reply
+    assert is_limit_reply("You've reached your credit limit. Upgrade your plan or wait. Report an issue (input /feedback)")
+    assert is_limit_reply("Rate limit exceeded, try again later")
+    assert not is_limit_reply('{"name": "rate limit checker", "count": 1}')  # an answer that happens to mention it
+    assert not is_limit_reply("Here is the spec you asked for.")
+    monkeypatch.setenv("FAKE_REPLY", "You've reached your credit limit for this month.")
+    p = AgentProvider("codex", executable=fake_codex, max_retries=1)
+    with pytest.raises(ProviderError, match="usage limit"):
+        p.chat([{"role": "user", "content": "go"}])
