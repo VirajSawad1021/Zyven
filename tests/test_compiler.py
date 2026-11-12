@@ -435,3 +435,129 @@ def test_too_deep_generated_module_is_skipped_not_fatal(tmp_path):
     assert "pkg.ok.add" in {s.id for s in a.symbols}
     assert "pkg.generated" not in {m.name for m in a.modules}
     assert any("generated.py" in w and "too deeply" in w for w in a.warnings)
+
+
+# ---- Tester coverage: optional parameters and every return field (gaps a mutation test found) -------------
+
+def _cov_tool():
+    return ToolSpec(name="first", description="d",
+                    params=[ToolParam(name="number", type="string", description="x"),
+                            ToolParam(name="strict", type="boolean", description="y", required=False)],
+                    returns=[ReturnField(name="value", type="integer", description="v"),
+                             ReturnField(name="display", type="string", description="text")],
+                    implementation_symbols=[], implementation_notes="", example_args={"number": "12"})
+
+
+def _case(args, field):
+    return {"tool": "first", "args": args, "field": field, "reference_imports": ["calc._core"],
+            "reference_expr": "calc._core.checksum({number})"}
+
+
+def test_coverage_gaps_names_unset_optionals_and_unchecked_fields():
+    from zyven.ai.roles import coverage_gaps
+    from zyven.ai.schemas import DiffCase
+    spec = _spec(_cov_tool())
+    gaps = coverage_gaps(spec, [DiffCase(**_case({"number": "12"}, "value"))])
+    assert len(gaps["first"]) == 2
+    assert "'strict'" in gaps["first"][0] and "'display'" in gaps["first"][1]
+    full = [DiffCase(**_case({"number": "12", "strict": True}, "value")), DiffCase(**_case({"number": "3"}, "display"))]
+    assert coverage_gaps(spec, full) == {}
+
+
+def test_tester_asks_once_more_for_what_the_cases_miss(analysis, monkeypatch):
+    monkeypatch.setattr(prov.time, "sleep", lambda s: None)
+    first = {"cases": [_case({"number": "12"}, "value")]}
+    gap_fill = {"cases": [_case({"number": "12", "strict": True}, "value"), _case({"number": "7"}, "display")]}
+    responses, prompts = [first, gap_fill], []
+
+    def answer(r):
+        prompts.append(json.loads(r.content)["messages"][-1]["content"])
+        return httpx.Response(200, json={"choices": [{"message": {"role": "assistant",
+                              "content": json.dumps(responses.pop(0))}, "finish_reason": "stop"}]})
+
+    p = ModelProvider("https://example.invalid/v1", "m", "k")
+    p._client = httpx.Client(transport=httpx.MockTransport(answer))
+    out = run_tester(p, analysis, _spec(_cov_tool()))
+    assert len(out.cases) == 3 and not responses
+    assert "'strict'" in prompts[1] and "'display'" in prompts[1]
+    from zyven.ai.roles import coverage_gaps
+    assert coverage_gaps(_spec(_cov_tool()), out.cases) == {}
+
+
+def test_a_tool_with_no_case_is_a_coverage_gap():
+    from zyven.ai.roles import coverage_gaps
+    from zyven.ai.schemas import DiffCase
+    spec = _spec(_cov_tool(), _tool("second"))
+    gaps = coverage_gaps(spec, [DiffCase(**_case({"number": "12", "strict": True}, "value")),
+                                DiffCase(**_case({"number": "3"}, "display"))])
+    assert gaps == {"second": ["write test cases for this tool: it has none"]}
+
+
+def test_a_reference_ending_in_print_is_rejected(tmp_path, monkeypatch):
+    import zyven.compiler.verify as v
+    from zyven.ai.schemas import DiffCase, DiffTests
+    from types import SimpleNamespace
+    monkeypatch.setattr(v, "run", lambda *a, **k: SimpleNamespace(stdout="", stderr="no sandbox in this test", ok=False))
+    good = DiffCase(tool="first", args={"number": "12"}, field="value", reference_imports=[],
+                    reference_expr="int({number}) * 2")
+    printed = good.model_copy(update={"reference_expr": "x = int({number}) * 2\nprint(x)"})
+    gate = v._differential_gate(tmp_path, _spec(_tool("first")), DiffTests(cases=[good, printed]), {}, None, set(), {})
+    kept = json.loads((tmp_path / "diff_tests.json").read_text(encoding="utf-8"))["cases"]
+    assert [c["reference_expr"] for c in kept] == ["int({number}) * 2"]
+    assert "not print" in gate.detail
+
+
+def test_tools_left_without_a_runnable_case_are_asked_about_again(analysis, monkeypatch):
+    import zyven.compiler.pipeline as pl
+    from zyven.ai.schemas import DiffCase, DiffTests
+    spec = _spec(_tool("first"), _tool("second"))
+    good = DiffCase(**_case({"number": "12"}, "value"))
+    broken = DiffCase(tool="second", args={"number": "3"}, field="value", reference_imports=[],
+                      reference_expr="calc._core.checksum({number}")  # syntax error: never closed
+    seen = {}
+
+    def fake_tester(provider, a, sub, feedback="", followups=True):
+        seen.update(tools=[t.name for t in sub.tools], feedback=feedback, followups=followups)
+        return DiffTests(cases=[good.model_copy(update={"tool": "second"})])
+
+    monkeypatch.setattr(pl, "tester", fake_tester)
+    events = []
+    out = pl._reask_unusable(None, analysis, spec, DiffTests(cases=[good, broken]), {"calc"},
+                             lambda kind, **d: events.append((kind, d)))
+    assert seen["tools"] == ["second"] and seen["followups"] is False
+    assert "second" in seen["feedback"] and "syntax error" in seen["feedback"]
+    assert [c.tool for c in out.cases] == ["first", "second", "second"]
+    assert [k for k, _ in events] == ["tester.retry", "tester.retry.done"]
+    assert "1 usable case(s) added for 1/1" in events[-1][1]["detail"]
+
+
+def test_no_reask_when_every_tool_has_a_runnable_case(analysis, monkeypatch):
+    import zyven.compiler.pipeline as pl
+    from zyven.ai.schemas import DiffCase, DiffTests
+    monkeypatch.setattr(pl, "tester", lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not be called")))
+    cases = DiffTests(cases=[DiffCase(**_case({"number": "12"}, "value"))])
+    assert pl._reask_unusable(None, analysis, _spec(_tool("first")), cases, {"calc"}, lambda *a, **k: None) is cases
+
+
+def test_a_broken_case_does_not_count_as_coverage(analysis, monkeypatch):
+    import zyven.compiler.pipeline as pl
+    from zyven.ai.schemas import DiffCase, DiffTests
+    spec = _spec(_cov_tool())
+    ok = [DiffCase(**_case({"number": "12"}, "value")), DiffCase(**_case({"number": "4"}, "display"))]
+    sets_strict_but_broken = DiffCase(tool="first", args={"number": "5", "strict": True}, field="value",
+                                      reference_imports=[], reference_expr="calc._core.checksum({number}")
+    seen = {}
+    monkeypatch.setattr(pl, "tester", lambda p, a, sub, feedback="", followups=True:
+                        seen.update(feedback=feedback) or DiffTests(cases=[]))
+    pl._reask_unusable(None, analysis, spec, DiffTests(cases=ok + [sets_strict_but_broken]), {"calc"},
+                       lambda *a, **k: None)
+    assert "'strict'" in seen["feedback"] and "syntax error" in seen["feedback"]
+
+
+def test_an_optional_parameter_must_also_be_left_out_once():
+    from zyven.ai.roles import coverage_gaps
+    from zyven.ai.schemas import DiffCase
+    always_set = [DiffCase(**_case({"number": "12", "strict": False}, "value")),
+                  DiffCase(**_case({"number": "3", "strict": True}, "display"))]
+    gaps = coverage_gaps(_spec(_cov_tool()), always_set)
+    assert gaps == {"first": ["leave the optional parameter 'strict' out in at least one case (its default behaviour)"]}

@@ -14,12 +14,12 @@ from pathlib import Path
 
 from zyven import __version__
 from zyven.ai.provider import ModelProvider, ProviderError
-from zyven.ai.roles import architect, compiler, lint_interface, repair, tester
+from zyven.ai.roles import architect, compiler, coverage_gaps, lint_interface, repair, tester
 from zyven.ai.schemas import AdapterCode, CandidateCapability, CapabilitySpec, DiffTests
 from zyven.analysis.analyzer import Analysis
 from zyven.compiler.build import assemble
 from zyven.compiler.policy import check_adapter
-from zyven.compiler.verify import VerificationReport, verify
+from zyven.compiler.verify import VerificationReport, reference_problem, verify
 
 EventFn = Callable[[str, dict], None]
 ROLE_NAMES = {"architect", "compiler", "tester", "repair"}
@@ -111,7 +111,12 @@ def compile_capability(
                                 f"{by('tester').label})")
     try:
         diff_tests = tester(by("tester"), a, spec)
-        emit("tester.done", detail=f"{len(diff_tests.cases)} cases for {len({c.tool for c in diff_tests.cases})} tools")
+        diff_tests = _reask_unusable(by("tester"), a, spec, diff_tests, package_roots, emit)
+        # coverage of the cases that can actually run: a broken reference covers nothing
+        gaps = coverage_gaps(spec, [c for c in diff_tests.cases if reference_problem(c, package_roots) is None])
+        emit("tester.done", detail=f"{len(diff_tests.cases)} cases for {len({c.tool for c in diff_tests.cases})} tools"
+             + (f"; still uncovered: " + "; ".join(f"{t}: {len(n)}" for t, n in gaps.items()) if gaps else "; full coverage"),
+             coverage_gaps=gaps)
     except ProviderError as e:
         diff_tests = None
         emit("tester.error", detail=f"no differential tests: {str(e)[:200]}")
@@ -190,6 +195,44 @@ def compile_capability(
          + (f" ({len(spec.tools)} tools; dropped unverifiable: {', '.join(dropped)})" if dropped else ""),
          verified=verified)
     return CompileResult(skill_dir, spec, verified, attempt, report, events, seconds)
+
+
+def _reask_unusable(provider, a, spec, diff_tests, package_roots, emit):
+    """Ask the Tester once more for every tool whose cases all fail the sandbox's own reference checks (a syntax
+    error, a last line that is not the value, print(...), a policy violation), quoting why. Without this, such a tool
+    has no differential check at all: a mutation test showed one losing every case to syntax errors."""
+    problems: dict[str, list[str]] = {}
+    usable = []
+    for c in diff_tests.cases:
+        why = reference_problem(c, package_roots)
+        if why is None:
+            usable.append(c)
+        else:
+            problems.setdefault(c.tool, []).append(why)
+    # Gaps are judged on the cases that can run: a case that set an optional parameter but has a syntax error covers
+    # nothing (a mutation in sort_versions' optional branch survived exactly that way).
+    gaps = coverage_gaps(spec, usable)
+    lacking = [t for t in spec.tools if t.name in gaps]
+    if not lacking:
+        return diff_tests
+    emit("tester.retry", detail=f"{len(lacking)} tool(s) need more runnable cases: {', '.join(t.name for t in lacking)}")
+    lines = []
+    for t in lacking:
+        why = "; ".join(sorted(set(problems.get(t.name, []))))[:400]
+        lines.append(f"- {t.name}: still needed: {'; '.join(gaps[t.name])}"
+                     + (f". Earlier cases were rejected: {why}" if why else ""))
+    feedback = ("WRITE NEW TEST CASES FOR THESE TOOLS. Earlier cases left these gaps or could not be used:\n"
+                + "\n".join(lines))
+    try:
+        extra = tester(provider, a, spec.model_copy(update={"tools": lacking}), feedback=feedback, followups=False)
+    except ProviderError as e:
+        emit("tester.error", detail=f"re-ask failed: {str(e)[:200]}")
+        return diff_tests
+    names = {t.name for t in lacking}
+    added = [c for c in extra.cases if c.tool in names and reference_problem(c, package_roots) is None]
+    emit("tester.retry.done", detail=f"{len(added)} usable case(s) added for "
+         f"{len({c.tool for c in added})}/{len(lacking)} tool(s)")
+    return DiffTests(cases=list(diff_tests.cases) + added)
 
 
 def _failed(emit, events, started, reason: str, name: str, skills_root: Path,
