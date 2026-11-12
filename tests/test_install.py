@@ -77,3 +77,20 @@ def test_no_model_explains_what_to_do():
     from zyven.orchestrator.server import NoModel
     with pytest.raises(ProviderError, match="--agent codex"):
         NoModel("MODEL_API_KEY is empty").chat([{"role": "user", "content": "hi"}])
+
+
+def test_next_prefetch_names_map_to_the_exported_nested_files(tmp_path):
+    from zyven.orchestrator.server import nested_segment
+    site = tmp_path / "out"
+    (site / "app" / "skills" / "__next.app" / "skills").mkdir(parents=True)
+    page = site / "app" / "skills" / "__next.app" / "skills" / "__PAGE__.txt"
+    page.write_text("x", encoding="utf-8")
+    (site / "app" / "__next.app").mkdir(parents=True)
+    (site / "app" / "__next.app" / "__PAGE__.txt").write_text("y", encoding="utf-8")
+    assert nested_segment(site, "/app/skills/__next.app.skills.__PAGE__.txt") == page.resolve()
+    assert nested_segment(site, "/app/__next.app.__PAGE__.txt").read_text(encoding="utf-8") == "y"
+    assert nested_segment(site, "/__next.__PAGE__.txt") is None        # a real file name: served as it is
+    assert nested_segment(site, "/app/skills/__next._tree.txt") is None
+    assert nested_segment(site, "/app/__next.app.nope.__PAGE__.txt") is None   # not exported
+    assert nested_segment(site, "/app/__next.app.....__PAGE__.txt") is None    # empty / '..' parts refused
+    assert nested_segment(site, "/../__next.app.skills.__PAGE__.txt") is None  # outside the site
