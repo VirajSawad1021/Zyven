@@ -6,6 +6,14 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **Hardened build and release.**
+  - Every GitHub Action in CI, the release workflow and Zyven's own `action.yml` is pinned to a full commit SHA, so a
+    moved tag cannot change what runs. Dependabot proposes the bumps.
+  - Checkouts no longer keep the token. Release builds use no dependency cache. Step outputs reach scripts as
+    environment variables.
+  - A CI job audits the workflows with zizmor.
+  - The PyPI upload publishes PEP 740 attestations through trusted publishing.
+  - `SECURITY.md` explains how to report a vulnerability.
 - **Coding agents as compile roles.** Codex, Claude Code, Antigravity, OpenCode or the Qoder CLI can do any compile role,
   run headless with minimal tools (`zyven compile --agent codex`, `--compiler claude:opus --tester qoder`). The gates
   still decide. `provenance.json` records who did each role. (#54)

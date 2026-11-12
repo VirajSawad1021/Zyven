@@ -1,0 +1,11 @@
+# Actions are pinned to full commit SHAs (a moved tag cannot change what runs). Dependabot proposes the bumps,
+# one reviewed PR at a time, so the pins do not go stale.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
