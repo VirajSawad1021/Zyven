@@ -6,6 +6,7 @@
   zyven verify -- <command...> | --url URL     check ANY MCP server: schemas, tool poisoning, rug pulls, robustness
   zyven mcp [--print-config]                   verified skills as a stdio MCP server for Claude Code / Codex / any agent
   zyven export <skill> [--to DIR]              a verified skill as a standalone MCP server (no Zyven needed)
+  zyven outdated [--fetch]                     skills whose library moved on upstream since they were verified
   zyven reassemble [skill|library ...]         rebuild skills with the current harness, rerun the gates (no model)
   zyven setup | zyven doctor                   build the sandbox image / check what is missing
   zyven sync [--scout]                         clone the pinned catalog repos (and optionally scout them)
@@ -217,6 +218,30 @@ def cmd_verify(args) -> None:
     sys.exit(0 if r.verdict == "PASS" else 1)
 
 
+def cmd_outdated(args) -> None:
+    from zyven.outdated import check, skill_dirs, to_json
+    targets = [Path(p) for p in args.paths] or [paths.home() / "library", paths.skills_out()]
+    skills = skill_dirs(targets)
+    if not skills:
+        sys.exit("no compiled skills found in: " + ", ".join(str(t) for t in targets))
+    rows = []
+    for sk in skills:
+        st = check(sk, fetch=args.fetch)
+        rows.append(st)
+        how = f"{st.behind} commits behind" if st.behind is not None else ""
+        print(f"  {st.state:<11} {st.skill:<28} {st.commit[:10]}" + (f" -> {st.upstream[:10]}" if st.state == "behind" else "")
+              + (f"  {how}" if how else "") + (f"  ({st.detail})" if st.detail else ""))
+        for f in st.touched[:8]:
+            print(f"                touched: {f}")
+    if args.json:
+        Path(args.json).write_text(to_json(rows), encoding="utf-8")
+    moved = [r for r in rows if r.state == "behind"]
+    if moved:
+        print(f"\n{len(moved)} skill(s) behind upstream. They stay verified for their pinned commit. To move one: pin the"
+              " new commit in catalog/repos.json, `zyven sync`, then `zyven compile` it again (all six gates rerun).")
+    sys.exit(1 if moved and args.strict else 0)
+
+
 def cmd_export(args) -> None:
     from zyven.export import export
     skill = Path(args.skill)
@@ -337,6 +362,13 @@ def main() -> None:
     s.add_argument("--skill", action="append", help="serve only this skill; repeatable")
     s.add_argument("--print-config", action="store_true", help="print the commands that add Zyven to Claude Code and Codex")
     s.set_defaults(fn=cmd_mcp)
+    s = sub.add_parser("outdated", help="skills whose library moved on upstream since they were verified")
+    s.add_argument("paths", nargs="*", help="skill folders or libraries (default: the library and skills/)")
+    s.add_argument("--fetch", action="store_true", help="also fetch, count commits behind and list changed files in "
+                   "the modules each skill uses (updates remote refs in the pinned checkout only)")
+    s.add_argument("--json", help="write the result here")
+    s.add_argument("--strict", action="store_true", help="exit 1 when any skill is behind (for CI)")
+    s.set_defaults(fn=cmd_outdated)
     s = sub.add_parser("export", help="a verified skill as a standalone MCP server (Dockerfile, pinned library, README)")
     s.add_argument("skill", help="the skill folder")
     s.add_argument("--to", help="output folder (default exported/<skill>)")
