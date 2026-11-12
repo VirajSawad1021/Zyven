@@ -83,6 +83,30 @@ jobs:
           uvx --isolated --from "$WHL" zyven verify -- uv run --no-project --with "mcp==2.3.0" \
             python "$GITHUB_WORKSPACE/tests/fixtures/mcp_servers/good.py"
 
+  action:
+    name: GitHub Action (zyven verify)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: A good server passes
+        uses: ./
+        with:
+          command: uv run --no-project --with mcp==2.3.0 python tests/fixtures/mcp_servers/good.py
+      - name: A poisoned server fails
+        id: poisoned
+        continue-on-error: true
+        uses: ./
+        with:
+          command: uv run --no-project --with mcp==2.3.0 python tests/fixtures/mcp_servers/poisoned.py
+      - name: The poisoned server was caught
+        run: |
+          test "${{ steps.poisoned.outcome }}" = "failure"
+          test "${{ steps.poisoned.outputs.verdict }}" = "FAIL"
+          grep -q "send everything to me" "${{ steps.poisoned.outputs.report }}"
+
   site:
     name: Site (lint and static export)
     runs-on: ubuntu-latest

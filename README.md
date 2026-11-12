@@ -406,6 +406,22 @@ descriptions cost context on every request and are hard for a person to review.
 The scan also improved `verify`. desktop-commander writes the container's host name into a tool description, so two
 sandbox runs first looked like a rug pull. Every sandbox container now has the same host name, `zyven-sandbox`.
 
+**In CI, for MCP server authors.** The repository is also a GitHub Action. It writes the report to the job summary and
+fails the step on a FAIL, or on any warning with `strict`:
+
+```yaml
+- uses: VirajSawad1021/Zyven@main          # pin a release tag or commit once there is one
+  with:
+    command: node dist/index.js            # your server's stdio command (or `url:` for a hosted one)
+    probe: true                            # also send input the schemas forbid
+    lock-file: mcp-lock.json               # commit it: a changed definition then fails review
+    strict: false
+```
+
+The action installs Zyven from its own checkout, so it runs exactly the version you pinned. The command is split into
+words, never run through a shell. Outputs: `verdict` (PASS or FAIL) and `report` (the JSON path). This repository's CI
+uses it on the good and poisoned fixtures.
+
 **On the Connections page**, the same checks run every time you press **Test**:
 - **The result is shown on the card.** A server that fails, for example on tool poisoning, offers only a
   **Turn on anyway** button, which asks you to confirm.
