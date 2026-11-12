@@ -19,7 +19,8 @@ from zyven.ai.schemas import AdapterCode, CandidateCapability, CapabilitySpec, D
 from zyven.analysis.analyzer import Analysis
 from zyven.compiler.build import assemble
 from zyven.compiler.policy import check_adapter
-from zyven.compiler.verify import VerificationReport, reference_problem, verify
+from zyven.compiler.verify import VerificationReport, reference_problem
+from zyven.compiler.verify import verify as _verify
 
 EventFn = Callable[[str, dict], None]
 ROLE_NAMES = {"architect", "compiler", "tester", "repair"}
@@ -51,9 +52,20 @@ def compile_capability(
     on_event: EventFn = _print_event,
     run_upstream: bool = True,
     roles: dict[str, ModelProvider] | None = None,
+    allow_hosts: list[str] | None = None,
 ) -> CompileResult:
     """`provider` serves every role unless `roles` names another one for "architect", "compiler", "tester" or
-    "repair" (for example a coding agent compiles and a chat model from another vendor writes the tests)."""
+    "repair" (for example a coding agent compiles and a chat model from another vendor writes the tests).
+
+    `allow_hosts` is set by a human reviewer, never by a model: the skill may reach only these hosts, through the
+    egress proxy, in every gate and later at run time (recorded in provenance as network_hosts)."""
+    def verify(*args, **kw):  # every verification under the reviewer's allowlist, if there is one
+        if not allow_hosts:
+            return _verify(*args, **kw)
+        from zyven.sandbox.egress import Egress
+        with Egress(allow_hosts) as eg:
+            return _verify(*args, egress=eg, **kw)
+
     started = time.monotonic()
     roles = roles or {}
     unknown = set(roles) - ROLE_NAMES
@@ -183,6 +195,7 @@ def compile_capability(
         **provenance, "capability": spec.name, "mode": spec.mode, "included_symbols": spec.included_symbols,
         "source_checkout": str((repo / a.source_root).resolve()),  # wrap mode: importable source at runtime
         "source_root": a.source_root,
+        "network_hosts": list(allow_hosts or []),  # set by a reviewer; enforced at run time by the egress proxy
         "generated_files": ["server.py"], "compile_seconds": seconds, "attempts": attempt,
         "dropped_tools": dropped,  # tools that could not be verified and are NOT in the package
         "model_calls": sum(p.stats.calls for p in {id(by(r)): by(r) for r in ROLE_NAMES}.values()),

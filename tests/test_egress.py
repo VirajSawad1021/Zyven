@@ -80,3 +80,69 @@ print("RESULT=" + json.dumps(out))
     assert "403" in out["refused"]
     assert out["direct"] != "connected"
     assert {"allowed": False, "host": "example.com", "port": 443} in decisions
+
+
+FETCH_SERVER = '''
+import urllib.request
+from mcp.server.mcpserver import MCPServer
+server = MCPServer(name="fetcher")
+
+@server.tool(name="fetch")
+def fetch(url: str) -> dict:
+    try:
+        with urllib.request.urlopen(url, timeout=20) as r:
+            return {"status": r.status}
+    except Exception as e:
+        return {"status": 0, "error": type(e).__name__ + ": " + str(e)[:80]}
+
+if __name__ == "__main__":
+    server.run("stdio")
+'''
+
+
+@pytest.mark.skipif(os.environ.get("ZYVEN_DOCKER_TESTS") != "1", reason="set ZYVEN_DOCKER_TESTS=1 (needs Docker and internet)")
+def test_a_skill_reaches_only_its_allowlisted_host_at_run_time(tmp_path):
+    import asyncio
+    import subprocess
+    from zyven.agent.mcp_tools import ToolBox
+    from zyven.memory.skills import skill_server_spec
+    skill = tmp_path / "fetcher"
+    skill.mkdir()
+    (skill / "server.py").write_text(FETCH_SERVER, encoding="utf-8")
+    (skill / "provenance.json").write_text(json.dumps({"network_hosts": ["pypi.org"]}), encoding="utf-8")
+    spec = skill_server_spec("fetcher", skill, None)
+    assert spec.egress_hosts == ["pypi.org"]
+
+    async def go():
+        async with ToolBox() as tb:
+            await tb.add_server(spec)
+            ok = await tb.call("fetch", {"url": "https://pypi.org/simple/"})
+            no = await tb.call("fetch", {"url": "https://example.com/"})
+            return ok, no
+
+    (ok_flag, ok_text), (no_flag, no_text) = asyncio.run(go())
+    assert '"status": 200' in ok_text.replace("'", '"') or '"status":200' in ok_text.replace(" ", "")
+    assert "403" in no_text
+    left = subprocess.run(["docker", "ps", "-a", "--filter", "name=zyven-proxy", "--format", "{{.Names}}"],
+                          capture_output=True, text=True).stdout.strip()
+    nets = subprocess.run(["docker", "network", "ls", "--filter", "name=zyven-egress", "--format", "{{.Name}}"],
+                          capture_output=True, text=True).stdout.strip()
+    assert left == "" and nets == ""  # the proxy and its network are gone with the toolbox
+
+
+def test_gates_run_on_the_egress_network_when_a_skill_has_an_allowlist(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    import zyven.compiler.verify as v
+    from zyven.ai.schemas import CapabilitySpec
+    seen = []
+    monkeypatch.setattr(v, "run", lambda cmd, mounts, policy, **k: seen.append(policy)
+                        or SimpleNamespace(ok=False, stdout="", stderr="stop here"))
+    (tmp_path / "server.py").write_text("x = 1\n", encoding="utf-8")
+    spec = CapabilitySpec(name="s", title="s", summary="", tools=[], included_symbols=[], relevant_tests=[])
+    eg = SimpleNamespace(network="zyven-egress-test", env=lambda: {"HTTPS_PROXY": "http://zyven-proxy-test:8080"})
+    v.verify(tmp_path, spec, tmp_path, set(), run_upstream=False, egress=eg)
+    assert seen and seen[0].network_name == "zyven-egress-test"
+    assert seen[0].extra_env["HTTPS_PROXY"] == "http://zyven-proxy-test:8080" and "PYTHONPATH" in seen[0].extra_env
+    seen.clear()
+    v.verify(tmp_path, spec, tmp_path, set(), run_upstream=False)
+    assert seen[0].network_name == "" and "HTTPS_PROXY" not in seen[0].extra_env  # no allowlist: --network none

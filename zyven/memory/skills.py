@@ -50,14 +50,19 @@ def skill_server_spec(name: str, skill_dir: Path, source_checkout: str | Path | 
     the host is a development-only opt-in (ZYVEN_SKILL_RUNTIME=host) and is logged every time."""
     from zyven.agent.mcp_tools import MCPServerSpec
 
+    hosts: list[str] = []
+    try:  # the reviewer-set allowlist the gates ran under (zyven compile --allow-host)
+        hosts = list(json.loads((Path(skill_dir) / "provenance.json").read_text(encoding="utf-8")).get("network_hosts") or [])
+    except (OSError, ValueError):
+        pass
     if os.environ.get(HOST_RUNTIME_ENV, "").lower() == "host":
-        log.warning("%s=host: running skill %r on the host WITHOUT sandbox isolation (development only)",
-                    HOST_RUNTIME_ENV, name)
+        log.warning("%s=host: running skill %r on the host WITHOUT sandbox isolation (development only)%s",
+                    HOST_RUNTIME_ENV, name, f"; its host allowlist {hosts} is NOT enforced" if hosts else "")
         spec = MCPServerSpec.python_script(name, Path(skill_dir) / "server.py")
         if source_checkout:
             spec.env = {"PYTHONPATH": str(source_checkout)}
         return spec
-    return MCPServerSpec.sandboxed(name, skill_dir, source_checkout)
+    return MCPServerSpec.sandboxed(name, skill_dir, source_checkout, egress_hosts=hosts)
 
 
 class SkillLibrary:

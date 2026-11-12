@@ -112,9 +112,12 @@ def smoke_plan(spec: CapabilitySpec) -> dict:
 
 def verify(skill_dir: Path, spec: CapabilitySpec, repo: Path, package_roots: set[str],
            run_upstream: bool = True, diff_tests: DiffTests | None = None,
-           source_root: str = ".", skip_tests: list[str] | None = None) -> VerificationReport:
+           source_root: str = ".", skip_tests: list[str] | None = None, egress=None) -> VerificationReport:
     # only the upstream-test gate uses this; big repos (e.g. sympy) need minutes, not seconds
-    policy = SandboxPolicy(image=SANDBOX_IMAGE, timeout_s=900)
+    # with a reviewer-set host allowlist (egress), every gate runs on the egress network, as the skill will at run time
+    net = {"network_name": egress.network} if egress is not None else {}
+    proxy_env = egress.env() if egress is not None else {}
+    policy = SandboxPolicy(image=SANDBOX_IMAGE, timeout_s=900, extra_env=dict(proxy_env), **net)
     source = (skill_dir / "server.py").read_text(encoding="utf-8")
     gates: list[Gate] = []
     failing: dict[str, str] = {}
@@ -126,7 +129,8 @@ def verify(skill_dir: Path, spec: CapabilitySpec, repo: Path, package_roots: set
 
     mounts = {repo: "/src", skill_dir: "/skill"}
     pythonpath = "/src" if source_root in ("", ".") else f"/src/{source_root}"
-    env_policy = SandboxPolicy(image=SANDBOX_IMAGE, timeout_s=60, extra_env={"PYTHONPATH": pythonpath})
+    env_policy = SandboxPolicy(image=SANDBOX_IMAGE, timeout_s=60, extra_env={"PYTHONPATH": pythonpath, **proxy_env},
+                               **net)
     imp = run(["python", "-c", "import runpy; runpy.run_path('/skill/server.py', run_name='zyven_import_check')"],
               mounts, env_policy, workdir="/skill")
     gates.append(Gate("import", imp.ok, "server module imports cleanly" if imp.ok else imp.stderr.strip()[-1500:]))

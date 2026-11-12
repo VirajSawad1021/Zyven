@@ -99,7 +99,7 @@ def cmd_compile(args) -> None:
         spec = CapabilitySpec.model_validate_json(Path(args.spec).read_text(encoding="utf-8"))
         print(f"spec fixed from {args.spec}: {spec.name}, {len(spec.tools)} tools")
         r = compile_capability(p, a, spec=spec, skills_root=Path(args.out) if args.out else paths.skills_out(),
-                               max_repairs=args.max_repairs, roles=roles)
+                               max_repairs=args.max_repairs, roles=roles, allow_hosts=args.allow_host)
         checks = f" ({', '.join(r.report.to_dict()['verified_for'])})" if r.report else ""
         print(f"\nskill: {r.skill_dir}\nverified: {r.verified}{checks}")
         sys.exit(0 if r.verified else 1)
@@ -136,7 +136,8 @@ def cmd_compile(args) -> None:
         cand = cand.model_copy(update={"tests": args.test})
     if cand is None:
         sys.exit(f"capability {args.capability!r} not found; available: {', '.join(c.name for c in candidates)}")
-    r = compile_capability(p, a, candidate=cand, skills_root=Path(args.out) if args.out else paths.skills_out(), max_repairs=args.max_repairs, roles=roles)
+    r = compile_capability(p, a, candidate=cand, skills_root=Path(args.out) if args.out else paths.skills_out(), max_repairs=args.max_repairs, roles=roles,
+                           allow_hosts=args.allow_host)
     checks = f" ({', '.join(r.report.to_dict()['verified_for'])})" if r.report else ""
     print(f"\nskill: {r.skill_dir}\nverified: {r.verified}{checks}")
     sys.exit(0 if r.verified else 1)
@@ -335,6 +336,7 @@ def main() -> None:
     s.add_argument("--entry", action="append", help="override entry points (human-edited boundary); repeatable")
     s.add_argument("--description", help="capability description when defining it with --entry")
     s.add_argument("--test", action="append", help="upstream test file to run for verification (repo-relative); repeatable")
+    s.add_argument("--allow-host", action="append", help="let this skill reach only this host (reviewer decision; repeatable): its gates and its run time use an egress proxy that refuses everything else")
     s.add_argument("--spec", help="compile this capability.json as it is (skips the Scout and Architect); e.g. to compare "
                    "contenders on one fixed design")
     who = ("'model' (the chat model in .env) or a coding agent run headless: codex, claude, agy, opencode, qoder, "

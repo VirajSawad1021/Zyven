@@ -310,6 +310,7 @@ uv run zyven analyze path/to/repo             # deterministic analysis + rules-o
 uv run zyven scout   path/to/repo             # AI: capabilities worth compiling
 uv run zyven compile path/to/repo --capability <name>
 uv run zyven compile path/to/repo --capability iban --entry stdnum.iban.validate   # reviewer-set boundary
+uv run zyven compile path/to/repo --capability weather --allow-host api.weather.example   # a skill that may reach one API
 uv run zyven sync --scout                     # clone the catalog and cache the Scout's capabilities
 uv run zyven board --port 8765                # board, site and APIs
 uv run zyven reassemble --dry-run             # which skills an improved harness would rebuild (no model calls)
