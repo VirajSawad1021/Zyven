@@ -242,7 +242,17 @@ def _failed(emit, events, started, reason: str, name: str, skills_root: Path,
     emit("done", detail=f"NOT VERIFIED: {reason[:240]}", verified=False)
     placeholder = spec or CapabilitySpec(name=name, title=name, summary="", tools=[], included_symbols=[],
                                          relevant_tests=[])
-    return CompileResult((skills_root / f"_failed_{name}").resolve(), placeholder, False, 0, None, events, seconds)
+    # Keep the evidence: without it a failed run (a model quota, a timeout) left nothing to diagnose. This folder has no
+    # server.py, so the skill library never mistakes it for a skill.
+    where = (skills_root / f"_failed_{name}").resolve()
+    try:
+        where.mkdir(parents=True, exist_ok=True)
+        (where / "events.json").write_text(json.dumps(events, indent=1, ensure_ascii=False), encoding="utf-8")
+        (where / "failure.json").write_text(json.dumps({"capability": name, "reason": reason, "seconds": seconds},
+                                                       indent=1, ensure_ascii=False), encoding="utf-8")
+    except OSError:
+        pass  # diagnostics are best effort; the result already says NOT VERIFIED
+    return CompileResult(where, placeholder, False, 0, None, events, seconds)
 
 
 def _remote_url(repo: Path) -> str | None:
