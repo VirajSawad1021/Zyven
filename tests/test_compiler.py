@@ -561,3 +561,15 @@ def test_an_optional_parameter_must_also_be_left_out_once():
                   DiffCase(**_case({"number": "3", "strict": True}, "display"))]
     gaps = coverage_gaps(_spec(_cov_tool()), always_set)
     assert gaps == {"first": ["leave the optional parameter 'strict' out in at least one case (its default behaviour)"]}
+
+
+def test_a_failed_compile_keeps_its_events_and_reason(tmp_path):
+    from zyven.compiler.pipeline import _failed
+    events = [{"t": 0.1, "event": "architect.start", "detail": "x"}]
+    r = _failed(lambda kind, **d: events.append({"event": kind, **d}), events, 0.0,
+                "compiler: model call failed after retries: HTTP 429", "calc", tmp_path)
+    assert not r.verified and r.skill_dir.name == "_failed_calc"
+    saved = json.loads((r.skill_dir / "events.json").read_text(encoding="utf-8"))
+    assert saved[-1]["event"] == "done" and "429" in saved[-1]["detail"]
+    assert "HTTP 429" in json.loads((r.skill_dir / "failure.json").read_text(encoding="utf-8"))["reason"]
+    assert not (r.skill_dir / "server.py").exists()
