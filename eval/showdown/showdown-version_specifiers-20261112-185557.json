@@ -1,0 +1,64 @@
+{
+ "capability": "version_specifiers",
+ "agents": "model,codex",
+ "mutants": 6,
+ "seed": 1,
+ "timeout": 1800,
+ "repo": "packaging",
+ "fixed_spec": true,
+ "rows": [
+  {
+   "contender": "model",
+   "seconds": 65,
+   "verified": true,
+   "attempts": 1,
+   "tools": 3,
+   "dropped": [],
+   "who": "gemma-4-26b-a4b-it@generativelanguage.googleapis.com",
+   "gates": {
+    "policy": true,
+    "import": true,
+    "upstream_tests": true,
+    "input_robustness": true,
+    "mcp_smoke": true,
+    "differential": true
+   },
+   "cases": 12,
+   "log_tail": "[zyven] gate.mcp_smoke: PASS 3 tools called with example args; invalid input rejected\n[zyven] gate.differential: PASS 12/12 cases match the library\n[zyven] done: VERIFIED after 1 attempt(s) in 60.6s\n\nverified: True (policy, import, upstream_tests, input_robustness, mcp_smoke, differential)",
+   "mutation": {
+    "killed": 12,
+    "mutants": 14,
+    "calibrated": 0,
+    "survivors": [
+     "compare_versions compare (line 4: Lt -> LtE)",
+     "compare_versions negate_condition (line 9: condition negated)"
+    ]
+   }
+  },
+  {
+   "contender": "codex",
+   "seconds": 61,
+   "verified": true,
+   "attempts": 1,
+   "tools": 3,
+   "dropped": [],
+   "who": "Codex (its default model) [coding agent]",
+   "gates": {
+    "policy": true,
+    "import": true,
+    "upstream_tests": true,
+    "input_robustness": true,
+    "mcp_smoke": true,
+    "differential": true
+   },
+   "cases": 14,
+   "log_tail": "[zyven] gate.mcp_smoke: PASS 3 tools called with example args; invalid input rejected\n[zyven] gate.differential: PASS 14/14 cases match the library\n[zyven] done: VERIFIED after 1 attempt(s) in 56.9s\n\nverified: True (policy, import, upstream_tests, input_robustness, mcp_smoke, differential)",
+   "mutation": {
+    "killed": 12,
+    "mutants": 12,
+    "calibrated": 0,
+    "survivors": []
+   }
+  }
+ ]
+}
