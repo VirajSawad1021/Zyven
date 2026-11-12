@@ -156,7 +156,9 @@ outside-in checks (section 6), which are not the same as the six gates.**
   - **The check is on host names.** The proxy resolves the names and refuses IP literals. Only ports 443 and 80 are
     allowed.
   - **TLS is not inspected,** so what is sent to an allowed host is not seen.
-  - **It applies to `zyven verify --docker` so far,** not yet to compiled skills at run time.
+  - **For compiled skills, only a reviewer sets it** (`zyven compile --allow-host`). A model never can. The gates
+    run under it and so does the skill at run time, except with `ZYVEN_SKILL_RUNTIME=host`, which is for
+    development only and logs that the allowlist is not enforced.
 - **`zyven export` copies the evidence; it does not re-verify.** The exported Docker image installs the library from git
   at the verified commit. If that commit or repository disappears upstream, the image cannot be rebuilt.
 - **`zyven outdated` maps symbols to files by module path.** A symbol re-exported from another module, or code moved

@@ -40,6 +40,9 @@ build, and installs without a clone.
 - **Network allowlist for the sandbox** (`zyven verify --docker ... --allow-host HOST`): an internal Docker network
   plus an egress proxy that forwards only to allowlisted hosts. Direct connections have no route. The report
   lists every refused host.
+- **Compiled skills can have a host allowlist too** (`zyven compile --allow-host`, set by a reviewer, never a model).
+  The gates run under it, it is recorded in provenance as `network_hosts`, and at run time `ToolBox` starts
+  the skill's egress proxy with it. That covers the board's agent, the hub and `zyven mcp`.
 
 ### Changed
 - Compiled skills declare `read_only_hint` / `destructive_hint=False` / `open_world_hint=False`. Their input schemas carry

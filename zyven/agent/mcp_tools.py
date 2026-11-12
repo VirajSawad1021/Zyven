@@ -23,6 +23,8 @@ class MCPServerSpec:
     args: list[str] = field(default_factory=list)
     cwd: str | None = None
     env: dict[str, str] | None = None
+    egress_hosts: list[str] = field(default_factory=list)  # reviewer-set allowlist (provenance network_hosts)
+    sandbox: tuple[dict, dict] | None = None  # (mounts, env) to rebuild the container command with an egress network
 
     @classmethod
     def python_script(cls, name: str, script: str | Path) -> "MCPServerSpec":
@@ -30,10 +32,12 @@ class MCPServerSpec:
         return cls(name=name, command=sys.executable, args=[str(script)])
 
     @classmethod
-    def sandboxed(cls, name: str, skill_dir: str | Path, source_checkout: str | Path | None = None) -> "MCPServerSpec":
+    def sandboxed(cls, name: str, skill_dir: str | Path, source_checkout: str | Path | None = None,
+                  egress_hosts: list[str] | None = None) -> "MCPServerSpec":
         """Runs a compiled skill inside the same locked-down container its verification gates used: no network,
         non-root, read-only, capabilities dropped, resource limits. The skill and its pinned source checkout are
-        mounted read-only at /skill and /src, exactly as during verification."""
+        mounted read-only at /skill and /src, exactly as during verification. With egress_hosts the skill reaches
+        only those hosts, through an egress proxy started by ToolBox.add_server, as its gates did."""
         from zyven.sandbox.runner import SandboxPolicy, stdio_command
 
         mounts = {Path(skill_dir): "/skill"}
@@ -42,7 +46,18 @@ class MCPServerSpec:
             mounts[Path(source_checkout)] = "/src"
             env["PYTHONPATH"] = "/src"
         argv = stdio_command(["python", "/skill/server.py"], mounts, SandboxPolicy(extra_env=env), workdir="/skill")
-        return cls(name=name, command=argv[0], args=argv[1:])
+        return cls(name=name, command=argv[0], args=argv[1:], egress_hosts=list(egress_hosts or []),
+                   sandbox=(mounts, env))
+
+    def with_egress(self, egress: Any) -> "MCPServerSpec":
+        """The same sandboxed skill, on the egress network with the proxy in its environment."""
+        from dataclasses import replace
+
+        from zyven.sandbox.runner import SandboxPolicy, stdio_command
+        mounts, env = self.sandbox or ({}, {})
+        policy = SandboxPolicy(extra_env={**env, **egress.env()}, network_name=egress.network)
+        argv = stdio_command(["python", "/skill/server.py"], mounts, policy, workdir="/skill")
+        return replace(self, command=argv[0], args=argv[1:])
 
 
 # A gate decides whether one specific call may go ahead: gate(tool_name, arguments) -> allowed.
@@ -69,6 +84,14 @@ class ToolBox:
         await self._stack.__aexit__(*exc)
 
     async def add_server(self, spec: MCPServerSpec) -> list[str]:
+        if spec.egress_hosts and spec.sandbox is not None:
+            # the skill's reviewer-set allowlist: start its egress proxy first; the exit stack closes the client
+            # (registered after) before the proxy and network are removed
+            from zyven.sandbox.egress import Egress
+            eg = Egress(spec.egress_hosts)
+            await asyncio.to_thread(eg.__enter__)
+            self._stack.push_async_callback(asyncio.to_thread, eg.__exit__, None, None, None)
+            spec = spec.with_egress(eg)
         params = StdioServerParameters(command=spec.command, args=spec.args, cwd=spec.cwd, env=spec.env)
         return await self.add_transport(spec.name, params)
 
