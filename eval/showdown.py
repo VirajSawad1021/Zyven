@@ -29,11 +29,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def compile_with(agent: str, repo: Path, capability: str, out: Path, timeout: float) -> dict:
+def compile_with(agent: str, repo: Path, capability: str, out: Path, timeout: float, spec: Path | None = None) -> dict:
     started = time.monotonic()
     cmd = [sys.executable, "-m", "zyven.cli", "compile", str(repo), "--capability", capability, "--out", str(out)]
     if agent != "model":
         cmd += ["--agent", agent]
+    if spec:
+        cmd += ["--spec", str(spec)]
     env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     try:
         p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=ROOT,
@@ -84,6 +86,8 @@ def main() -> None:
                                                              "claude, agy, opencode, qoder (optionally name:model)")
     ap.add_argument("--mutants", type=int, default=6, help="mutants per tool for the test-quality score (0 = skip)")
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--spec", type=Path, help="one fixed capability.json for every contender (no Architect), so only "
+                    "the Compiler and Tester vary")
     ap.add_argument("--timeout", type=float, default=1800)
     ap.add_argument("--work", type=Path, default=None, help="scratch folder for the compiled skills (not committed)")
     args = ap.parse_args()
@@ -91,7 +95,8 @@ def main() -> None:
     rows = []
     for agent in [a.strip() for a in args.agents.split(",") if a.strip()]:
         print(f"== {agent}: compiling {args.capability} ...", flush=True)
-        row = compile_with(agent, args.repo, args.capability, work / agent.replace(":", "_"), args.timeout)
+        row = compile_with(agent, args.repo, args.capability, work / agent.replace(":", "_"), args.timeout,
+                           args.spec)
         print(f"   verified={row['verified']} attempts={row['attempts']} {row['seconds']}s tools={row['tools']} "
               f"dropped={row['dropped']} cases={row['cases']}", flush=True)
         if row["verified"] and args.mutants:
@@ -104,7 +109,10 @@ def main() -> None:
     out = ROOT / "eval" / "showdown"
     out.mkdir(parents=True, exist_ok=True)
     md = [f"# Agent showdown: `{args.capability}` ({time.strftime('%Y-%m-%d')})", "",
-          f"Repository `{args.repo.name}` at its pinned commit; every role played by the contender; same gates. "
+          f"Repository `{args.repo.name}` at its pinned commit; "
+          + ("one FIXED spec for everyone (no Architect), so only the Compiler, Tester and Repair vary; " if args.spec
+             else "every role played by the contender; ")
+          + "same gates. "
           "One run each: a sample, not a benchmark. Compiled skills were not committed.", "",
           "| Contender | Verified | Attempts | Time | Tools kept | Dropped | Tester cases | Mutants caught | Cases calibrated |",
           "|---|---|---|---|---|---|---|---|---|"]
@@ -122,7 +130,8 @@ def main() -> None:
             md += ["", f"{r['contender']} did not verify. Last log lines:", "```", r["log_tail"], "```"]
     (out / f"showdown-{args.capability}-{stamp}.md").write_text("\n".join(md) + "\n", encoding="utf-8")
     (out / f"showdown-{args.capability}-{stamp}.json").write_text(
-        json.dumps({k: v for k, v in vars(args).items() if k not in ("work", "repo")} | {"repo": args.repo.name} |
+        json.dumps({k: v for k, v in vars(args).items() if k not in ("work", "repo", "spec")} | {"repo": args.repo.name} |
+                   {"fixed_spec": bool(args.spec)} |
                    {"rows": [{k: v for k, v in r.items() if k != "skill_dir"} for r in rows]}, indent=1, default=str),
         encoding="utf-8")
     print("\n" + "\n".join(md))
