@@ -47,11 +47,33 @@ def server_for(store: ConnectionStore, cid: str, conn: dict[str, Any] | None = N
     return make_server(conn, store.secrets_for(cid), auth=auth)
 
 
-async def _list_tools(store: ConnectionStore, cid: str, conn: dict[str, Any]) -> list[Any]:
+async def _list_tools(store: ConnectionStore, cid: str, conn: dict[str, Any]) -> tuple[list[Any], dict[str, Any]]:
     from mcp import Client
 
     async with Client(server_for(store, cid, conn), read_timeout_seconds=30) as client:
-        return list((await client.list_tools()).tools)
+        info = client.server_info
+        meta = {"name": getattr(info, "name", ""), "version": getattr(info, "version", ""),
+                "protocol": str(client.protocol_version or ""), "instructions": client.instructions or ""}
+        return list((await client.list_tools()).tools), meta
+
+
+# What the Connections page shows from `zyven verify`: the checks that one listing can decide. Stability needs two
+# connections, robustness needs calls, and isolation is about where Zyven runs a server, not about the server.
+SHOWN_CHECKS = ("handshake", "schemas", "descriptions", "annotations")
+
+
+def verify_listing(conn: dict[str, Any], tools: list[Any], meta: dict[str, Any], seconds: float) -> dict[str, Any]:
+    """The outside-in checks on one tool listing, and the definition hashes the user is approving."""
+    from zyven.mcpverify.checks import FAIL, run_checks
+    obs = {"target": conn.get("name", ""), "started": True, "seconds": seconds,
+           "server": {k: meta.get(k, "") for k in ("name", "version", "protocol")},
+           "instructions": meta.get("instructions", ""),
+           "tools": [t.model_dump(by_alias=True, exclude_none=True, mode="json") for t in tools]}
+    r = run_checks(obs)
+    checks = [{"name": c.name, "status": c.status, "detail": c.detail, "findings": c.findings[:6]}
+              for c in r.checks if c.name in SHOWN_CHECKS]
+    verdict = "FAIL" if any(c["status"] == FAIL for c in checks) else "PASS"
+    return {"verify": {"verdict": verdict, "checks": checks, "checked": time.time()}, "pins": r.lock}
 
 
 async def probe(store: ConnectionStore, cid: str) -> dict[str, Any]:
@@ -60,8 +82,14 @@ async def probe(store: ConnectionStore, cid: str) -> dict[str, Any]:
     if conn.get("oauth") and not conn.get("signed_in"):
         return store.update(cid, tools=None, enabled=False, error="Sign in first.", checked=time.time())
     try:
-        tools = await asyncio.wait_for(_list_tools(store, cid, conn), PROBE_TIMEOUT_S)
-        return store.update(cid, tools=describe_tools(tools), error=None, checked=time.time())
+        started = time.monotonic()
+        tools, meta = await asyncio.wait_for(_list_tools(store, cid, conn), PROBE_TIMEOUT_S)
+        checked = verify_listing(conn, tools, meta, time.monotonic() - started)
+        # A Test is a review: the definitions seen now are the ones a later run must still match (pins).
+        changes = {"tools": describe_tools(tools), "error": None, "checked": time.time(), **checked}
+        if checked["verify"]["verdict"] == "FAIL" and conn.get("enabled") and not conn.get("verify_override"):
+            changes["enabled"] = False  # re-tested and now failing: switched off until the user decides again
+        return store.update(cid, **changes)
     except Exception as e:  # noqa: BLE001 - any transport, auth or launch failure is shown to the user
         from zyven.connections.oauth import SignInNeeded, expire_sign_in, leaf_error
 

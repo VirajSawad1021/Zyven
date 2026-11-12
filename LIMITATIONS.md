@@ -77,6 +77,9 @@ outside-in checks (section 6), which are not the same as the six gates.**
 - **Connected services are trusted as far as the user chose to trust them.** Whether a tool is read-only comes from the
   server's own hint. A server that marks a destructive tool read-only would run without an approval card. An unknown hint
   means ask, but a wrong hint is not detected.
+- **Pinned definitions protect against a changed description, not against changed behaviour.** Each Test records a hash of
+  every tool definition, and a later change is refused. A server can still do something different behind the same
+  definition. Connections tested before this feature have no pins, so they load as before until they are tested again.
 - **Tool output is untrusted text.** A page or message returned by a connected service can try to steer the model
   (prompt injection). The approval card on writes, which shows the exact arguments, is the safeguard; reads are not gated.
 - **Each coding agent's containment is that program's own.** Zyven checked it on Windows and configured it (Codex's sandbox with temp
