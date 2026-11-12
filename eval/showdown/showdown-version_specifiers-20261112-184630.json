@@ -1,0 +1,38 @@
+{
+ "capability": "version_specifiers",
+ "agents": "model",
+ "mutants": 6,
+ "seed": 1,
+ "timeout": 1800,
+ "repo": "packaging",
+ "rows": [
+  {
+   "contender": "model",
+   "seconds": 109,
+   "verified": true,
+   "attempts": 1,
+   "tools": 1,
+   "dropped": [],
+   "who": "gemma-4-26b-a4b-it@generativelanguage.googleapis.com",
+   "gates": {
+    "policy": true,
+    "import": true,
+    "upstream_tests": true,
+    "input_robustness": true,
+    "mcp_smoke": true,
+    "differential": true
+   },
+   "cases": 2,
+   "log_tail": "verified: True (policy, import, upstream_tests, input_robustness, mcp_smoke, differential)\n18:43:49 model call failed (HTTP 429: [{ \"error\": { \"code\": 429, \"message\": \"You exceeded your current quota); retry 1 in 1s\n18:43:50 model call failed (HTTP 429: [{ \"error\": { \"code\": 429, \"message\": \"You exceeded your current quota); retry 2 in 2s\n18:43:53 model call failed (HTTP 429: [{ \"error\": { \"code\": 429, \"message\": \"You exceeded your current quota); retry 3 in 4s\n18:43:57 model call failed (HTTP 429: [{ \"error\": { \"code\": 429, \"message\": \"You exceeded your current quota); retry 4 in 8s",
+   "mutation": {
+    "killed": 4,
+    "mutants": 6,
+    "calibrated": 0,
+    "survivors": [
+     "parse_version off_by_one (line 13: 1 -> 2)",
+     "parse_version off_by_one (line 13: 1 -> 2)"
+    ]
+   }
+  }
+ ]
+}
