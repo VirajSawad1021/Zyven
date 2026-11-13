@@ -6,6 +6,13 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **SARIF output for `zyven verify`** (`--sarif FILE`, and a `sarif` output on the GitHub Action), so findings show up
+  in GitHub code scanning.
+  - Every finding has a stable rule ID, such as `descriptions/hide-from-user` or `stability/lock-mismatch`, with a
+    level (error for failures, warning otherwise) and a fingerprint that stays the same between runs.
+  - Results are attached to the lock file, or to the file named in the server command; with `--discover`, to each
+    server's config file.
+  - The JSON report now says, per check, how many findings are failures (`failing`).
 - **`zyven verify` catches terminal escape sequences** in tool names, descriptions, parameters and server instructions.
   - Text hidden with SGR 8 is read back in the report.
   - It names cursor movement and erasing, OSC 8 hyperlinks with their real targets, OSC 52 clipboard writes,
