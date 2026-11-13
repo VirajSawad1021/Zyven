@@ -18,10 +18,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false  # nothing here pushes; keep the token out of .git/config
-      # v4 caches only when `cache:` is set, and it is not; package-manager-cache is a v5 input
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v4.4.0 # zizmor: ignore[cache-poisoning]
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
-          node-version: "20"  # no dependency cache in a release build: a poisoned cache must not reach PyPI
+          node-version: "20"
+          package-manager-cache: false  # no dependency cache in a release build: a poisoned cache must not reach PyPI
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
         with:
           python-version: "3.12"
