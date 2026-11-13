@@ -74,6 +74,10 @@ build, and installs without a clone.
 - Every sandbox container gets the host name `zyven-sandbox`.
 
 ### Fixed
+- **Policy gate: attributes reached by a string.** `getattr(f, "__glo" + "bals__")` passed the static gate,
+  because only written-out attributes were checked. `getattr` is now allowed only as a direct call with a literal,
+  ordinary name; `attrgetter`, `methodcaller` and `__builtins__` are refused. The container was always the
+  boundary, and the docs now say the gate is a filter.
 - **Source-root detection:** the analyzer picked `.` over `src/` when a stray package sat at the top (pypa/packaging's
   `tasks/`), so adapters imported `src.packaging...`. It now prefers the package that `pyproject.toml` names. (#54)
 - **Leaked containers:** `verify` left sandbox containers running when a server ignored the end of its input. (#57)

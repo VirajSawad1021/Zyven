@@ -12,6 +12,9 @@ When a compiled skill receives a passing validation report and is marked as veri
    - The generated MCP adapter code contains no forbidden standard library imports (`os`, `sys`, `subprocess`, `socket`, `shutil`, `urllib`).
    - The code contains no calls to dangerous builtins (`__import__`, `eval`, `exec`, `open`).
    - All imports are strictly scoped per-tool to prevent module shadowing.
+   - Attributes reached by a string are limited to `getattr(obj, "literal_name")` with an ordinary name.
+   - This gate is a filter, not the security boundary. Python has more ways to reach an attribute than a list
+     can name, so the boundary is the container the code runs in.
 
 2. **Clean Import Isolation (Gate 2):**
    - The assembled MCP server script (`server.py`) can be imported cleanly inside an isolated container with only its declared pinned dependencies present on `PYTHONPATH`.
