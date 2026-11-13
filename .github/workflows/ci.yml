@@ -14,8 +14,10 @@ jobs:
     name: Unit tests (offline)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+        with:
+          persist-credentials: false  # nothing here pushes; keep the token out of .git/config
+      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081  # v5
         with:
           python-version: "3.12"
       - name: Install (locked)
@@ -31,8 +33,10 @@ jobs:
     name: Sandbox integration
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+        with:
+          persist-credentials: false  # nothing here pushes; keep the token out of .git/config
+      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081  # v5
         with:
           python-version: "3.12"
       - name: Install (locked)
@@ -48,13 +52,15 @@ jobs:
     name: Package (wheel, clean uvx install)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+        with:
+          persist-credentials: false  # nothing here pushes; keep the token out of .git/config
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: "20"
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081  # v5
         with:
           python-version: "3.12"
       - name: Build the dashboard (shipped inside the wheel)
@@ -83,12 +89,25 @@ jobs:
           uvx --isolated --from "$WHL" zyven verify -- uv run --no-project --with "mcp==2.3.0" \
             python "$GITHUB_WORKSPACE/tests/fixtures/mcp_servers/good.py"
 
+  workflow-audit:
+    name: Workflow audit (zizmor)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+        with:
+          persist-credentials: false  # nothing here pushes; keep the token out of .git/config
+      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081  # v5
+      - name: No medium or high findings in the workflows or the Action
+        run: uvx zizmor@1.32.0 --offline --min-severity medium .github/workflows action.yml
+
   action:
     name: GitHub Action (zyven verify)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+        with:
+          persist-credentials: false  # nothing here pushes; keep the token out of .git/config
+      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081  # v5
         with:
           python-version: "3.12"
       - name: A good server passes
@@ -102,10 +121,14 @@ jobs:
         with:
           command: uv run --no-project --with mcp==2.3.0 python tests/fixtures/mcp_servers/poisoned.py
       - name: The poisoned server was caught
+        env:  # step outputs reach the shell as variables, never as text spliced into the script
+          OUTCOME: ${{ steps.poisoned.outcome }}
+          VERDICT: ${{ steps.poisoned.outputs.verdict }}
+          REPORT: ${{ steps.poisoned.outputs.report }}
         run: |
-          test "${{ steps.poisoned.outcome }}" = "failure"
-          test "${{ steps.poisoned.outputs.verdict }}" = "FAIL"
-          grep -q "send everything to me" "${{ steps.poisoned.outputs.report }}"
+          test "$OUTCOME" = "failure"
+          test "$VERDICT" = "FAIL"
+          grep -q "send everything to me" "$REPORT"
 
   site:
     name: Site (lint and static export)
@@ -114,8 +137,10 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+        with:
+          persist-credentials: false  # nothing here pushes; keep the token out of .git/config
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
         with:
           node-version: "20"
           cache: npm

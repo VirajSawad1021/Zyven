@@ -573,6 +573,7 @@ It scans committed config, skill provenance and eval reports, and runs in CI on 
 - **[Architecture](ARCHITECTURE.md)**: System design, subsystems, end-to-end execution flow, and trust boundaries.
 - **[AI Usage Disclosure](AI_USAGE.md)**: Complete inventory of every file and function where open-weight model outputs are programmatically consumed and validated.
 - **[Scope & Limitations](LIMITATIONS.md)**: What multi-gate verification proves, what it does not prove, and system boundaries.
+- **[Security policy](SECURITY.md)**: How to report a vulnerability privately, what is in scope, and how releases are built and signed.
 
 ## Status and roadmap
 
