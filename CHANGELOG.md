@@ -13,6 +13,9 @@ build, and installs without a clone.
   - Results are attached to the lock file, or to the file named in the server command; with `--discover`, to each
     server's config file.
   - The JSON report now says, per check, how many findings are failures (`failing`).
+- **`zyven verify --discover` / `--config` checks across servers.** A new `cross-server` warning when two servers offer
+  the same tool name, or when one server's text names another server's tool (`send_email` in a calculator's
+  description), which is how tool shadowing works. Plain words such as `search` are not counted as tool names.
 - **`zyven verify` catches terminal escape sequences** in tool names, descriptions, parameters and server instructions.
   - Text hidden with SGR 8 is read back in the report.
   - It names cursor movement and erasing, OSC 8 hyperlinks with their real targets, OSC 52 clipboard writes,

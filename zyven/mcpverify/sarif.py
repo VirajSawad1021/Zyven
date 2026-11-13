@@ -69,10 +69,14 @@ RULES: list[tuple[str, str, str]] = [
     ("robustness/server-died", "stopped answering", "The server stopped answering after invalid input."),
     ("robustness/invalid-input-accepted", "", "A tool accepted input its own schema forbids."),
     ("pinning/unpinned-launch", "", "The launch command can run a different release next time."),
+    ("cross-server/same-tool-name", "is also offered by",
+     "Two servers offer the same tool name, so a client may call the wrong one."),
+    ("cross-server/names-other-server-tool", "how tool shadowing works",
+     "One server's text names another server's tool, which is how tool shadowing works."),
 ]
 
 # Rules that are about security rather than correctness; GitHub uses security-severity to rank them.
-_SEVERITY = {"descriptions": "8.0", "stability": "7.0", "pinning": "5.0", "robustness": "5.0"}
+_SEVERITY = {"descriptions": "8.0", "stability": "7.0", "pinning": "5.0", "robustness": "5.0", "cross-server": "6.0"}
 _SECURITY_CORRECTNESS = {"schemas/", "handshake/", "descriptions/missing", "descriptions/long",
                          "stability/second-connection", "annotations/missing"}
 
