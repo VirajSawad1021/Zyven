@@ -182,6 +182,14 @@ def test_baseline_candidates_are_deterministic(analysis):
     ("x = eval('1+1')", False),
     ("x = locals()", False),
     ("x = ().__class__.__bases__", False),
+    # attributes reached by a string: only a literal, ordinary name passes
+    ("import datetime\nx = getattr(datetime.date(2026, 1, 1), 'year', None)", True),
+    ("def f(): pass\nx = getattr(f, '__glo' + 'bals__')", False),
+    ("def f(): pass\nx = getattr(f, '__globals__')", False),
+    ("def f(): pass\nn = 'x'\nx = getattr(f, n)", False),
+    ("g = getattr\nx = g(1, 'real')", False),
+    ("import functools\nx = functools.reduce(getattr, ['a'], 1)", False),
+    ("x = __builtins__", False),
     ("from . import y", False),
     ("def f(:\n", False),
 ])
