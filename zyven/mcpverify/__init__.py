@@ -37,6 +37,10 @@ def verify_server(command: list[str] | None = None, url: str | None = None, head
             egress = Egress(allow_hosts).__enter__()
         obs = asyncio.run(observe(make, label, sandboxed, probe=probe, timeout=timeout))
         obs["network"] = bool(network and docker_image)
+        obs["launch"] = {"command": list(command)} if command else {"url": url}
+        if docker_image:
+            from zyven.mcpverify.pinning import image_id
+            obs["image"] = {"name": docker_image, "id": image_id(docker_image)}
         if egress is not None:
             obs["egress"] = {"hosts": egress.hosts, "decisions": egress.decisions()}
     finally:  # a server that ignores the end of its input would otherwise keep running
@@ -45,10 +49,11 @@ def verify_server(command: list[str] | None = None, url: str | None = None, head
             remove_container(name)
         if egress is not None:
             egress.__exit__(None, None, None)
-    lock = None
+    lock = locked = None
     if lock_file and lock_file.exists():
-        lock = json.loads(lock_file.read_text(encoding="utf-8")).get("tools") or {}
-    return run_checks(obs, lock)
+        locked = json.loads(lock_file.read_text(encoding="utf-8"))
+        lock = locked.get("tools") or {}
+    return run_checks(obs, lock, locked)
 
 
 _MARK = {PASS: "PASS", WARN: "WARN", FAIL: "FAIL", SKIP: "SKIP"}
@@ -89,6 +94,14 @@ def format_markdown(r: Report) -> str:
     return "\n".join(lines) + "\n"
 
 
+LOCK_VERSION = 2
+
+
 def write_lock(r: Report, path: Path) -> None:
-    data: dict[str, Any] = {"target": r.target, "server": r.server, "tools": r.lock}
+    """Version 2 records more than the tool definitions: the server's name and version, how it was launched (and the
+    image build), and the hosts it reached through the egress proxy. Version 1 files (tools only) still work."""
+    data: dict[str, Any] = {"lock_version": LOCK_VERSION, "target": r.target, "server": r.server, "launch": r.launch}
+    if r.reached_hosts is not None:
+        data["reached_hosts"] = r.reached_hosts
+    data["tools"] = r.lock
     path.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")

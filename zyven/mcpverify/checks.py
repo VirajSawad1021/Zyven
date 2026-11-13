@@ -7,7 +7,9 @@ what can be checked from the outside, from what the server itself says and does:
   schemas      every tool name is valid and unique; input and output schemas are valid JSON Schema
   descriptions tool descriptions carry no hidden text or instructions aimed at the model (tool poisoning)
   annotations  tools say whether they are read-only or destructive, and the hints do not contradict each other
-  stability    the tool list is the same on a second connection, and matches a lock file if one is given (rug pull)
+  stability    the tool list is the same on a second connection, and matches a lock file if one is given (rug pull):
+               definitions, server name and version, launch command, image build, hosts it contacts
+  pinning      the launch command names an exact version (npx pkg@1.2.3, uvx --from pkg==1.2.3, image@sha256)
   robustness   (opt-in, calls tools) invalid input is rejected cleanly and the server survives it
   isolation    whether the server ran in Zyven's sandbox (no network, read-only, no capabilities) or on this machine
 
@@ -133,6 +135,8 @@ class Report:
     server: dict[str, Any]
     tools: list[str]
     lock: dict[str, str]  # tool name -> definition hash, for --lock
+    launch: dict[str, Any] = field(default_factory=dict)  # command or URL, and the image build, for --lock
+    reached_hosts: list[str] | None = None  # hosts reached through the egress proxy (None: not observed)
 
     def to_dict(self) -> dict[str, Any]:
         return {**asdict(self), "checks": [asdict(c) for c in self.checks]}
@@ -223,7 +227,10 @@ def _texts(tool: dict[str, Any]) -> list[tuple[str, str]]:
     return [(w, t) for w, t in out if t.strip()]
 
 
-def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None) -> Report:
+def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
+               locked: dict[str, Any] | None = None) -> Report:
+    """`lock` holds the pinned tool hashes; `locked` is the whole lock file (server, launch, hosts), if any."""
+    from zyven.mcpverify.pinning import launch_of, lock_differences, reached_hosts, unpinned
     checks: list[Check] = []
     tools: list[dict[str, Any]] = obs.get("tools") or []
     names = [t.get("name", "") for t in tools]
@@ -313,12 +320,16 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None) -> Repor
             warn.append(f"tools in the lock file but no longer offered: {removed}")
         if added:
             warn.append(f"new tools since the lock file: {added}")
+    if locked:
+        b, w = lock_differences(obs, locked)
+        bad += b
+        warn += w
     if again is None and obs.get("second_connection_error"):  # say why, instead of a silent skip
         warn.append(f"a second connection failed, so stability was not checked: {obs['second_connection_error']}")
     detail = ("tool definitions differ" if bad else
               ("same definitions on a second connection" if again is not None else
                ("second connection failed" if obs.get("second_connection_error") else "not checked twice"))
-              + ("; matches the lock file" if lock and not bad and not warn else ""))
+              + ("; matches the lock file" if (lock or locked) and not bad and not warn else ""))
     checks.append(Check("stability", FAIL if bad else (WARN if warn else (PASS if again is not None else SKIP)),
                         detail, bad + warn))
 
@@ -336,6 +347,14 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None) -> Repor
                   else "no tool has required parameters to leave out")
         checks.append(Check("robustness", FAIL if failed else PASS,
                             detail + ("; server still answering" if alive else ""), failed))
+
+    # pinning (stdio servers: is the code that runs fixed by the command?)
+    command = (obs.get("launch") or {}).get("command")
+    if command:
+        why = unpinned(command)
+        checks.append(Check("pinning", WARN if why else PASS,
+                            "the launch command can run a different release next time" if why else
+                            "the launch command names exact versions", why))
 
     # isolation
     eg = obs.get("egress")
@@ -357,4 +376,5 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None) -> Repor
                             "ran on this machine with your permissions (use --docker IMAGE to run it in the sandbox)"))
 
     verdict = FAIL if any(c.status == FAIL for c in checks) else PASS
-    return Report(obs.get("target", ""), verdict, checks, srv, names, hashes)
+    return Report(obs.get("target", ""), verdict, checks, srv, names, hashes, launch_of(obs),
+                  reached_hosts(obs) if obs.get("egress") else None)

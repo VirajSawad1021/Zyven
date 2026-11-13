@@ -12,6 +12,13 @@ build, and installs without a clone.
     and stray control characters such as backspace.
   - Instruction patterns are also matched after escapes and invisible characters are stripped, so
     `ign<ESC>[0more previous instructions` no longer slips past.
+- **Lock file version 2 and a `pinning` check** in `zyven verify`.
+  - The lock now records the server's name and version, the launch command, the image ID under `--docker`, and the
+    hosts reached under `--allow-host`.
+  - A new version with identical tool definitions (the postmark-mcp pattern) is now a warning.
+  - A renamed server fails.
+  - `pinning` warns when `npx`, `uvx`, `pipx` or `docker run` would start whatever release is newest.
+  - Version 1 lock files still work.
 - **Hardened build and release.**
   - Every GitHub Action in CI, the release workflow and Zyven's own `action.yml` is pinned to a full commit SHA, so a
     moved tag cannot change what runs. Dependabot proposes the bumps.
