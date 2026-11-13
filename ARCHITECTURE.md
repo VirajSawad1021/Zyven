@@ -239,8 +239,9 @@ command run in the sandbox with `--docker IMAGE --mount HOST:/PATH`) and records
 | schemas | a tool name is invalid or repeated, or a schema is not valid JSON Schema (Draft 2020-12) |
 | descriptions | names, descriptions, parameters or server instructions carry tool poisoning (see the list below) |
 | annotations | a tool is marked both read-only and destructive (a missing hint is a warning) |
-| stability | definitions differ between two connections or from a lock file (a rug pull) |
+| stability | definitions differ between two connections or from a lock file (a rug pull); against a version 2 lock, also the server name (fail), version, launch command, image ID and reached hosts (warnings) |
 | robustness | (`--probe`) input the schema forbids is accepted, or the server stops answering |
+| pinning | (stdio) the launch command names no exact version: `npx`/`bunx` without `@x.y.z`, `uvx`/`pipx` without `==`, a docker image without `@sha256` |
 | isolation | a warning, not a failure, when the server ran on the host, or in the sandbox with `--allow-network` |
 
 The poisoning patterns: invisible Unicode tag characters (decoded back to readable text in the report), bidi overrides,
@@ -248,6 +249,12 @@ terminal escape sequences (a CLI client prints them straight to the screen: SGR 
 movement and erasing, OSC 8 hyperlinks with their real targets, OSC 52 clipboard writes, 8-bit forms included), other
 control characters such as backspace, `<IMPORTANT>` blocks, "do not tell the user", requests to read credential files, and URLs to send data to. The instruction patterns are matched on the raw text and
 again with every escape sequence and invisible character removed, so splitting a phrase with them does not hide it.
+
+Why the lock records more than definitions: postmark-mcp (September 2025) changed its code in a new version and kept
+every tool description, so a definitions-only lock stays green. A version 2 lock (`lock_version: 2`) adds
+`server` (name, version, protocol), `launch` (command or URL, and the local image ID under `--docker`) and, under
+`--allow-host`, `reached_hosts`. A server's reported version is whatever it says (the reference memory server always
+says 1.0.0), which is why `pinning` asks for the version in the command itself. Version 1 files still load.
 
 A stdio server gets the SDK's minimal environment, never the caller's secrets; `--env NAME` passes a variable through.
 Sandbox containers are named, force-removed after each connection (some Node servers outlive their input), and all get the

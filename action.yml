@@ -23,7 +23,7 @@ inputs:
     required: false
     default: "false"
   lock-file:
-    description: "Path to a lock file of tool definitions; compared if it exists. Commit it to catch rug pulls between releases."
+    description: "Path to a lock file (tool definitions, server name and version, launch command, image, reached hosts); compared if it exists. Commit it to catch rug pulls between releases."
     required: false
     default: ""
   docker-image:

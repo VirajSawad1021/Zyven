@@ -138,8 +138,58 @@ def test_real_good_server_passes_and_locks(tmp_path):
     assert status(r, "robustness") == PASS and r.tools == ["add"]
     lock = tmp_path / "lock.json"
     write_lock(r, lock)
+    saved = json.loads(lock.read_text(encoding="utf-8"))
+    assert saved["lock_version"] == 2 and saved["launch"]["command"][-1].endswith("good.py")
+    assert saved["server"]["name"] and "reached_hosts" not in saved  # no egress proxy, so nothing observed
     again = verify_server([sys.executable, str(FIX / "good.py")], lock_file=lock)
-    assert status(again, "stability") == PASS
+    assert status(again, "stability") == PASS and status(again, "pinning") == PASS
+
+
+# ---- lock file v2 and pinning ---------------------------------------------------------------------------
+
+def test_a_new_server_version_with_the_same_tools_is_flagged():
+    # the postmark-mcp case: identical tool definitions, new code
+    clean = run_checks(obs(server={"name": "s", "version": "1.0.15"}))
+    locked = {"server": {"name": "s", "version": "1.0.15"}, "tools": clean.lock}
+    same = run_checks(obs(server={"name": "s", "version": "1.0.15"}), clean.lock, locked)
+    assert status(same, "stability") == PASS and same.checks[4].detail.endswith("matches the lock file")
+    bumped = run_checks(obs(server={"name": "s", "version": "1.0.16"}), clean.lock, locked)
+    st = next(c for c in bumped.checks if c.name == "stability")
+    assert st.status == WARN and "1.0.15 to 1.0.16" in st.findings[0]
+    renamed = run_checks(obs(server={"name": "other", "version": "1.0.15"}), clean.lock, locked)
+    assert status(renamed, "stability") == FAIL
+
+
+def test_launch_image_and_new_hosts_are_compared_with_the_lock():
+    egress = {"hosts": ["api.example.com"], "decisions": [{"host": "api.example.com", "port": 443, "allowed": True}]}
+    first = run_checks(obs(launch={"command": ["npx", "-y", "srv@1.0.0"]}, sandboxed=True, egress=egress,
+                           image={"name": "node:20", "id": "sha256:aaaa"}))
+    assert first.reached_hosts == ["api.example.com"] and first.launch["image"]["id"] == "sha256:aaaa"
+    locked = {"server": {"name": "s"}, "launch": first.launch, "reached_hosts": first.reached_hosts,
+              "tools": first.lock}
+    more = dict(egress, hosts=["api.example.com", "cdn.example.com"],
+                decisions=egress["decisions"] + [{"host": "cdn.example.com", "port": 443, "allowed": True}])
+    r = run_checks(obs(launch={"command": ["npx", "-y", "srv@1.0.1"]}, sandboxed=True, egress=more,
+                       image={"name": "node:20", "id": "sha256:bbbb"}), first.lock, locked)
+    found = " ".join(next(c for c in r.checks if c.name == "stability").findings)
+    assert "srv@1.0.0  ->  " in found and "different build" in found and "cdn.example.com" in found
+
+
+def test_unpinned_launch_commands():
+    from zyven.mcpverify.pinning import unpinned
+    assert unpinned(["npx", "-y", "@modelcontextprotocol/server-memory@2025.4.25"]) == []
+    assert unpinned(["npx", "-y", "@scope/srv"]) and "@scope/srv@1.2.3" in unpinned(["npx", "-y", "@scope/srv@latest"])[0]
+    assert unpinned(["npx", "-y", "--package", "srv@1.2.3", "srv-bin"]) == []
+    assert unpinned(["npx.cmd", "srv"])
+    assert unpinned(["uvx", "mcp-server-fetch"]) and unpinned(["uvx", "--from", "mcp-server-fetch==2025.4.7", "x"]) == []
+    assert unpinned(["uvx", "mcp-server-git==2025.1.14"]) == [] and unpinned(["uvx", "--from", "./local", "x"]) == []
+    assert unpinned(["uv", "tool", "run", "srv"]) and unpinned(["pipx", "run", "srv"])
+    assert unpinned(["docker", "run", "-i", "--rm", "-e", "K", "mcp/fetch"])
+    assert unpinned(["docker", "run", "-i", "mcp/fetch@sha256:" + "a" * 64]) == []
+    assert unpinned(["python", "server.py"]) == [] and unpinned(None) == []
+    r = run_checks(obs(launch={"command": ["npx", "-y", "srv"]}))
+    assert status(r, "pinning") == WARN and r.verdict == PASS
+    assert "pinning" not in [c.name for c in run_checks(obs(launch={"url": "https://x/mcp"})).checks]
 
 
 def test_real_poisoned_server_fails(tmp_path):
