@@ -146,6 +146,7 @@ def cmd_compile(args) -> None:
 def cmd_verify_configs(args) -> None:
     """zyven verify --config FILE / --discover: every server a client is configured with, then one summary."""
     from zyven.mcpverify import format_markdown, verify_server
+    from zyven.mcpverify.checks import cross_server
     from zyven.mcpverify.configs import known_locations, read_config
     files = [Path(p) for p in args.config or []]
     if args.discover:
@@ -162,17 +163,14 @@ def cmd_verify_configs(args) -> None:
         sys.exit("no MCP servers found in those files")
     print(f"{len(entries)} server(s). Each runs on this machine as its client would run it"
           + (" (inside the sandbox)" if args.docker else "") + "; env values from the config are passed, never shown.\n")
-    rows, reports = [], []
+    rows, done = [], []
     for e in entries:
         if e.disabled:
             rows.append((e.name, "skipped", "disabled in its config", e.source))
             continue
         r = verify_server(e.command or None, e.url or None, e.headers or None, e.env or None, args.docker,
                           None, probe=args.probe, timeout=args.timeout, network=args.allow_network)
-        reports.append({"name": e.name, "source": e.source, **r.to_dict()})
-        if args.markdown:
-            with open(args.markdown, "a", encoding="utf-8") as f:
-                f.write(f"## {e.name}\n\n" + format_markdown(r) + "\n")
+        done.append((e, r))
         bad = [c.name for c in r.checks if c.status == "FAIL"]
         warn = [c.name for c in r.checks if c.status == "WARN" and c.name != "isolation"]
         rows.append((e.name, r.verdict, ("failed: " + ", ".join(bad)) if bad else
@@ -180,6 +178,15 @@ def cmd_verify_configs(args) -> None:
         print(f"  {r.verdict:4}  {e.name}  ({rows[-1][2]})", flush=True)
     width = max(len(r[0]) for r in rows)
     print("\n" + "\n".join(f"  {n:<{width}}  {v:<7}  {d}" for n, v, d, _ in rows))
+    cross_server([(e.name, r) for e, r in done])
+    across = [(e.name, f) for e, r in done for c in r.checks if c.name == "cross-server" for f in c.findings]
+    if across:
+        print("\nacross servers (warnings):\n" + "\n".join(f"  {n}: {f}" for n, f in across))
+    reports = [{"name": e.name, "source": e.source, **r.to_dict()} for e, r in done]
+    if args.markdown:
+        with open(args.markdown, "a", encoding="utf-8") as f:
+            for e, r in done:
+                f.write(f"## {e.name}\n\n" + format_markdown(r) + "\n")
     if args.json:
         Path(args.json).write_text(json.dumps(reports, indent=1, ensure_ascii=False), encoding="utf-8")
         print(f"report: {args.json}")
