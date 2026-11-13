@@ -405,6 +405,7 @@ reports.
 | robustness | with `--probe`: input the tool's own schema forbids is accepted, or the server stops answering |
 | pinning | a warning when the launch command runs whatever was published last (`npx -y pkg`, `uvx pkg`, a docker tag): pin `pkg@1.2.3`, `--from pkg==1.2.3` or `image@sha256:...` |
 | isolation | a warning, not a failure, when the server ran on this machine instead of in the sandbox |
+| cross-server | with `--discover` or `--config`: a warning when two servers offer the same tool name, or one server's text names another server's tool (**tool shadowing**) |
 
 Nothing is called unless `--probe` is given, and probes only send input the schema rejects. A stdio server gets only a
 minimal environment (`--env NAME` passes a variable through), so your shell's secrets are not handed to it. It still

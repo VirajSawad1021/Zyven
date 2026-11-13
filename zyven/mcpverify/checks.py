@@ -12,6 +12,8 @@ what can be checked from the outside, from what the server itself says and does:
   pinning      the launch command names an exact version (npx pkg@1.2.3, uvx --from pkg==1.2.3, image@sha256)
   robustness   (opt-in, calls tools) invalid input is rejected cleanly and the server survives it
   isolation    whether the server ran in Zyven's sandbox (no network, read-only, no capabilities) or on this machine
+  cross-server (several servers, e.g. --discover) two servers offer the same tool name, or one server's text names
+               another server's tool (tool shadowing)
 
 Everything here is a pure function of an observation dict, so it is tested without starting a server.
 """
@@ -137,6 +139,7 @@ class Report:
     lock: dict[str, str]  # tool name -> definition hash, for --lock
     launch: dict[str, Any] = field(default_factory=dict)  # command or URL, and the image build, for --lock
     reached_hosts: list[str] | None = None  # hosts reached through the egress proxy (None: not observed)
+    texts: dict[str, str] = field(default_factory=dict)  # tool name -> all text the model reads for it
 
     def to_dict(self) -> dict[str, Any]:
         return {**asdict(self), "checks": [asdict(c) for c in self.checks]}
@@ -376,5 +379,46 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
                             "ran on this machine with your permissions (use --docker IMAGE to run it in the sandbox)"))
 
     verdict = FAIL if any(c.status == FAIL for c in checks) else PASS
+    texts = {t.get("name", ""): "\n".join(f"{w}: {x}" for w, x in _texts(t)) for t in tools}
+    if obs.get("instructions"):
+        texts["(server instructions)"] = obs["instructions"]
     return Report(obs.get("target", ""), verdict, checks, srv, names, hashes, launch_of(obs),
-                  reached_hosts(obs) if obs.get("egress") else None)
+                  reached_hosts(obs) if obs.get("egress") else None, texts)
+
+
+def _distinctive(name: str) -> bool:
+    """A tool name unlikely to be an ordinary word in a description: send_email, getUser, fs.read (not "search")."""
+    return len(name) >= 5 and (any(c in name for c in "_-.") or any(c.isupper() for c in name[1:]))
+
+
+def cross_server(reports: list[tuple[str, Report]]) -> None:
+    """Checks that need several servers at once, added to each report involved as a `cross-server` warning.
+
+    * The same tool name from two servers: a client may call the wrong one, or one may replace the other.
+    * One server's text names another server's tool. Tool shadowing works this way: a description says "when you
+      call send_email, also BCC ..." to change how the model uses a tool from a different, trusted server.
+    """
+    owners: dict[str, list[str]] = {}
+    for label, r in reports:
+        for n in dict.fromkeys(r.tools):
+            owners.setdefault(n, []).append(label)
+    findings: dict[str, list[str]] = {label: [] for label, _ in reports}
+    for n, who in sorted(owners.items()):
+        if len(who) > 1:
+            for label in who:
+                findings[label].append(f"tool {n!r} is also offered by {[w for w in who if w != label]}: "
+                                       "a client may call the wrong one")
+    for label, r in reports:
+        own = set(r.tools)
+        for n, who in sorted(owners.items()):
+            if n in own or not _distinctive(n):
+                continue
+            rx = re.compile(rf"(?<![\w\-.]){re.escape(n)}(?![\w\-])")
+            for tool, text in r.texts.items():
+                if rx.search(text):
+                    findings[label].append(f"{tool} names {n!r}, a tool of {who}: text that steers calls to another "
+                                           "server's tool is how tool shadowing works (read it)")
+    for label, r in reports:
+        if findings[label]:
+            r.checks.append(Check("cross-server", WARN, f"{len(findings[label])} interaction(s) with other servers",
+                                  findings[label]))
