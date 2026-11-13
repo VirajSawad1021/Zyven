@@ -6,6 +6,12 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **`zyven verify` catches terminal escape sequences** in tool names, descriptions, parameters and server instructions.
+  - Text hidden with SGR 8 is read back in the report.
+  - It names cursor movement and erasing, OSC 8 hyperlinks with their real targets, OSC 52 clipboard writes,
+    and stray control characters such as backspace.
+  - Instruction patterns are also matched after escapes and invisible characters are stripped, so
+    `ign<ESC>[0more previous instructions` no longer slips past.
 - **Hardened build and release.**
   - Every GitHub Action in CI, the release workflow and Zyven's own `action.yml` is pinned to a full commit SHA, so a
     moved tag cannot change what runs. Dependabot proposes the bumps.

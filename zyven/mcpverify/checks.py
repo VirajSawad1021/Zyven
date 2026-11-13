@@ -47,6 +47,75 @@ _INSTRUCTION_RES = [(re.compile(p, re.IGNORECASE | re.DOTALL), why) for p, why i
 _BASE64_RE = re.compile(r"[A-Za-z0-9+/]{120,}={0,2}")
 _BIDI = {"‪", "‫", "‬", "‭", "‮", "⁦", "⁧", "⁨", "⁩"}
 
+# Terminal escape sequences. A CLI client that prints a tool description puts these straight on the screen, where they
+# can hide text (SGR 8, colours), move the cursor and erase what was shown, plant a hyperlink whose text differs from
+# its target (OSC 8) or write the clipboard (OSC 52). The model still reads every byte.
+_ANSI_RE = re.compile(
+    r"\x1b\][^\x07\x1b\x9c]*(?:\x07|\x1b\\|\x9c)?"   # OSC ... ended by BEL or ST
+    r"|\x9d[^\x07\x1b\x9c]*(?:\x07|\x1b\\|\x9c)?"    # 8-bit OSC
+    r"|(?:\x1b\[|\x9b)[0-?]*[ -/]*[@-~]"               # CSI (7- and 8-bit)
+    r"|\x1b[PX^_][^\x1b\x9c]*(?:\x1b\\|\x9c)?"        # DCS, SOS, PM, APC strings
+    r"|\x1b[ -/]*[0-~]"                               # any other escape
+)
+_CURSOR_FINALS = set("ABCDEFGHJKSTfsu")
+
+
+def _ansi_findings(text: str) -> list[str]:
+    kinds: dict[str, None] = {}  # insertion-ordered set
+    concealed, links, hiding = [], [], False
+    pos = 0
+    for m in _ANSI_RE.finditer(text):
+        if hiding:
+            concealed.append(text[pos:m.start()])
+        pos = m.end()
+        seq = m.group(0)
+        body = seq[2:] if seq.startswith("\x1b") else seq[1:]
+        if seq.startswith(("\x1b]", "\x9d")):
+            num, _, rest = body.rstrip("\x07\x9c").removesuffix("\x1b\\").partition(";")
+            if num == "8":
+                links.append(rest.partition(";")[2] or "(end of link)")
+                kinds["hyperlinks (the text shown can differ from where the link goes)"] = None
+            elif num == "52":
+                kinds["writes the clipboard (OSC 52)"] = None
+            elif num in ("0", "1", "2"):
+                kinds["sets the terminal title"] = None
+            else:
+                kinds[f"operating system command OSC {num or '?'}"] = None
+        elif seq.startswith(("\x1b[", "\x9b")):
+            final, params = seq[-1], [p for p in seq[2 if seq.startswith("\x1b") else 1:-1].split(";")]
+            if final == "m":
+                if "8" in params:
+                    hiding = True
+                    kinds["concealed text (SGR 8)"] = None
+                if any(p in ("0", "", "28") for p in params) and "8" not in params:
+                    hiding = False
+                kinds["colour or style changes (text can be drawn invisible against the background)"] = None
+            elif final in _CURSOR_FINALS:
+                kinds["cursor movement or erasing (can overwrite what was shown)"] = None
+            else:
+                kinds[f"control sequence ending in {final!r}"] = None
+        else:
+            kinds["other escape sequences"] = None
+    if hiding:
+        concealed.append(text[pos:])
+    if not kinds:
+        return []
+    detail = "; ".join(kinds)
+    hidden = "".join(concealed).strip()
+    if hidden:
+        detail += f"; concealed text reads: \"{hidden[:120]}\""
+    real = [l for l in links if l != "(end of link)"]
+    if real:
+        detail += f"; links go to: {real[:3]}"
+    return [f"terminal escape sequences: {detail}"]
+
+
+def strip_hidden(text: str) -> str:
+    """What the text says once escape sequences and invisible format characters are removed: instruction patterns are
+    matched on this too, so `ign<ESC>[0more previous instructions` cannot slip past them."""
+    text = _ANSI_RE.sub("", text)
+    return "".join(ch for ch in text if unicodedata.category(ch) not in ("Cf", "Cc") or ch in "\t\n\r")
+
 
 @dataclass
 class Check:
@@ -105,13 +174,19 @@ def hidden_characters(text: str) -> list[str]:
                     and ch != "­" and not 0xE0000 <= ord(ch) <= 0xE007F})
     if other:
         found.append(f"invisible format characters: {other}")
+    found += _ansi_findings(text)
+    controls = sorted({f"U+{ord(ch):04X}" for ch in _ANSI_RE.sub("", text)
+                       if unicodedata.category(ch) == "Cc" and ch not in "\t\n\r"})
+    if controls:
+        found.append(f"control characters (backspace and the like can rewrite what is displayed): {controls}")
     return found
 
 
 def scan_text(text: str) -> list[str]:
     out = hidden_characters(text)
+    plain = strip_hidden(text)
     for rx, why in _INSTRUCTION_RES:
-        m = rx.search(text)
+        m = rx.search(text) or rx.search(plain)
         if m:
             out.append(f"{why}: \"{m.group(0)[:80]}\"")
     if _BASE64_RE.search(text):

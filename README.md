@@ -399,7 +399,7 @@ reports.
 |---|---|
 | handshake | the server does not start, finish the MCP handshake or list its tools in time |
 | schemas | a tool name is invalid or repeated, or an input/output schema is not valid JSON Schema |
-| descriptions | a name, description or parameter carries **tool poisoning**: invisible Unicode (decoded and shown), `<IMPORTANT>` blocks, "do not tell the user", requests to read `~/.ssh` or send data to a URL |
+| descriptions | a name, description or parameter carries **tool poisoning**: invisible Unicode (decoded and shown), terminal escape sequences (concealed text read back, cursor tricks, hyperlink targets, clipboard writes), `<IMPORTANT>` blocks, "do not tell the user", requests to read `~/.ssh` or send data to a URL |
 | annotations | a tool is marked both read-only and destructive (a missing `readOnlyHint` is a warning) |
 | stability | the tool definitions change between two connections, or differ from the lock file (a **rug pull**) |
 | robustness | with `--probe`: input the tool's own schema forbids is accepted, or the server stops answering |
