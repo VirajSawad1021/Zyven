@@ -15,8 +15,8 @@ import logging
 import re
 from dataclasses import dataclass, field
 
-from zyven.ai.provider import ModelProvider
-from zyven.ai.schemas import AdapterCode, CandidateCapability, CapabilitySpec, DiffTests, ScoutResult
+from zyven.ai.provider import ModelProvider, ProviderError
+from zyven.ai.schemas import AdapterCode, CandidateCapability, CapabilitySpec, DiffTests, ScoutResult, ToolImpl
 from zyven.analysis.analyzer import Analysis
 from zyven.analysis.miner import evidence_packet, repo_digest
 from zyven.analysis.refs import RefResolver
@@ -386,8 +386,29 @@ def compiler(provider: ModelProvider, a: Analysis, spec: CapabilitySpec) -> Adap
               f"that wrap an existing Python library. {UNTRUSTED_NOTE}\n{_CODE_RULES}\n"
               "Return one entry per tool in the spec, with the same tool names.")
     user = f"CAPABILITY SPEC\n{spec.model_dump_json(indent=1)}\n\nLIBRARY EVIDENCE\n{_impl_evidence(a, spec)}"
-    return provider.generate_structured([{"role": "system", "content": system}, {"role": "user", "content": user}],
-                                        AdapterCode)
+    try:
+        return provider.generate_structured([{"role": "system", "content": system}, {"role": "user", "content": user}],
+                                            AdapterCode)
+    except ProviderError as whole:
+        if len(spec.tools) < 2:
+            raise
+        # One answer for every tool can be too long for a slow host (a free-tier host timed out twice at 240 s on a
+        # 3-tool spec). Ask per tool: each answer is short. Tools that still fail are left out; partial verification
+        # then drops them instead of the whole capability failing.
+        log.warning("compiler: whole-spec call failed (%s); asking per tool", str(whole)[:120])
+        got: list[ToolImpl] = []
+        for t in spec.tools:
+            one = spec.model_copy(update={"tools": [t]})
+            u = f"CAPABILITY SPEC\n{one.model_dump_json(indent=1)}\n\nLIBRARY EVIDENCE\n{_impl_evidence(a, one)}"
+            try:
+                out = provider.generate_structured([{"role": "system", "content": system},
+                                                    {"role": "user", "content": u}], AdapterCode)
+                got += [i for i in out.tools if i.tool == t.name][:1]
+            except ProviderError as e:
+                log.warning("compiler: tool %s failed on its own too: %s", t.name, str(e)[:120])
+        if not got:
+            raise whole
+        return AdapterCode(tools=got)
 
 
 def repair(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, current: AdapterCode,
