@@ -402,9 +402,29 @@ def create_app(env_path: Path | None = None, data_dir: Path | None = None,
     def skills():
         b: Board = state["board"]
         health = b.library.health()
-        return [{"name": s.name, "title": s.spec.title, "summary": s.spec.summary, "source": s.source,
-                 "verified_for": s.verified_for, "tools": [t.name for t in s.spec.tools],
-                 "health": health.get(s.name, {"ok": 0, "calls": 0})} for s in b.library.list()]
+        out = []
+        for s in b.library.list():
+            try:
+                prov = json.loads((s.dir / "provenance.json").read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                prov = {}
+            out.append({"name": s.name, "title": s.spec.title, "summary": s.spec.summary, "source": s.source,
+                        "verified_for": s.verified_for, "tools": [t.name for t in s.spec.tools],
+                        "health": health.get(s.name, {"ok": 0, "calls": 0}),
+                        "commit": str(prov.get("commit", ""))[:12], "repository": prov.get("repository", ""),
+                        "network_hosts": list(prov.get("network_hosts") or [])})
+        return out
+
+    @app.get("/api/skills/{name}/upstream")
+    def skill_upstream(name: str):
+        """zyven outdated for one skill, on request (git ls-remote; nothing is fetched or written)."""
+        from zyven.outdated import check
+        b: Board = state["board"]
+        skill = next((s for s in b.library.list() if s.name == name), None)
+        if skill is None:
+            raise HTTPException(404, "unknown skill")
+        st = check(skill.dir, fetch=False)
+        return {"state": st.state, "commit": st.commit[:12], "upstream": st.upstream[:12], "detail": st.detail}
 
     @app.get("/api/catalog")
     def catalog():

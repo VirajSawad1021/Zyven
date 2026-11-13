@@ -94,3 +94,29 @@ def test_next_prefetch_names_map_to_the_exported_nested_files(tmp_path):
     assert nested_segment(site, "/app/__next.app.nope.__PAGE__.txt") is None   # not exported
     assert nested_segment(site, "/app/__next.app.....__PAGE__.txt") is None    # empty / '..' parts refused
     assert nested_segment(site, "/../__next.app.skills.__PAGE__.txt") is None  # outside the site
+
+
+def test_skills_api_shows_commit_network_and_checks_upstream_on_request(tmp_path, monkeypatch):
+    import shutil
+    from fastapi.testclient import TestClient
+
+    import zyven.outdated as od
+    from zyven.orchestrator.server import create_app
+    root = Path(__file__).resolve().parents[1]
+    lib = tmp_path / "board" / "library"
+    lib.mkdir(parents=True)
+    shutil.copytree(root / "skills" / "graph_algorithms", lib / "graph_algorithms")
+    env = tmp_path / ".env"
+    env.write_text("", encoding="utf-8")
+    calls = []
+    monkeypatch.setattr(od, "check", lambda d, fetch=False: calls.append((d.name, fetch)) or
+                        od.Status("graph_algorithms", "r", "49ca2290b80c1389", state="behind", upstream="6855cd5869aa",
+                                  detail="upstream HEAD differs"))
+    with TestClient(create_app(env_path=env, data_dir=tmp_path, board_dir=tmp_path / "board"),
+                    base_url="http://127.0.0.1") as c:
+        s = c.get("/api/skills").json()[0]
+        assert s["name"] == "graph_algorithms" and len(s["commit"]) == 12 and s["network_hosts"] == []
+        assert calls == []  # listing skills makes no network call
+        up = c.get("/api/skills/graph_algorithms/upstream").json()
+        assert up["state"] == "behind" and up["upstream"] == "6855cd5869aa" and calls == [("graph_algorithms", False)]
+        assert c.get("/api/skills/nope/upstream").status_code == 404

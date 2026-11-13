@@ -1,9 +1,11 @@
 "use client";
 
-import { Box, Check, GitBranch, Terminal } from "lucide-react";
+import { useState } from "react";
+import { Box, Check, GitBranch, Globe, RefreshCw, Terminal, WifiOff } from "lucide-react";
 import { Badge, ArtFrame, Empty, Hero, ToolChip } from "../components/ui";
 import { Reveal, Stars } from "../components/motion";
 import type { CatalogRepo, Skill } from "../lib/types";
+import { api } from "../lib/api";
 
 const GATES: [string, string][] = [
   ["policy", "Policy"], ["import", "Import"], ["upstream_tests", "Upstream"],
@@ -18,6 +20,39 @@ function Tile({ seed, tag, mono, children }: { seed: string; tag: string; mono?:
       <span className={`frost absolute left-3.5 top-3.5 z-10 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.04em] text-ink ${mono ? "font-mono" : "font-mono"}`}>{tag}</span>
       <div className="frost relative z-10 rounded-[18px] px-4 py-3.5 shadow-[0_1px_2px_rgba(20,20,19,0.08)]">{children}</div>
     </ArtFrame>
+  );
+}
+
+/** Network: none (the default sandbox), or the reviewer-set allowlist. Then an on-demand upstream check. */
+function Freshness({ s }: { s: Skill }) {
+  const [up, setUp] = useState<{ state: string; upstream: string; detail: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const hosts = s.network_hosts ?? [];
+  const check = async () => {
+    setBusy(true);
+    try { setUp(await api<{ state: string; upstream: string; detail: string }>(`/api/skills/${encodeURIComponent(s.name)}/upstream`)); }
+    catch { setUp({ state: "unknown", upstream: "", detail: "check failed" }); }
+    finally { setBusy(false); }
+  };
+  return (
+    <div className="mt-2.5 space-y-1 text-[11px]">
+      <p className="flex items-center gap-1.5 text-muted" title={hosts.length ? "Reaches only these hosts, through the egress proxy" : "No network in the sandbox"}>
+        {hosts.length ? <Globe className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+        {hosts.length ? <span>network: <span className="font-mono">{hosts.join(", ")}</span></span> : "no network"}
+      </p>
+      <p className="flex items-center gap-1.5 text-muted">
+        <GitBranch className="h-3 w-3" />upstream:
+        {up ? (
+          <span className={up.state === "behind" ? "text-warn" : up.state === "up to date" ? "text-good" : ""} title={up.detail}>
+            {up.state === "behind" ? `behind upstream (${up.upstream})` : up.state}
+          </span>
+        ) : (
+          <button onClick={check} disabled={busy} className="inline-flex items-center gap-1 underline decoration-dotted hover:text-ink">
+            <RefreshCw className={`h-2.5 w-2.5 ${busy ? "animate-spin" : ""}`} />check upstream
+          </button>
+        )}
+      </p>
+    </div>
   );
 }
 
@@ -62,7 +97,8 @@ export function Skills({ skills, onGoTasks }: { skills: Skill[]; onGoTasks: () =
                   </div>
                   <div className="mt-1 flex justify-between text-[11px] text-muted"><span>{h.ok}/{h.calls} calls healthy</span><span>{pct}%</span></div>
                 </div>
-                <p className="mt-2.5 flex items-center gap-1.5 font-mono text-[11px] text-muted"><GitBranch className="h-3 w-3" />{s.source}</p>
+                <p className="mt-2.5 flex items-center gap-1.5 font-mono text-[11px] text-muted"><Box className="h-3 w-3" />{s.source}</p>
+                <Freshness s={s} />
               </Tile></Reveal>
             );
           })}

@@ -26,6 +26,9 @@ export interface Skill {
   verified_for: string[];
   tools: string[];
   health?: { ok: number; calls: number };
+  commit?: string;
+  repository?: string;
+  network_hosts?: string[];
 }
 
 export interface CatalogRepo {
