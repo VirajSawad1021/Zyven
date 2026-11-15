@@ -69,6 +69,9 @@ RULES: list[tuple[str, str, str]] = [
     ("robustness/server-died", "stopped answering", "The server stopped answering after invalid input."),
     ("robustness/invalid-input-accepted", "", "A tool accepted input its own schema forbids."),
     ("pinning/unpinned-launch", "", "The launch command can run a different release next time."),
+    ("capabilities/destructive", "destructiveHint", "A tool says it can delete or overwrite data."),
+    ("capabilities/open-world", "openWorldHint", "A tool says it reaches systems outside the server."),
+    ("capabilities/reaches-host", "egress proxy", "The server reached this host during the check."),
     ("cross-server/same-tool-name", "is also offered by",
      "Two servers offer the same tool name, so a client may call the wrong one."),
     ("cross-server/names-other-server-tool", "how tool shadowing works",
@@ -162,6 +165,18 @@ def to_sarif(reports: list[tuple[Report, str]]) -> dict[str, Any]:
                 results.append({"ruleId": rule, "level": "error" if failing else "warning",
                                 "message": {"text": f"{label}: {text}"}, "locations": location,
                                 "partialFingerprints": {"zyvenFinding/v1": fp}})
+        for text in r.capabilities:  # listed for review, never a failure
+            rule = rule_of("descriptions", text)
+            if rule.endswith("/other"):
+                rule = rule_of("capabilities", text)
+            used.add(rule)
+            fp = hashlib.sha256(f"{r.target}|{rule}|{text}".encode("utf-8")).hexdigest()[:32]
+            results.append({"ruleId": rule, "level": "note", "message": {"text": f"{label}: {text}"},
+                            "locations": location, "partialFingerprints": {"zyvenFinding/v1": fp}})
+    return _log(results, used, tool_version)
+
+
+def _log(results: list[dict[str, Any]], used: set[str], tool_version: str) -> dict[str, Any]:
     return {
         "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
         "version": "2.1.0",

@@ -67,6 +67,12 @@ def format_report(r: Report, verbose: bool = False) -> str:
         lines += [f"          - {f}" for f in shown]
         if len(shown) < len(c.findings):
             lines.append(f"          ... {len(c.findings) - len(shown)} more (use -v)")
+    if r.capabilities:
+        shown = r.capabilities if verbose else r.capabilities[:5]
+        lines += ["", f"  capabilities: what it can do or touches ({len(r.capabilities)}; listed, not counted against it)"]
+        lines += [f"          - {c}" for c in shown]
+        if len(shown) < len(r.capabilities):
+            lines.append(f"          ... {len(r.capabilities) - len(shown)} more (use -v)")
     warns = sum(c.status == WARN for c in r.checks)
     lines += ["", f"verdict: {r.verdict}" + (f" with {warns} warning(s)" if r.verdict == PASS and warns else "")]
     return "\n".join(lines)
@@ -89,6 +95,11 @@ def format_markdown(r: Report) -> str:
         lines += ["", f"<details{' open' if c.status == FAIL else ''}><summary><b>{c.name}</b>: {len(c.findings)} finding(s)"
                       "</summary>", ""]
         lines += [f"- `{f.replace('`', chr(39))}`" for f in c.findings[:40]]
+        lines += ["", "</details>"]
+    if r.capabilities:
+        lines += ["", f"<details><summary><b>capabilities</b>: {len(r.capabilities)} (what it can do or touches; "
+                      "not counted against it)</summary>", ""]
+        lines += [f"- `{c.replace('`', chr(39))}`" for c in r.capabilities[:40]]
         lines += ["", "</details>"]
     lines += ["", "<sub>Outside-in checks by [Zyven](https://github.com/VirajSawad1021/Zyven); not a security audit.</sub>"]
     return "\n".join(lines) + "\n"

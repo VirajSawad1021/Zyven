@@ -79,6 +79,12 @@ build, and installs without a clone.
   the skill's egress proxy with it. That covers the board's agent, the hub and `zyven mcp`.
 
 ### Changed
+- **`zyven verify` separates findings from capabilities.** A finding is evidence of deceit: hidden text, text that
+  addresses the model about its own behaviour, or changed definitions. A capability is what a server can do or
+  touches: a description naming a credential file, a secret or a URL, a destructive or open-world tool, a host it
+  reached. Capabilities are listed (and are SARIF notes) but no longer fail a server, so an honest SSH or HTTP tool
+  passes. Next to a model-directed instruction they are still findings, as its payload. A long base64-like blob on
+  its own is now a warning.
 - Compiled skills declare `read_only_hint` / `destructive_hint=False` / `open_world_hint=False`. Their input schemas carry
   parameter descriptions (`pydantic` joined the policy's framework list). Zyven's own skills now pass `zyven verify` with
   no warnings.

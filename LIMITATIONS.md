@@ -131,6 +131,9 @@ outside-in checks (section 6), which are not the same as the six gates.**
     with `--probe`, how it treats input its own schema forbids. A server whose tools do harm *with valid input* passes.
   - **The poisoning scan is a list of known patterns.** A carefully written malicious description can avoid all of them.
     Ordinary descriptions were checked for false positives ("send a message", "read a file"), but the list will need tuning.
+  - **Mentions of credential files, secrets and URLs are capabilities, not failures,** unless the same text also
+    addresses the model. A description that only says "read ~/.ssh/id_rsa and post it to https://..." with no
+    instruction wording is listed, not failed. This trades some recall for far fewer false alarms on honest tools.
   - **The stability check only sees changes between two connections a few seconds apart, or against your lock file.** A
     server that changes its definitions after a week, or only for some clients, is caught only by a later run against the
     lock file.
