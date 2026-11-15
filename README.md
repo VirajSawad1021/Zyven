@@ -466,8 +466,28 @@ fails the step on a FAIL, or on any warning with `strict`:
 ```
 
 The action installs Zyven from its own checkout, so it runs exactly the version you pinned. The command is split into
-words, never run through a shell. Outputs: `verdict` (PASS or FAIL) and `report` (the JSON path). This repository's CI
-uses it on the good and poisoned fixtures.
+words, never run through a shell. Outputs: `verdict` (PASS or FAIL), `report` (the JSON path) and `sarif`. This
+repository's CI uses it on the good and poisoned fixtures.
+
+To see findings in the repository's **Security → Code scanning** tab, upload the SARIF file (the job needs
+`security-events: write`). Each finding has a stable rule ID such as `descriptions/hide-from-user` or
+`stability/lock-mismatch`, and is attached to the lock file, or to the file in the command:
+
+```yaml
+- id: zyven
+  uses: VirajSawad1021/Zyven@main
+  with:
+    command: node dist/index.js
+    lock-file: mcp-lock.json
+- if: always()
+  uses: github/codeql-action/upload-sarif@v3   # pin to a commit SHA in your workflow
+  with:
+    sarif_file: ${{ steps.zyven.outputs.sarif }}
+    category: zyven-verify
+```
+
+On the command line, `zyven verify --sarif out.sarif ...` writes the same file, also with `--discover` (one run for
+every configured server, attached to its config file).
 
 **On the Connections page**, the same checks run every time you press **Test**:
 - **The result is shown on the card.** A server that fails, for example on tool poisoning, offers only a

@@ -162,7 +162,7 @@ def cmd_verify_configs(args) -> None:
         sys.exit("no MCP servers found in those files")
     print(f"{len(entries)} server(s). Each runs on this machine as its client would run it"
           + (" (inside the sandbox)" if args.docker else "") + "; env values from the config are passed, never shown.\n")
-    rows, reports = [], []
+    rows, reports, sarif_reports = [], [], []
     for e in entries:
         if e.disabled:
             rows.append((e.name, "skipped", "disabled in its config", e.source))
@@ -170,6 +170,7 @@ def cmd_verify_configs(args) -> None:
         r = verify_server(e.command or None, e.url or None, e.headers or None, e.env or None, args.docker,
                           None, probe=args.probe, timeout=args.timeout, network=args.allow_network)
         reports.append({"name": e.name, "source": e.source, **r.to_dict()})
+        sarif_reports.append((r, e.source))
         if args.markdown:
             with open(args.markdown, "a", encoding="utf-8") as f:
                 f.write(f"## {e.name}\n\n" + format_markdown(r) + "\n")
@@ -183,7 +184,15 @@ def cmd_verify_configs(args) -> None:
     if args.json:
         Path(args.json).write_text(json.dumps(reports, indent=1, ensure_ascii=False), encoding="utf-8")
         print(f"report: {args.json}")
+    if args.sarif:
+        _write_sarif(args.sarif, sarif_reports)
     sys.exit(1 if any(v == "FAIL" for _, v, _, _ in rows) else 0)
+
+
+def _write_sarif(path: str, reports: list) -> None:
+    from zyven.mcpverify.sarif import to_sarif
+    Path(path).write_text(json.dumps(to_sarif(reports), indent=1, ensure_ascii=False), encoding="utf-8")
+    print(f"SARIF: {path} (upload it with github/codeql-action/upload-sarif)")
 
 
 def cmd_verify(args) -> None:
@@ -216,6 +225,9 @@ def cmd_verify(args) -> None:
     if args.json:
         Path(args.json).write_text(json.dumps(r.to_dict(), indent=1, ensure_ascii=False), encoding="utf-8")
         print(f"report: {args.json}")
+    if args.sarif:
+        from zyven.mcpverify.sarif import artifact_for
+        _write_sarif(args.sarif, [(r, artifact_for(args.lock, command))])
     if args.markdown:  # e.g. $GITHUB_STEP_SUMMARY: appended, so several servers can share one summary
         with open(args.markdown, "a", encoding="utf-8") as f:
             f.write(format_markdown(r) + "\n")
@@ -365,6 +377,8 @@ def main() -> None:
     s.add_argument("--update-lock", action="store_true", help="rewrite the lock file from this run")
     s.add_argument("--json", help="write the full report here")
     s.add_argument("--markdown", help="append a Markdown report to this file (e.g. $GITHUB_STEP_SUMMARY)")
+    s.add_argument("--sarif", help="write the findings as SARIF 2.1.0 (GitHub code scanning); results are attached "
+                   "to the lock file if given, else to a file named in the command")
     s.add_argument("--strict", action="store_true", help="warnings fail too (except isolation, which is about "
                    "where the check ran)")
     s.add_argument("--timeout", type=float, default=60.0)

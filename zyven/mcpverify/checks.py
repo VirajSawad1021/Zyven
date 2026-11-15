@@ -125,6 +125,7 @@ class Check:
     status: str
     detail: str
     findings: list[str] = field(default_factory=list)
+    failing: int = 0  # the first `failing` findings are failures, the rest warnings
 
 
 @dataclass
@@ -267,7 +268,7 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
     checks.append(Check("schemas", FAIL if bad else (WARN if warn else PASS),
                         f"{len(bad)} problems" if bad else (f"valid; {len(warn)} tools with undocumented parameters"
                                                              if warn else f"{len(tools)} tool schemas valid"),
-                        bad + warn))
+                        bad + warn, len(bad)))
 
     # descriptions (tool poisoning)
     bad, warn = [], []
@@ -284,7 +285,7 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
     checks.append(Check("descriptions", FAIL if bad else (WARN if warn else PASS),
                         f"{len(bad)} suspicious passages" if bad else
                         ("no hidden text or model-directed instructions found" + (f"; {len(warn)} notes" if warn else "")),
-                        bad + warn))
+                        bad + warn, len(bad)))
 
     # annotations
     bad, warn = [], []
@@ -299,7 +300,7 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
     checks.append(Check("annotations", FAIL if bad else (WARN if warn else PASS),
                         "; ".join(bad) if bad else (f"{unmarked}/{len(tools)} tools do not say whether they are read-only"
                                                     if warn else "every tool says whether it is read-only"),
-                        bad + warn))
+                        bad + warn, len(bad)))
 
     # stability
     hashes = {t.get("name", ""): tool_hash(t) for t in tools}
@@ -331,7 +332,7 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
                ("second connection failed" if obs.get("second_connection_error") else "not checked twice"))
               + ("; matches the lock file" if (lock or locked) and not bad and not warn else ""))
     checks.append(Check("stability", FAIL if bad else (WARN if warn else (PASS if again is not None else SKIP)),
-                        detail, bad + warn))
+                        detail, bad + warn, len(bad)))
 
     # robustness (only when probes ran)
     probes = obs.get("probes")
@@ -346,7 +347,7 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
         detail = (f"{rejected}/{len(probes)} invalid calls rejected cleanly" if probes
                   else "no tool has required parameters to leave out")
         checks.append(Check("robustness", FAIL if failed else PASS,
-                            detail + ("; server still answering" if alive else ""), failed))
+                            detail + ("; server still answering" if alive else ""), failed, len(failed)))
 
     # pinning (stdio servers: is the code that runs fixed by the command?)
     command = (obs.get("launch") or {}).get("command")

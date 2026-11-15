@@ -54,6 +54,9 @@ outputs:
   report:
     description: "Path to the JSON report"
     value: ${{ steps.verify.outputs.report }}
+  sarif:
+    description: "Path to the findings as SARIF 2.1.0, for github/codeql-action/upload-sarif"
+    value: ${{ steps.verify.outputs.sarif }}
 
 runs:
   using: "composite"
@@ -77,7 +80,8 @@ runs:
         set +e            # GitHub runs this with -e; a FAIL must still write the outputs before the step fails
         set -uo pipefail
         report="$RUNNER_TEMP/zyven-verify-$RANDOM.json"
-        args=(verify --json "$report" --markdown "$GITHUB_STEP_SUMMARY" --timeout "$ZV_TIMEOUT")
+        sarif="${report%.json}.sarif"
+        args=(verify --json "$report" --sarif "$sarif" --markdown "$GITHUB_STEP_SUMMARY" --timeout "$ZV_TIMEOUT")
         [ "$ZV_PROBE" = "true" ] && args+=(--probe)
         [ "$ZV_STRICT" = "true" ] && args+=(--strict)
         [ -n "$ZV_LOCK" ] && args+=(--lock "$ZV_LOCK")
@@ -98,4 +102,5 @@ runs:
         verdict=$([ -f "$report" ] && python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["verdict"])' "$report" || echo FAIL)
         echo "verdict=$verdict" >> "$GITHUB_OUTPUT"
         echo "report=$report" >> "$GITHUB_OUTPUT"
+        echo "sarif=$sarif" >> "$GITHUB_OUTPUT"
         exit $code
