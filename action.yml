@@ -59,6 +59,8 @@ runs:
   using: "composite"
   steps:
     - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+      with:
+        enable-cache: false  # v6+ caches by default; a verifier should not read or write a cache shared across the caller's runs
     - id: verify
       shell: bash
       env:
