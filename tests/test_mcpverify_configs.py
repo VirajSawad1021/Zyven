@@ -67,3 +67,4 @@ def test_verify_config_checks_every_server_and_never_prints_env_values(tmp_path)
     assert secret not in p.stdout + p.stderr + (tmp_path / "r.json").read_text(encoding="utf-8")
     assert {r["name"]: r["verdict"] for r in json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))} == \
         {"calc": "PASS", "notes": "FAIL"}
+    assert "across servers" in p.stdout and "'add' is also offered by ['notes']" in p.stdout  # both fixtures offer add

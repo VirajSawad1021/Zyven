@@ -243,6 +243,7 @@ command run in the sandbox with `--docker IMAGE --mount HOST:/PATH`) and records
 | robustness | (`--probe`) input the schema forbids is accepted, or the server stops answering |
 | pinning | (stdio) the launch command names no exact version: `npx`/`bunx` without `@x.y.z`, `uvx`/`pipx` without `==`, a docker image without `@sha256` |
 | isolation | a warning, not a failure, when the server ran on the host, or in the sandbox with `--allow-network` |
+| cross-server | (`--discover`, `--config`) the same tool name from two servers, or one server's text naming another server's distinctive tool name (`send_email`, not `search`); warnings |
 
 The poisoning patterns: invisible Unicode tag characters (decoded back to readable text in the report), bidi overrides,
 terminal escape sequences (a CLI client prints them straight to the screen: SGR 8 concealed text is read back, cursor
