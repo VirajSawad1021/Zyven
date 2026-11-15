@@ -403,6 +403,7 @@ reports.
 | annotations | a tool is marked both read-only and destructive (a missing `readOnlyHint` is a warning) |
 | stability | the tool definitions change between two connections, or differ from the lock file (a **rug pull**). The lock also records the server's name and version, the launch command, the image build and the hosts it reached; a renamed server fails, and the other changes are warnings |
 | robustness | with `--probe`: input the tool's own schema forbids is accepted, or the server stops answering |
+| results | with `--probe`: the text those calls return, error messages included, carries hidden text or instructions aimed at the model (injection through tool output). Only invalid input is sent, so normal results are not seen |
 | pinning | a warning when the launch command runs whatever was published last (`npx -y pkg`, `uvx pkg`, a docker tag): pin `pkg@1.2.3`, `--from pkg==1.2.3` or `image@sha256:...` |
 | isolation | a warning, not a failure, when the server ran on this machine instead of in the sandbox |
 | cross-server | with `--discover` or `--config`: a warning when two servers offer the same tool name, or one server's text names another server's tool (**tool shadowing**) |
