@@ -241,6 +241,7 @@ command run in the sandbox with `--docker IMAGE --mount HOST:/PATH`) and records
 | annotations | a tool is marked both read-only and destructive (a missing hint is a warning) |
 | stability | definitions differ between two connections or from a lock file (a rug pull); against a version 2 lock, also the server name (fail), version, launch command, image ID and reached hosts (warnings) |
 | robustness | (`--probe`) input the schema forbids is accepted, or the server stops answering |
+| results | (`--probe`) the probe calls' output and error text, scanned with the description rules |
 | pinning | (stdio) the launch command names no exact version: `npx`/`bunx` without `@x.y.z`, `uvx`/`pipx` without `==`, a docker image without `@sha256` |
 | isolation | a warning, not a failure, when the server ran on the host, or in the sandbox with `--allow-network` |
 | cross-server | (`--discover`, `--config`) the same tool name from two servers, or one server's text naming another server's distinctive tool name (`send_email`, not `search`); warnings |

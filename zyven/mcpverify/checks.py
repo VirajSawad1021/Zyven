@@ -11,6 +11,8 @@ what can be checked from the outside, from what the server itself says and does:
                definitions, server name and version, launch command, image build, hosts it contacts
   pinning      the launch command names an exact version (npx pkg@1.2.3, uvx --from pkg==1.2.3, image@sha256)
   robustness   (opt-in, calls tools) invalid input is rejected cleanly and the server survives it
+  results      (with robustness) the text those calls return, error messages included, carries no hidden text or
+               instructions aimed at the model; tool output reaches the model like a description does
   isolation    whether the server ran in Zyven's sandbox (no network, read-only, no capabilities) or on this machine
   cross-server (several servers, e.g. --discover) two servers offer the same tool name, or one server's text names
                another server's tool (tool shadowing)
@@ -351,6 +353,22 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
                   else "no tool has required parameters to leave out")
         checks.append(Check("robustness", FAIL if failed else PASS,
                             detail + ("; server still answering" if alive else ""), failed, len(failed)))
+
+    # results: what the probe calls returned is read by the model too (injection through tool output)
+    if probes is None:
+        checks.append(Check("results", SKIP, "not run (pass --probe; only invalid input is sent, so only error and "
+                                             "rejection text is seen)"))
+    else:
+        bad = []
+        for p in probes:
+            for f in scan_text(p.get("text") or ""):
+                if f"{p['tool']}: {f}" not in bad:  # several probes of one tool often return the same message
+                    bad.append(f"{p['tool']}: {f}")
+        seen = sum(1 for p in probes if p.get("text"))
+        checks.append(Check("results", FAIL if bad else PASS,
+                            f"{len(bad)} suspicious passages in tool output" if bad else
+                            f"no hidden text or model-directed instructions in {seen} tool response(s)",
+                            bad, len(bad)))
 
     # pinning (stdio servers: is the code that runs fixed by the command?)
     command = (obs.get("launch") or {}).get("command")

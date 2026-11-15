@@ -99,8 +99,12 @@ async def observe(make_server, label: str, sandboxed: bool, probe: bool = False,
                                 res = await client.call_tool(t["name"], args)
                                 entry["ok"] = bool(res.is_error)
                                 entry["detail"] = f"{what}: rejected" if res.is_error else f"{what}: ACCEPTED"
+                                entry["text"] = result_text(res)
                             except Exception as e:  # noqa: BLE001
                                 entry["ok"] = _is_protocol_error(e)  # a JSON-RPC error is a clean rejection too
+                                if entry["ok"]:  # the error message reaches the model as well
+                                    entry["text"] = _clip(" ".join(str(x) for x in (getattr(e, "message", ""),
+                                                                                    getattr(e, "data", None) or "") if x))
                                 entry["detail"] = (f"{what}: rejected ({type(e).__name__})" if entry["ok"]
                                                    else f"{what}: connection failed ({_why(e)})")
                             obs["probes"].append(entry)
@@ -124,6 +128,22 @@ async def observe(make_server, label: str, sandboxed: bool, probe: bool = False,
         except Exception as e:  # noqa: BLE001
             obs["second_connection_error"] = _why(e)
     return obs
+
+
+RESULT_TEXT_LIMIT = 8000
+
+
+def _clip(text: str) -> str:
+    return text[:RESULT_TEXT_LIMIT]
+
+
+def result_text(res: Any) -> str:
+    """The text of a tool result as the model would read it: text content and structured content."""
+    import json
+    parts = [getattr(c, "text", "") for c in getattr(res, "content", None) or [] if getattr(c, "text", "")]
+    if getattr(res, "structured_content", None) is not None:
+        parts.append(json.dumps(res.structured_content, ensure_ascii=False))
+    return _clip("\n".join(parts))
 
 
 def _is_protocol_error(e: BaseException) -> bool:

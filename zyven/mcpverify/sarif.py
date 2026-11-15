@@ -76,13 +76,17 @@ RULES: list[tuple[str, str, str]] = [
 ]
 
 # Rules that are about security rather than correctness; GitHub uses security-severity to rank them.
-_SEVERITY = {"descriptions": "8.0", "stability": "7.0", "pinning": "5.0", "robustness": "5.0", "cross-server": "6.0"}
+_SEVERITY = {"descriptions": "8.0", "results": "8.0", "stability": "7.0", "pinning": "5.0", "robustness": "5.0",
+             "cross-server": "6.0"}
 _SECURITY_CORRECTNESS = {"schemas/", "handshake/", "descriptions/missing", "descriptions/long",
                          "stability/second-connection", "annotations/missing"}
 
 
 def rule_of(check: str, finding: str) -> str:
     """The stable rule ID for one finding of one check."""
+    if check == "results":  # tool output is scanned with the description rules: results/hide-from-user, ...
+        rid = rule_of("descriptions", finding)
+        return "results/" + rid.split("/", 1)[1]
     for rid, needle, _ in RULES:
         if rid.split("/")[0] == check and needle and needle in finding:
             return rid
@@ -92,7 +96,10 @@ def rule_of(check: str, finding: str) -> str:
 
 def _rule_entries(used: set[str]) -> list[dict[str, Any]]:
     seen: dict[str, dict[str, Any]] = {}
-    for rid, _, text in RULES + [(u, "", "Other finding of this check.") for u in sorted(used)]:
+    described = {rid: text for rid, _, text in RULES}
+    output = [(u, "", "In tool output: " + described.get("descriptions/" + u.split("/", 1)[1], "other finding."))
+              for u in sorted(used) if u.startswith("results/")]
+    for rid, _, text in RULES + output + [(u, "", "Other finding of this check.") for u in sorted(used)]:
         if rid in seen or rid not in used:
             continue
         check = rid.split("/")[0]

@@ -6,6 +6,9 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **`zyven verify --probe` reads what tools return.** A new `results` check scans the text of every probe call's
+  result and error message with the description rules, since tool output reaches the model too. Probes send only
+  input the schema forbids, so normal results are not seen; that is stated in the report.
 - **SARIF output for `zyven verify`** (`--sarif FILE`, and a `sarif` output on the GitHub Action), so findings show up
   in GitHub code scanning.
   - Every finding has a stable rule ID, such as `descriptions/hide-from-user` or `stability/lock-mismatch`, with a
