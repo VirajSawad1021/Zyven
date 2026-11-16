@@ -29,3 +29,4 @@ web/.next/
 web/out/
 web/next-env.d.ts
 web/tsconfig.tsbuildinfo
+eval/heldout/pypi-metadata-snapshot.json
