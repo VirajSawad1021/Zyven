@@ -88,6 +88,13 @@ def compile_capability(
         "generator": f"zyven {__version__}", "model": provider.label,
         "roles": {r: by(r).label for r in sorted(ROLE_NAMES)},  # who wrote what
     }
+    from zyven.ai.families import family_of, tester_independence
+    provenance["role_families"] = {r: family_of(lbl) for r, lbl in provenance["roles"].items()}
+    provenance["tester_independence"] = tester_independence(provenance["roles"])
+    if provenance["tester_independence"] in ("same model", "same family"):
+        emit("tester.not_independent",
+             detail=f"the Tester is the {provenance['tester_independence']} as the Compiler; a misreading they share "
+                    "can pass the differential gate (give --tester a model from another family to reduce that)")
 
     if spec is None:
         assert candidate is not None, "need a candidate or a spec"
