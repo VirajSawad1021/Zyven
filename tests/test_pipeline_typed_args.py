@@ -118,3 +118,44 @@ def test_diff_check_runs_setup_statements_then_the_last_expression_only():
     assert diff_check.evaluate("xs = [1, 2, 3]\nys = [x * 2 for x in xs]\nsum(ys)", env) == 12
     with pytest.raises(ValueError, match="must end with an expression"):
         diff_check.evaluate("x = 1", {})
+
+
+# --- generated cases: the Tester's reference, new arguments --------------------------------------------------------
+
+def _scale_gate(tmp_path, monkeypatch, body, expr):
+    (tmp_path / "server.py").write_text("def scale(n):\n" + textwrap.indent(body, "    ") + "\n", encoding="utf-8")
+
+    def fake_run(cmd, mounts, policy, workdir="/src"):
+        out = diff_check.main(str(tmp_path / "server.py"), str(tmp_path / "diff_tests.json"))
+        return SimpleNamespace(stdout="ZYVEN_DIFF_REPORT=" + json.dumps(out), stderr="")
+
+    monkeypatch.setattr(V, "run", fake_run)
+    tool = ToolSpec(name="scale", description="d", params=[ToolParam(name="n", type="integer", description="x")],
+                    returns=[ReturnField(name="v", type="integer", description="v")], implementation_symbols=[],
+                    implementation_notes="n", example_args={"n": "2"})
+    case = DiffCase(tool="scale", args={"n": "2"}, field="v", reference_imports=[], reference_expr=expr)
+    failing: dict = {}
+    return V._differential_gate(tmp_path, _spec(tool), DiffTests(cases=[case]), {}, None, set(), failing), failing
+
+
+def test_a_bug_the_testers_own_case_misses_is_caught_by_a_generated_case(tmp_path, monkeypatch):
+    gate, failing = _scale_gate(tmp_path, monkeypatch, "return {'v': n * 2 if n < 5 else n * 2 + 1}", "{n} * 2")
+    assert not gate.passed, gate.detail
+    assert "1/1 Tester cases + " in gate.detail and "generated" in failing["scale"]
+
+
+def test_inputs_the_library_rejects_or_the_tool_refuses_are_not_scored(tmp_path, monkeypatch):
+    lib_rejects = "{n} * 2 if {n} >= 0 else int('not a number')"  # the 'library' refuses negative numbers
+    gate, _ = _scale_gate(tmp_path, monkeypatch, "return {'v': n * 2}", lib_rejects)
+    assert gate.passed and "not scored" in gate.detail, gate.detail
+    tool_refuses = "if n < 0:\n    raise ValueError('n must not be negative')\nreturn {'v': n * 2}"
+    gate, _ = _scale_gate(tmp_path, monkeypatch, tool_refuses, "{n} * 2")
+    assert gate.passed and "not scored" in gate.detail, gate.detail
+
+
+def test_generated_cases_are_the_same_on_every_run(tmp_path):
+    import random
+    cases = [{"tool": "t", "args": {"a": 3, "s": "abc", "xs": [1, 2]}, "reference_expr": "{a}{s}{xs}"}]
+    first = diff_check.generated_args(cases, 12, random.Random(diff_check.SEED))
+    assert first == diff_check.generated_args(cases, 12, random.Random(diff_check.SEED)) and len(first) == 12
+    assert all(a["s"] not in ("ABC", " abc ") for a in first)  # case and spacing are gate 4's, not varied here

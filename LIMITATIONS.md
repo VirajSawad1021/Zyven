@@ -30,6 +30,7 @@ When a compiled skill receives a passing validation report and is marked as veri
 
 6. **Differential Equivalence on Reference Cases (Gate 6):**
    - For every differential test case generated independently by the Tester role, calling the MCP tool yields the identical JSON-formatted value as calling the underlying source library directly. A tool with no usable test case cannot pass this gate.
+   - The same holds for up to 12 more argument sets per tool, generated without a model from the Tester's values and small changes of them, when the Tester's reference uses every argument through a placeholder. Inputs the library rejects are not scored, and neither are inputs the tool refuses with an error.
 
 ---
 
@@ -156,6 +157,10 @@ outside-in checks (section 6), which are not the same as the six gates.**
   - One verified compile is an example, not a comparison between agents.
 - **`zyven reassemble` trusts the saved differential cases.** It reruns the six gates with the cases the Tester wrote when the
   skill was first compiled. It does not write new ones. A weak original test set stays weak.
+- **Generated differential cases are small variations, not a search.** They mix and nudge the Tester's own values
+  (numbers +-1, 0, negated; text shortened or reversed; lists shortened, reversed or emptied). They do not vary case or
+  spacing (gate 4 covers those), cannot invent a new kind of input, and cover nothing for a reference that hard-codes an
+  argument instead of using its placeholder. A tool that raises on input the library accepts is recorded, not failed.
 - **The network allowlist works through a proxy.**
   - **Programs that ignore `HTTPS_PROXY` cannot reach anything.** Node's built-in `fetch` is one of them, unless told to
     use the proxy. That fails closed: safe, but such a server may not work with an allowlist.
