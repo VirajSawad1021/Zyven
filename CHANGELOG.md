@@ -6,6 +6,9 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **A pre-commit hook** (`zyven-verify`): committing an MCP client config (`.mcp.json`, `.cursor/mcp.json`,
+  `.vscode/mcp.json`, `claude_desktop_config.json`, `.codex/config.toml`) checks every server in it. Behind it,
+  `zyven verify --files FILE...` treats its arguments as config files.
 - **Compiles record how independent the Tester was.** `provenance.json` now has each role's model family and
   `tester_independence` (same model, same family, different family, or unknown), and a compile logs a warning when the
   Tester comes from the Compiler's own family. Models of one family share more errors, and a misreading the Tester and
