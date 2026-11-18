@@ -240,6 +240,18 @@ def cmd_verify(args) -> None:
     if args.sarif:
         from zyven.mcpverify.sarif import artifact_for
         _write_sarif(args.sarif, [(r, artifact_for(args.lock, command))])
+    if args.srt_settings:
+        from zyven.mcpverify.srt import srt_settings
+        try:
+            settings = srt_settings(r)
+        except ValueError as e:
+            print(f"srt settings not written: {e}")
+        else:
+            Path(args.srt_settings).write_text(json.dumps(settings, indent=1) + "\n", encoding="utf-8")
+            hosts = settings["network"]["allowedDomains"]
+            print(f"srt settings: {args.srt_settings} (network: {', '.join(hosts) or 'none'}; no writes). The check "
+                  "made only a few calls: add any host the server needs later. Run: srt --settings "
+                  f"{args.srt_settings} <server command>")
     if args.markdown:  # e.g. $GITHUB_STEP_SUMMARY: appended, so several servers can share one summary
         with open(args.markdown, "a", encoding="utf-8") as f:
             f.write(format_markdown(r) + "\n")
@@ -393,6 +405,8 @@ def main() -> None:
     s.add_argument("--markdown", help="append a Markdown report to this file (e.g. $GITHUB_STEP_SUMMARY)")
     s.add_argument("--sarif", help="write the findings as SARIF 2.1.0 (GitHub code scanning); results are attached "
                    "to the lock file if given, else to a file named in the command")
+    s.add_argument("--srt-settings", help="with --docker and --allow-host: write a sandbox-runtime (srt) settings file "
+                   "that allows only the hosts the server reached, no writes, and no reads of credential folders")
     s.add_argument("--strict", action="store_true", help="warnings fail too (except isolation, which is about "
                    "where the check ran)")
     s.add_argument("--timeout", type=float, default=60.0)

@@ -6,6 +6,10 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **`zyven verify --srt-settings FILE`.** After a check in the sandbox with `--allow-host`, writes a settings file for
+  Anthropic's sandbox-runtime that allows only the hosts the server reached, no writes and no reads of credential
+  folders, to run the server afterwards with least privilege. Without a network observation it writes nothing and
+  says why.
 - **A pre-commit hook** (`zyven-verify`): committing an MCP client config (`.mcp.json`, `.cursor/mcp.json`,
   `.vscode/mcp.json`, `claude_desktop_config.json`, `.codex/config.toml`) checks every server in it. Behind it,
   `zyven verify --files FILE...` treats its arguments as config files.
