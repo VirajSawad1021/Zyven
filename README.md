@@ -491,6 +491,22 @@ To see findings in the repository's **Security → Code scanning** tab, upload t
 On the command line, `zyven verify --sarif out.sarif ...` writes the same file, also with `--discover` (one run for
 every configured server, attached to its config file).
 
+**As a pre-commit hook.** Checks every server in an MCP client config you commit (`.mcp.json`, `.cursor/mcp.json`,
+`.vscode/mcp.json`, `claude_desktop_config.json`, `.codex/config.toml`):
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/VirajSawad1021/Zyven
+    rev: main                              # pin a release tag or commit once there is one
+    hooks:
+      - id: zyven-verify
+        # args: [--docker, zyven-sandbox:py312]   # run the servers in the sandbox (needs `zyven setup` once)
+```
+
+The servers run on your machine as your client would run them, unless you add the `--docker` argument. A failing
+server stops the commit; `git commit --no-verify` skips the hook.
+
 **On the Connections page**, the same checks run every time you press **Test**:
 - **The result is shown on the card.** A server that fails, for example on tool poisoning, offers only a
   **Turn on anyway** button, which asks you to confirm.

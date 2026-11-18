@@ -203,6 +203,12 @@ def _write_sarif(path: str, reports: list) -> None:
 
 def cmd_verify(args) -> None:
     from zyven.mcpverify import format_markdown, format_report, verify_server, write_lock
+    if args.files:  # pre-commit passes the changed config files as trailing arguments
+        files = [a for a in args.server if a != "--"]
+        if not files:
+            print("no config files given; nothing to check")
+            sys.exit(0)
+        args.config, args.server = (args.config or []) + files, []
     if args.config or args.discover:
         return cmd_verify_configs(args)
     command = args.server[1:] if args.server[:1] == ["--"] else args.server
@@ -368,6 +374,8 @@ def main() -> None:
     s.add_argument("--config", action="append", help="check every server in a client config (Claude Desktop/Code, "
                    "Cursor, VS Code mcp.json, Codex config.toml); repeatable")
     s.add_argument("--discover", action="store_true", help="find the usual client config files and check them all")
+    s.add_argument("--files", action="store_true", help="treat the trailing arguments as client config files "
+                   "(what a pre-commit hook passes); same as one --config per file")
     s.add_argument("--header", action="append", help="HTTP header for --url, 'Name: value'; repeatable")
     s.add_argument("--env", dest="env_var", action="append",
                    help="environment for the server, NAME=value or NAME (pass through); nothing else is passed")

@@ -1,0 +1,7 @@
+- id: zyven-verify
+  name: zyven verify (MCP servers in client configs)
+  description: Check every MCP server listed in a committed client config for tool poisoning, rug pulls and invalid schemas.
+  entry: zyven verify --files
+  language: python
+  pass_filenames: true
+  files: (^|/)(\.mcp\.json|mcp\.json|claude_desktop_config\.json|\.cursor/mcp\.json|\.vscode/mcp\.json|\.codex/config\.toml)$

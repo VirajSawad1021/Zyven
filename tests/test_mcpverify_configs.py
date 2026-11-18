@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -68,3 +69,45 @@ def test_verify_config_checks_every_server_and_never_prints_env_values(tmp_path)
     assert {r["name"]: r["verdict"] for r in json.loads((tmp_path / "r.json").read_text(encoding="utf-8"))} == \
         {"calc": "PASS", "notes": "FAIL"}
     assert "across servers" in p.stdout and "'add' is also offered by ['notes']" in p.stdout  # both fixtures offer add
+
+
+def test_files_flag_checks_each_config_passed_like_pre_commit(tmp_path):
+    first = tmp_path / "mcp.json"
+    first.write_text(json.dumps({"mcpServers": {
+        "calc": {"command": sys.executable, "args": [str(FIX / "good.py")]}}}), encoding="utf-8")
+    second = tmp_path / ".cursor" / "mcp.json"
+    second.parent.mkdir()
+    second.write_text(json.dumps({"mcpServers": {
+        "notes": {"command": sys.executable, "args": [str(FIX / "poisoned.py")]}}}), encoding="utf-8")
+    p = subprocess.run([sys.executable, "-m", "zyven.cli", "verify", "--files", str(first), str(second)],
+                       capture_output=True, text=True, cwd=ROOT, env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+    assert p.returncode == 1, p.stdout + p.stderr
+    assert "calc" in p.stdout and "notes" in p.stdout
+    assert "FAIL  notes" in p.stdout
+
+
+def test_files_flag_with_a_clean_config_passes(tmp_path):
+    f = tmp_path / "mcp.json"
+    f.write_text(json.dumps({"mcpServers": {
+        "calc": {"command": sys.executable, "args": [str(FIX / "good.py")]}}}), encoding="utf-8")
+    p = subprocess.run([sys.executable, "-m", "zyven.cli", "verify", "--files", str(f)],
+                       capture_output=True, text=True, cwd=ROOT, env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+    assert p.returncode == 0, p.stdout + p.stderr
+
+
+def test_files_flag_with_no_files_does_nothing():
+    p = subprocess.run([sys.executable, "-m", "zyven.cli", "verify", "--files"],
+                       capture_output=True, text=True, cwd=ROOT, env={**os.environ, "PYTHONIOENCODING": "utf-8"})
+    assert p.returncode == 0, p.stdout + p.stderr
+    assert "nothing to check" in p.stdout
+
+
+def test_the_pre_commit_hook_matches_client_config_paths():
+    lines = (ROOT / ".pre-commit-hooks.yaml").read_text(encoding="utf-8").splitlines()
+    line = next(line for line in lines if line.startswith("  files:"))
+    pattern = re.compile(line.split("files:", 1)[1].strip())
+    for path in (".mcp.json", "sub/.mcp.json", ".cursor/mcp.json", ".vscode/mcp.json",
+                 "claude_desktop_config.json", ".codex/config.toml"):
+        assert pattern.search(path), path
+    for path in ("package.json", "mcp.json.bak", "docs/notmcp.json", "config.toml"):
+        assert not pattern.search(path), path
