@@ -9,8 +9,10 @@ answer for any arguments. After the Tester's own cases, each tool gets up to GEN
 mixed from the values its cases use and small variations of them (numbers +-1, 0 and negated; text with changed case,
 a character dropped, reversed; lists shortened, reversed or emptied). Case and spacing are not varied: gate 4 already
 requires tools to treat those as the same input. The library decides each one: if it rejects the input, the case is
-inconclusive. If it gives an answer, a tool that returns a different one fails; a tool that raises is recorded but
-not counted, because rejecting some input on purpose is allowed (gate 5). The draw is seeded, so a rerun checks the
+inconclusive. If it gives an answer, a tool that returns a different one fails. A tool that declines the input (it
+raises, or answers with an error message or a validity flag set to False) is recorded but not counted, because
+rejecting some input on purpose is allowed (gate 5), and a Tester's reference is often written for valid input only
+(python-stdnum's format() will format an invalid ISBN). A case that compares the validity flag itself is still scored. The draw is seeded, so a rerun checks the
 same inputs. No model is involved.
 """
 
@@ -93,6 +95,17 @@ def _templated(c: dict) -> bool:
     return bool(c["args"]) and all("{" + k + "}" in c["reference_expr"] for k in c["args"])
 
 
+FLAGS = ("is_valid", "valid", "success", "ok")
+
+
+def _declined(out, field: str) -> bool:
+    """The tool answered "this input is not valid" (an error message, or a validity flag set to False) instead of a
+    result. Not when the compared field is that flag itself: then a wrong verdict is exactly what must be caught."""
+    if not isinstance(out, dict) or field == "error" or field in FLAGS:
+        return False
+    return bool(out.get("error")) or any(out.get(f) is False for f in FLAGS)
+
+
 def _check(ns: dict, c: dict, args: dict) -> dict:
     r = {"tool": c["tool"], "args": args, "field": c["field"], "expr": c["reference_expr"]}
     try:
@@ -115,6 +128,7 @@ def _check(ns: dict, c: dict, args: dict) -> dict:
         r.update(expected=expected if isinstance(expected, (str, int, float, bool, type(None))) else str(expected),
                  got=got if isinstance(got, (str, int, float, bool, type(None))) else str(got))
         r["status"] = "match" if _norm(got) == _norm(expected) else "mismatch"
+        r["tool_declined"] = _declined(out, c["field"])
     except Exception:  # noqa: BLE001
         r.update(status="tool_error", detail="".join(traceback.format_exc().splitlines(keepends=True)[-6:]))
     return r
@@ -138,8 +152,8 @@ def main(server_path: str, tests_path: str, generated_per_tool: int | None = Non
             r["generated"] = True
             if r["status"] == "invalid_reference":  # the library itself rejects these arguments
                 r["status"] = "inconclusive"
-            elif r["status"] == "tool_error":  # the tool refused input the library accepts: recorded, not counted
-                r["status"] = "tool_rejected"
+            elif r["status"] == "tool_error" or (r["status"] == "mismatch" and r.get("tool_declined")):
+                r["status"] = "tool_rejected"  # the tool refused input the library accepts: recorded, not counted
             results.append(r)
     return {"results": results}
 

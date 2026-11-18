@@ -142,7 +142,9 @@ parameters arrive as real lists and objects, not JSON text). The program is eval
 
 A reference that uses every argument through an `{arg}` placeholder is a template, so `diff_check.py` also runs it on
 up to 12 generated argument sets per tool (seeded, no model): values mixed from the Tester's cases and small changes of
-them. If the library rejects the input the case is `inconclusive`; if the tool raises it is `tool_rejected`; neither is
+them. If the library rejects the input the case is `inconclusive`; if the tool declines it (raises, or answers with an
+error message or `is_valid`/`valid`/`success`/`ok` set to False) it is `tool_rejected`, unless the case compares that flag
+itself; neither is
 scored. A different answer fails the gate, and the repair message says the input was generated.
 
 ### 4.3 Compiler & Static Policy (`zyven/compiler/`)

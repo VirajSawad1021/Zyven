@@ -160,7 +160,9 @@ outside-in checks (section 6), which are not the same as the six gates.**
 - **Generated differential cases are small variations, not a search.** They mix and nudge the Tester's own values
   (numbers +-1, 0, negated; text shortened or reversed; lists shortened, reversed or emptied). They do not vary case or
   spacing (gate 4 covers those), cannot invent a new kind of input, and cover nothing for a reference that hard-codes an
-  argument instead of using its placeholder. A tool that raises on input the library accepts is recorded, not failed.
+  argument instead of using its placeholder. A tool that declines input the library accepts (raises, or answers with an
+  error or a validity flag set to False) is recorded, not failed, so a tool that wrongly declines is caught only by a
+  case that compares the validity flag itself.
 - **The network allowlist works through a proxy.**
   - **Programs that ignore `HTTPS_PROXY` cannot reach anything.** Node's built-in `fetch` is one of them, unless told to
     use the proxy. That fails closed: safe, but such a server may not work with an allowlist.

@@ -17,6 +17,14 @@ build, and installs without a clone.
   `tester_independence` (same model, same family, different family, or unknown), and a compile logs a warning when the
   Tester comes from the Compiler's own family. Models of one family share more errors, and a misreading the Tester and
   Compiler share is the differential gate's known blind spot. Use `--tester` with a model from another family.
+- **Generated cases in the differential gate.** A Tester reference written with `{arg}` placeholders is reused on up
+  to 12 more argument sets per tool, mixed from the Tester's values and small changes of them (seeded, no model).
+  Inputs the library rejects, and inputs the tool declines (it raises, or answers with an error or `is_valid: False`),
+  are not scored; any other disagreement fails the gate. Every skill saved so far still passes, with no false reject.
+  On five skills and the same 96 mutants, the gates caught 81 instead of 80 (eval/results/mutation-20261118-*): a
+  small gain, because most survivors sit where no Tester value reaches (an option no case sets, a field no case compares).
+  `eval/mutation_test.py --generated 0` turns them off, to measure what they add. Existing installs pick up the new
+  checker after `zyven setup`, which rebuilds the sandbox image.
 - **`zyven verify --probe` reads what tools return.** A new `results` check scans the text of every probe call's
   result and error message with the description rules, since tool output reaches the model too. Probes send only
   input the schema forbids, so normal results are not seen; that is stated in the report.

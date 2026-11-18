@@ -159,3 +159,10 @@ def test_generated_cases_are_the_same_on_every_run(tmp_path):
     first = diff_check.generated_args(cases, 12, random.Random(diff_check.SEED))
     assert first == diff_check.generated_args(cases, 12, random.Random(diff_check.SEED)) and len(first) == 12
     assert all(a["s"] not in ("ABC", " abc ") for a in first)  # case and spacing are gate 4's, not varied here
+
+
+def test_a_tool_that_answers_invalid_is_declining_but_a_wrong_validity_flag_is_still_caught():
+    out = {"is_valid": False, "formatted_number": "", "error": "The number has an invalid length."}
+    assert diff_check._declined(out, "formatted_number")          # a reference for valid input only: not scored
+    assert not diff_check._declined(out, "is_valid")             # the verdict itself is what the case checks
+    assert not diff_check._declined({"is_valid": True, "error": ""}, "formatted_number")
