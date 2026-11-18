@@ -491,6 +491,19 @@ To see findings in the repository's **Security → Code scanning** tab, upload t
 On the command line, `zyven verify --sarif out.sarif ...` writes the same file, also with `--discover` (one run for
 every configured server, attached to its config file).
 
+**Run it afterwards with least privilege.** After a check in the sandbox with an allowlist, `--srt-settings FILE`
+writes a settings file for Anthropic's [sandbox-runtime](https://github.com/anthropics/sandbox-runtime) that allows only
+the hosts the server reached, no writes, and no reads of credential folders such as `~/.ssh` and `~/.aws`:
+
+```bash
+zyven verify --docker zyven-sandbox:py312 --mount ./server:/srv --allow-host api.example.com \
+  --srt-settings srt.json -- python /srv/server.py
+srt --settings srt.json python server/server.py
+```
+
+The check makes only a few calls, so a server can need more hosts or a writable folder in real use; add them to the
+file by hand.
+
 **As a pre-commit hook.** Checks every server in an MCP client config you commit (`.mcp.json`, `.cursor/mcp.json`,
 `.vscode/mcp.json`, `claude_desktop_config.json`, `.codex/config.toml`):
 
