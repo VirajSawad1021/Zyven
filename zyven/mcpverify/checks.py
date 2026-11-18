@@ -17,6 +17,12 @@ what can be checked from the outside, from what the server itself says and does:
   cross-server (several servers, e.g. --discover) two servers offer the same tool name, or one server's text names
                another server's tool (tool shadowing)
 
+Findings and capabilities are kept apart. A finding is evidence of deceit: hidden text, or text that addresses the
+model about its own behaviour, or definitions that changed. A capability is what the server can do or touches: a
+description that names a credential file or a URL, a destructive tool, a host it reached. Capabilities are listed but
+never fail a server; an honest SSH or HTTP tool has to mention them. They become findings when the same text also
+addresses the model, because then they are the payload of an instruction.
+
 Everything here is a pure function of an observation dict, so it is tested without starting a server.
 """
 
@@ -50,6 +56,10 @@ INSTRUCTION_PATTERNS = [
     (r"(instead of|rather than) (using |calling )?(the )?\w+ tool", "tries to redirect calls meant for another tool"),
 ]
 _INSTRUCTION_RES = [(re.compile(p, re.IGNORECASE | re.DOTALL), why) for p, why in INSTRUCTION_PATTERNS]
+# Patterns that say what a tool touches rather than what the model should do: capabilities on their own.
+CAPABILITY_PATTERNS = {"names a credential or config file", "asks for secrets to be passed along",
+                       "asks for data to be sent to a URL"}
+assert CAPABILITY_PATTERNS <= {why for _, why in INSTRUCTION_PATTERNS}
 _BASE64_RE = re.compile(r"[A-Za-z0-9+/]{120,}={0,2}")
 _BIDI = {"‪", "‫", "‬", "‭", "‮", "⁦", "⁧", "⁨", "⁩"}
 
@@ -142,6 +152,7 @@ class Report:
     lock: dict[str, str]  # tool name -> definition hash, for --lock
     launch: dict[str, Any] = field(default_factory=dict)  # command or URL, and the image build, for --lock
     reached_hosts: list[str] | None = None  # hosts reached through the egress proxy (None: not observed)
+    capabilities: list[str] = field(default_factory=list)  # what it can do or touches; listed, never a failure
     texts: dict[str, str] = field(default_factory=dict)  # tool name -> all text the model reads for it
 
     def to_dict(self) -> dict[str, Any]:
@@ -202,6 +213,24 @@ def scan_text(text: str) -> list[str]:
     if _BASE64_RE.search(text):
         out.append("contains a long base64-like blob")
     return out
+
+
+def classify_text(text: str) -> tuple[list[str], list[str], list[str]]:
+    """(findings, warnings, capabilities) for one piece of text the model reads.
+
+    Hidden text and model-directed instructions are findings. Credential files, secrets and URLs are capabilities,
+    and a long encoded blob is a warning, unless the same text has a finding: then they are its payload."""
+    hidden = hidden_characters(text)
+    plain = strip_hidden(text)
+    model, caps = [], []
+    for rx, why in _INSTRUCTION_RES:
+        m = rx.search(text) or rx.search(plain)
+        if m:
+            (caps if why in CAPABILITY_PATTERNS else model).append(f"{why}: \"{m.group(0)[:80]}\"")
+    blob = ["contains a long base64-like blob"] if _BASE64_RE.search(text) else []
+    if hidden or model:
+        return hidden + model + caps + blob, [], []
+    return [], [b + " (read it)" for b in blob], caps
 
 
 def _schema_problems(schema: Any, where: str) -> list[str]:
@@ -277,6 +306,7 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
 
     # descriptions (tool poisoning)
     bad, warn = [], []
+    capabilities: list[str] = []
     for t in tools:
         n = t.get("name", "")
         if not (t.get("description") or "").strip():
@@ -284,9 +314,15 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
         elif len(t["description"]) > LONG_DESCRIPTION:
             warn.append(f"{n}: description is {len(t['description'])} characters (unusually long; read it)")
         for where, text in _texts(t):
-            bad += [f"{n} ({where}): {f}" for f in scan_text(text)]
+            f, w, c = classify_text(text)
+            bad += [f"{n} ({where}): {x}" for x in f]
+            warn += [f"{n} ({where}): {x}" for x in w]
+            capabilities += [f"{n} ({where}): {x}" for x in c]
     if obs.get("instructions"):
-        bad += [f"server instructions: {f}" for f in scan_text(obs["instructions"])]
+        f, w, c = classify_text(obs["instructions"])
+        bad += [f"server instructions: {x}" for x in f]
+        warn += [f"server instructions: {x}" for x in w]
+        capabilities += [f"server instructions: {x}" for x in c]
     checks.append(Check("descriptions", FAIL if bad else (WARN if warn else PASS),
                         f"{len(bad)} suspicious passages" if bad else
                         ("no hidden text or model-directed instructions found" + (f"; {len(warn)} notes" if warn else "")),
@@ -301,6 +337,10 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
             bad.append(f"{n}: marked both read-only and destructive")
         if ro is None:
             warn.append(f"{n}: no readOnlyHint (clients must treat it as able to change things)")
+        if destr is True and ro is not True:
+            capabilities.append(f"{n}: can delete or overwrite data (destructiveHint)")
+        if ann.get("openWorldHint") is True:
+            capabilities.append(f"{n}: reaches systems outside the server (openWorldHint)")
     unmarked = sum(1 for t in tools if (t.get("annotations") or {}).get("readOnlyHint") is None)
     checks.append(Check("annotations", FAIL if bad else (WARN if warn else PASS),
                         "; ".join(bad) if bad else (f"{unmarked}/{len(tools)} tools do not say whether they are read-only"
@@ -360,10 +400,14 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
                                              "rejection text is seen)"))
     else:
         bad = []
-        for p in probes:
-            for f in scan_text(p.get("text") or ""):
-                if f"{p['tool']}: {f}" not in bad:  # several probes of one tool often return the same message
-                    bad.append(f"{p['tool']}: {f}")
+        for p in probes:  # same split as descriptions; a data blob in output is normal, so it is not noted
+            f, _, c = classify_text(p.get("text") or "")
+            for x in f:
+                if f"{p['tool']}: {x}" not in bad:  # several probes of one tool often return the same message
+                    bad.append(f"{p['tool']}: {x}")
+            for x in c:
+                if f"{p['tool']} (output): {x}" not in capabilities:
+                    capabilities.append(f"{p['tool']} (output): {x}")
         seen = sum(1 for p in probes if p.get("text"))
         checks.append(Check("results", FAIL if bad else PASS,
                             f"{len(bad)} suspicious passages in tool output" if bad else
@@ -397,12 +441,14 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
                             if obs.get("sandboxed") else
                             "ran on this machine with your permissions (use --docker IMAGE to run it in the sandbox)"))
 
+    if obs.get("egress"):
+        capabilities += [f"reaches {h} (observed through the egress proxy)" for h in reached_hosts(obs)]
     verdict = FAIL if any(c.status == FAIL for c in checks) else PASS
     texts = {t.get("name", ""): "\n".join(f"{w}: {x}" for w, x in _texts(t)) for t in tools}
     if obs.get("instructions"):
         texts["(server instructions)"] = obs["instructions"]
     return Report(obs.get("target", ""), verdict, checks, srv, names, hashes, launch_of(obs),
-                  reached_hosts(obs) if obs.get("egress") else None, texts)
+                  reached_hosts(obs) if obs.get("egress") else None, texts=texts, capabilities=capabilities)
 
 
 def _distinctive(name: str) -> bool:
