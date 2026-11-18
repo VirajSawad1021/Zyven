@@ -87,6 +87,10 @@ build, and installs without a clone.
 - Every sandbox container gets the host name `zyven-sandbox`.
 
 ### Fixed
+- **Policy gate: lookups inside the wrapped library are allowed again.** The `getattr` rule added for 0.2.0 also refused
+  `getattr(phonenumbers.PhoneNumberFormat, fmt)`, the usual way to turn "E164" into a constant, so a phone-number skill
+  verified earlier no longer passed gate 1. A non-literal name is allowed when the object is a name inside a source
+  package (`pkg.Thing`, or `Thing` from `from pkg import Thing`), never the module itself or a local value.
 - **Policy gate: attributes reached by a string.** `getattr(f, "__glo" + "bals__")` passed the static gate,
   because only written-out attributes were checked. `getattr` is now allowed only as a direct call with a literal,
   ordinary name; `attrgetter`, `methodcaller` and `__builtins__` are refused. The container was always the

@@ -190,6 +190,14 @@ def test_baseline_candidates_are_deterministic(analysis):
     ("g = getattr\nx = g(1, 'real')", False),
     ("import functools\nx = functools.reduce(getattr, ['a'], 1)", False),
     ("x = __builtins__", False),
+    # a lookup inside the wrapped library, as a phone-number skill does to turn "E164" into a constant
+    ("import calc\ndef f(fmt): return getattr(calc.Format, fmt)", True),
+    ("import calc as c\ndef f(fmt): return getattr(c.Format.Sub, fmt, None)", True),
+    ("from calc import Format\ndef f(fmt): return getattr(Format, fmt)", True),
+    ("import calc\ndef f(n): return getattr(calc, n)", False),                    # the module itself: its loader
+    ("import calc\ndef f(n): return getattr(calc.__loader__, n)", False),        # a dunder in the chain
+    ("import json\ndef f(n): return getattr(json.decoder, n)", False),            # not the source package
+    ("def g(): pass\ndef f(n): return getattr(g, n)", False),                     # a local value
     ("from . import y", False),
     ("def f(:\n", False),
 ])
