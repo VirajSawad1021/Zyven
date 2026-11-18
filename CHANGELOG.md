@@ -6,6 +6,10 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **Compiles record how independent the Tester was.** `provenance.json` now has each role's model family and
+  `tester_independence` (same model, same family, different family, or unknown), and a compile logs a warning when the
+  Tester comes from the Compiler's own family. Models of one family share more errors, and a misreading the Tester and
+  Compiler share is the differential gate's known blind spot. Use `--tester` with a model from another family.
 - **`zyven verify --probe` reads what tools return.** A new `results` check scans the text of every probe call's
   result and error message with the description rules, since tool output reaches the model too. Probes send only
   input the schema forbids, so normal results are not seen; that is stated in the report.
