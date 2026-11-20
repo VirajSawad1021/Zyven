@@ -6,6 +6,9 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **`zyven verify --findings-csv FILE`.** Appends one row per finding (server, check, rule ID, level, text and an empty
+  label column) to a CSV file, also with `--discover` and `--config`, for labelling findings by hand to measure how
+  precise each rule is. Rows use the same rules and levels as the SARIF output.
 - **`zyven verify --srt-settings FILE`.** After a check in the sandbox with `--allow-host`, writes a settings file for
   Anthropic's sandbox-runtime that allows only the hosts the server reached, no writes and no reads of credential
   folders, to run the server afterwards with least privilege. Without a network observation it writes nothing and
