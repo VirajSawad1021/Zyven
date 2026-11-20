@@ -192,7 +192,15 @@ def cmd_verify_configs(args) -> None:
         print(f"report: {args.json}")
     if args.sarif:
         _write_sarif(args.sarif, [(r, e.source) for e, r in done])
+    if args.findings_csv:
+        _write_rows(args.findings_csv, [(e.name, r) for e, r in done])
     sys.exit(1 if any(v == "FAIL" for _, v, _, _ in rows) else 0)
+
+
+def _write_rows(path: str, reports: list) -> None:
+    from zyven.mcpverify.labels import append_rows, finding_rows
+    n = append_rows(Path(path), [row for name, r in reports for row in finding_rows(name, r)])
+    print(f"findings: {n} row(s) appended to {path} (fill in the label column: real, capability or false alarm)")
 
 
 def _write_sarif(path: str, reports: list) -> None:
@@ -240,6 +248,8 @@ def cmd_verify(args) -> None:
     if args.sarif:
         from zyven.mcpverify.sarif import artifact_for
         _write_sarif(args.sarif, [(r, artifact_for(args.lock, command))])
+    if args.findings_csv:
+        _write_rows(args.findings_csv, [(r.server.get("name") or r.target, r)])
     if args.srt_settings:
         from zyven.mcpverify.srt import srt_settings
         try:
@@ -405,6 +415,8 @@ def main() -> None:
     s.add_argument("--markdown", help="append a Markdown report to this file (e.g. $GITHUB_STEP_SUMMARY)")
     s.add_argument("--sarif", help="write the findings as SARIF 2.1.0 (GitHub code scanning); results are attached "
                    "to the lock file if given, else to a file named in the command")
+    s.add_argument("--findings-csv", help="append one row per finding (server, check, rule, level, text and an empty "
+                   "label column) to this CSV file, for labelling by hand")
     s.add_argument("--srt-settings", help="with --docker and --allow-host: write a sandbox-runtime (srt) settings file "
                    "that allows only the hosts the server reached, no writes, and no reads of credential folders")
     s.add_argument("--strict", action="store_true", help="warnings fail too (except isolation, which is about "
