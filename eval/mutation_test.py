@@ -184,7 +184,8 @@ def _same_args(case_args: dict, reported: dict) -> bool:
     return True
 
 
-def run_skill(skill_dir: Path, per_tool: int, rng: random.Random, with_upstream: bool) -> list[Mutant]:
+def run_skill(skill_dir: Path, per_tool: int, rng: random.Random, with_upstream: bool,
+              generated: int | None = None) -> list[Mutant]:
     from zyven.analysis.analyzer import analyze
     from zyven.compiler.verify import verify
 
@@ -208,7 +209,8 @@ def run_skill(skill_dir: Path, per_tool: int, rng: random.Random, with_upstream:
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", message=".*serializ", category=UserWarning)
                 return verify(work, spec, repo, set(a.packages), run_upstream=with_upstream, diff_tests=diff,
-                              source_root=a.source_root, skip_tests=[t.file for t in a.tests if t.third_party])
+                              source_root=a.source_root, skip_tests=[t.file for t in a.tests if t.third_party],
+                              generated_per_tool=generated)
         finally:
             shutil.rmtree(work, ignore_errors=True)
 
@@ -300,7 +302,8 @@ def report(muts: list[Mutant], args, seconds: float) -> tuple[dict, str]:
             alone[g] = alone.get(g, 0) + 1
     data = {"mutants": len(scored), "killed": len(killed), "score": round(score, 3), "errors": len(errors),
             "by_gate": by_gate, "failed_at_all": alone, "by_operator": {k: {"killed": v[0], "total": v[1]} for k, v in by_op.items()},
-            "upstream_gate": args.with_upstream, "seed": args.seed, "seconds": round(seconds),
+            "upstream_gate": args.with_upstream, "seed": args.seed, "generated_per_tool": args.generated,
+            "seconds": round(seconds),
             "skills": sorted({m.skill for m in muts}), "calibrated": CALIBRATION_LOG,
             "results": [asdict(m) for m in muts]}
     md = [f"# Mutation test of the gates ({time.strftime('%Y-%m-%d')})", "",
@@ -330,6 +333,8 @@ def main() -> None:
     ap.add_argument("paths", nargs="+", type=Path, help="skill folders or libraries")
     ap.add_argument("--max", type=int, default=8, help="mutants per tool")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--generated", type=int, default=None, help="generated differential cases per tool (default: the "
+                    "gate's own setting; 0 turns them off, to measure what they add)")
     ap.add_argument("--with-upstream", action="store_true", help="also run the upstream-tests gate (slow, cannot kill)")
     ap.add_argument("--calibrate", action="store_true", help="drop Tester cases that fail on the unmutated skill "
                     "(reported); without it such a skill aborts the run")
@@ -345,7 +350,7 @@ def main() -> None:
     muts: list[Mutant] = []
     for s in skills:
         print(f"{s.name}:", flush=True)
-        muts += run_skill(s, args.max, rng, args.with_upstream)
+        muts += run_skill(s, args.max, rng, args.with_upstream, args.generated)
     data, md = report(muts, args, time.monotonic() - started)
     args.out.mkdir(parents=True, exist_ok=True)
     stamp = time.strftime("%Y%m%d-%H%M%S")

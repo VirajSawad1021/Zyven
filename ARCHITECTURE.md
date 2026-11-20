@@ -140,6 +140,13 @@ reported with the reason. Example arguments are converted to the declared parame
 parameters arrive as real lists and objects, not JSON text). The program is evaluated inside the sandbox by
 `sandbox/diff_check.py::evaluate` and its value is compared with the tool's output.
 
+A reference that uses every argument through an `{arg}` placeholder is a template, so `diff_check.py` also runs it on
+up to 12 generated argument sets per tool (seeded, no model): values mixed from the Tester's cases and small changes of
+them. If the library rejects the input the case is `inconclusive`; if the tool declines it (raises, or answers with an
+error message or `is_valid`/`valid`/`success`/`ok` set to False) it is `tool_rejected`, unless the case compares that flag
+itself; neither is
+scored. A different answer fails the gate, and the repair message says the input was generated.
+
 ### 4.3 Compiler & Static Policy (`zyven/compiler/`)
 - **Import Scoping:** Generates local imports within each tool function body to prevent namespace pollution or accidental module shadowing across tools.
 - **AST Security Policy (an allowlist):** generated code may import only the source package, `mcp`, and a short list of pure stdlib modules (`datetime`, `re`, `math`, `decimal`, `json`, `functools`, `calendar`, …). Everything else, `os`, `sys`, `subprocess` and `socket` included, is rejected. Calls to `open`, `exec`, `eval`, `compile`, `__import__`, `globals`, `locals`, `vars`, `input`, `setattr` and `delattr`, introspection attributes such as `__globals__` and `__subclasses__`, and `global`/`nonlocal` are rejected too. The check runs before any execution.

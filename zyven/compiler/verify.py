@@ -112,7 +112,10 @@ def smoke_plan(spec: CapabilitySpec) -> dict:
 
 def verify(skill_dir: Path, spec: CapabilitySpec, repo: Path, package_roots: set[str],
            run_upstream: bool = True, diff_tests: DiffTests | None = None,
-           source_root: str = ".", skip_tests: list[str] | None = None, egress=None) -> VerificationReport:
+           source_root: str = ".", skip_tests: list[str] | None = None, egress=None,
+           generated_per_tool: int | None = None) -> VerificationReport:
+    """generated_per_tool: extra differential cases per tool built from the Tester's references (None: the default,
+    0: none). Only experiments change it, e.g. the mutation test measuring what generated cases add."""
     # only the upstream-test gate uses this; big repos (e.g. sympy) need minutes, not seconds
     # with a reviewer-set host allowlist (egress), every gate runs on the egress network, as the skill will at run time
     net = {"network_name": egress.network} if egress is not None else {}
@@ -189,7 +192,8 @@ def verify(skill_dir: Path, spec: CapabilitySpec, repo: Path, package_roots: set
                       f"{len(report.get('calls', []))} tools called with example args; invalid input rejected",
                       report))
     if diff_tests is not None:
-        gates.append(_differential_gate(skill_dir, spec, diff_tests, mounts, env_policy, package_roots, failing))
+        gates.append(_differential_gate(skill_dir, spec, diff_tests, mounts, env_policy, package_roots, failing,
+                                        generated_per_tool))
     return VerificationReport(gates, failing)
 
 
@@ -214,7 +218,8 @@ def reference_problem(c, package_roots: set[str]) -> str | None:
     return None if res.ok else "; ".join(res.violations)[:110]
 
 
-def _differential_gate(skill_dir, spec, diff_tests, mounts, env_policy, package_roots, failing) -> Gate:
+def _differential_gate(skill_dir, spec, diff_tests, mounts, env_policy, package_roots, failing,
+                       generated_per_tool: int | None = None) -> Gate:
     """Tool output must equal the library computed directly (Tester-written reference, adapter unseen)."""
     allowed, rejected = [], []
     tools = {t.name: t for t in spec.tools}
@@ -226,26 +231,36 @@ def _differential_gate(skill_dir, spec, diff_tests, mounts, env_policy, package_
             rejected.append(f"{c.tool}: {why}")
     cases = [{**c.model_dump(), "args": typed_args(tools[c.tool].params, c.args) if c.tool in tools else c.args}
              for c in allowed]
-    (skill_dir / "diff_tests.json").write_text(json.dumps({"cases": cases}, indent=1, ensure_ascii=False), encoding="utf-8")
+    saved = {"cases": cases, **({"generated_per_tool": generated_per_tool} if generated_per_tool is not None else {})}
+    (skill_dir / "diff_tests.json").write_text(json.dumps(saved, indent=1, ensure_ascii=False), encoding="utf-8")
     run_ = run(["python", "/opt/zyven/diff_check.py", "/skill/server.py", "/skill/diff_tests.json"], mounts,
                env_policy, workdir="/skill")
     line = next((ln for ln in run_.stdout.splitlines() if ln.startswith("ZYVEN_DIFF_REPORT=")), None)
     report = json.loads(line.split("=", 1)[1]) if line else {"fatal": (run_.stderr or run_.stdout)[-800:]}
     results = report.get("results", [])
-    valid = [r for r in results if r["status"] != "invalid_reference"]
+    # generated cases the library rejects (inconclusive) or the tool refuses on purpose (tool_rejected) are not scored
+    valid = [r for r in results if r["status"] not in ("invalid_reference", "inconclusive", "tool_rejected")]
     bad = [r for r in valid if r["status"] != "match"]
+    own = [r for r in valid if not r.get("generated")]
+    gen = [r for r in valid if r.get("generated")]
+    unscored = sum(r["status"] in ("inconclusive", "tool_rejected") for r in results)
     for r in bad:
-        why = (f"for args {json.dumps(r['args'])}, field '{r['field']}' returned {json.dumps(r.get('got'))} but the "
+        why = ("(a generated input, not one of the Tester's cases) " if r.get("generated") else "") + (
+               f"for args {json.dumps(r['args'])}, field '{r['field']}' returned {json.dumps(r.get('got'))} but the "
                f"library itself gives {json.dumps(r.get('expected'))} (reference: {r['expr']})"
                if r["status"] == "mismatch" else f"for args {json.dumps(r['args'])} the tool raised:\n{r.get('detail')}")
         failing[r["tool"]] = (failing.get(r["tool"], "") + "\n" if r["tool"] in failing else "") + why
-    untested = sorted({t.name for t in spec.tools} - {r["tool"] for r in valid})
-    detail = (f"{len(valid) - len(bad)}/{len(valid)} cases match the library"
-              + (f"; {len(results) - len(valid)} reference expressions invalid (ignored)" if len(results) > len(valid) else "")
+    untested = sorted({t.name for t in spec.tools} - {r["tool"] for r in own})
+    invalid = sum(r["status"] == "invalid_reference" for r in results)
+    detail = (f"{sum(r['status'] == 'match' for r in own)}/{len(own)} Tester cases"
+              + (f" + {sum(r['status'] == 'match' for r in gen)}/{len(gen)} generated cases" if gen else "")
+              + " match the library"
+              + (f" ({unscored} generated not scored: the library or the tool rejected the input)" if unscored else "")
+              + (f"; {invalid} reference expressions invalid (ignored)" if invalid else "")
               + (f"; {len(rejected)} rejected by policy (e.g. {rejected[0]})" if rejected else "")
               + (f"; no valid case for: {', '.join(untested)}" if untested else "")
               + ("; " + report["fatal"][:200] if report.get("fatal") else "")
               + (f"; first mismatch: {bad[0]['tool']}({json.dumps(bad[0]['args'])}).{bad[0]['field']} returned "
                  f"{json.dumps(bad[0].get('got'))}, library gives {json.dumps(bad[0].get('expected'))}"
                  if bad and bad[0]["status"] == "mismatch" else ""))
-    return Gate("differential", bool(valid) and not bad and not report.get("fatal"), detail, report)
+    return Gate("differential", bool(own) and not bad and not report.get("fatal"), detail, report)

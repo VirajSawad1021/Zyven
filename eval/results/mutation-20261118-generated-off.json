@@ -1,0 +1,1139 @@
+{
+ "mutants": 96,
+ "killed": 80,
+ "score": 0.833,
+ "errors": 0,
+ "by_gate": {
+  "differential": 27,
+  "mcp_smoke": 52,
+  "input_robustness": 1
+ },
+ "failed_at_all": {
+  "differential": 74,
+  "mcp_smoke": 52,
+  "input_robustness": 1
+ },
+ "by_operator": {
+  "drop_statement": {
+   "killed": 33,
+   "total": 35
+  },
+  "flip_bool": {
+   "killed": 6,
+   "total": 9
+  },
+  "swap_args": {
+   "killed": 13,
+   "total": 14
+  },
+  "negate_condition": {
+   "killed": 9,
+   "total": 11
+  },
+  "off_by_one": {
+   "killed": 7,
+   "total": 9
+  },
+  "compare": {
+   "killed": 4,
+   "total": 5
+  },
+  "drop_return_field": {
+   "killed": 6,
+   "total": 9
+  },
+  "arithmetic": {
+   "killed": 1,
+   "total": 1
+  },
+  "boolean": {
+   "killed": 1,
+   "total": 3
+  }
+ },
+ "upstream_gate": false,
+ "seed": 1,
+ "generated_per_tool": 0,
+ "seconds": 1173,
+ "skills": [
+  "graph_algorithms",
+  "hijri_gregorian_conversion",
+  "iban_validation",
+  "isbn_ean_validation",
+  "jewish_holidays_and_fasts"
+ ],
+ "calibrated": [],
+ "results": [
+  {
+   "skill": "graph_algorithms",
+   "tool": "shortest_path_weight",
+   "operator": "drop_statement",
+   "where": "line 21: statement dropped: weight = None",
+   "killed_by": "differential",
+   "detail": "17/18 Tester cases match the library",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "shortest_path_weight",
+   "operator": "drop_statement",
+   "where": "line 22: statement dropped: path_exists = False",
+   "killed_by": "differential",
+   "detail": "17/18 Tester cases match the library",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "shortest_path_weight",
+   "operator": "flip_bool",
+   "where": "line 22: False -> True",
+   "killed_by": "differential",
+   "detail": "17/18 Tester cases match the library; first mismatch: shortest_path_weight({\"edges\": [[\"A\", \"B\", 5], [\"C\", \"D\", 10]], \"source\": \"A\", \"target\": \"D\"}).path_exists",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "shortest_path_weight",
+   "operator": "swap_args",
+   "where": "line 14: first two arguments swapped",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "shortest_path_weight",
+   "operator": "drop_statement",
+   "where": "line 19: statement dropped: display = f'Shortest path weight from {source} to {target} i",
+   "killed_by": "mcp_smoke",
+   "detail": "shortest_path_weight: missing return fields ['weight', 'path_exists', 'display']; output=\"Error executing tool shortest_path_weight\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "shortest_path_weight",
+   "operator": "negate_condition",
+   "where": "line 9: condition negated",
+   "killed_by": "mcp_smoke",
+   "detail": "shortest_path_weight: missing return fields ['weight', 'path_exists', 'display']; output=\"Error executing tool shortest_path_weight\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_connected_components",
+   "operator": "off_by_one",
+   "where": "line 5: 1 -> 2",
+   "killed_by": "differential",
+   "detail": "17/18 Tester cases match the library; first mismatch: count_connected_components({\"edges\": [[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"A\"]]}).is_connected returned false, l",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_connected_components",
+   "operator": "drop_statement",
+   "where": "line 2: statement dropped: G = nx.Graph()",
+   "killed_by": "mcp_smoke",
+   "detail": "count_connected_components: missing return fields ['count', 'display', 'is_connected']; output=\"Error executing tool count_connected_components\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_connected_components",
+   "operator": "compare",
+   "where": "line 5: Eq -> NotEq",
+   "killed_by": "differential",
+   "detail": "17/18 Tester cases match the library; first mismatch: count_connected_components({\"edges\": [[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"A\"]]}).is_connected returned false, l",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_connected_components",
+   "operator": "drop_statement",
+   "where": "line 5: statement dropped: is_connected = count == 1",
+   "killed_by": "mcp_smoke",
+   "detail": "count_connected_components: missing return fields ['count', 'display', 'is_connected']; output=\"Error executing tool count_connected_components\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_connected_components",
+   "operator": "drop_statement",
+   "where": "line 3: statement dropped: G.add_edges_from(edges)",
+   "killed_by": "differential",
+   "detail": "16/18 Tester cases match the library; first mismatch: count_connected_components({\"edges\": [[\"A\", \"B\"], [\"C\", \"D\"]]}).count returned 0, library gives 2",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_connected_components",
+   "operator": "drop_statement",
+   "where": "line 4: statement dropped: count = nx.number_connected_components(G)",
+   "killed_by": "mcp_smoke",
+   "detail": "count_connected_components: missing return fields ['count', 'display', 'is_connected']; output=\"Error executing tool count_connected_components\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "mst_total_weight",
+   "operator": "drop_statement",
+   "where": "line 6: statement dropped: G.add_edge(edge[0], edge[1], weight=edge[2])",
+   "killed_by": "differential",
+   "detail": "15/18 Tester cases match the library; first mismatch: mst_total_weight({\"edges\": [[\"A\", \"B\", 1], [\"B\", \"C\", 2], [\"A\", \"C\", 3]]}).total_weight returned 0, librar",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "mst_total_weight",
+   "operator": "drop_statement",
+   "where": "line 10: statement dropped: mst_edges = [[u, v, w] for u, v, w in T.edges(data='weight')",
+   "killed_by": "mcp_smoke",
+   "detail": "mst_total_weight: missing return fields ['total_weight', 'mst_edges', 'display']; output=\"Error executing tool mst_total_weight\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "mst_total_weight",
+   "operator": "off_by_one",
+   "where": "line 4: 3 -> 4",
+   "killed_by": "mcp_smoke",
+   "detail": "mst_total_weight: missing return fields ['total_weight', 'mst_edges', 'display']; output=\"Error executing tool mst_total_weight\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "mst_total_weight",
+   "operator": "drop_statement",
+   "where": "line 11: statement dropped: display = f'The total weight of the MST is {total_weight}'",
+   "killed_by": "mcp_smoke",
+   "detail": "mst_total_weight: missing return fields ['total_weight', 'mst_edges', 'display']; output=\"Error executing tool mst_total_weight\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "mst_total_weight",
+   "operator": "off_by_one",
+   "where": "line 6: 0 -> 1",
+   "killed_by": "differential",
+   "detail": "15/18 Tester cases match the library; first mismatch: mst_total_weight({\"edges\": [[\"A\", \"B\", 1], [\"B\", \"C\", 2], [\"A\", \"C\", 3]]}).total_weight returned 0, librar",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "mst_total_weight",
+   "operator": "negate_condition",
+   "where": "line 4: condition negated",
+   "killed_by": "mcp_smoke",
+   "detail": "mst_total_weight: missing return fields ['total_weight', 'mst_edges', 'display']; output=\"Error executing tool mst_total_weight\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "max_flow_value",
+   "operator": "off_by_one",
+   "where": "line 8: 1 -> 2",
+   "killed_by": "mcp_smoke",
+   "detail": "max_flow_value: missing return fields ['flow_value', 'display']; output=\"Error executing tool max_flow_value\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "max_flow_value",
+   "operator": "drop_return_field",
+   "where": "line 16: return field 'display' dropped",
+   "killed_by": "mcp_smoke",
+   "detail": "max_flow_value: missing return fields ['display']; output={\"flow_value\": 5}",
+   "failed_gates": [
+    "mcp_smoke"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "max_flow_value",
+   "operator": "drop_statement",
+   "where": "line 12: statement dropped: display = f'The maximum flow from {source} to {target} is {f",
+   "killed_by": "mcp_smoke",
+   "detail": "max_flow_value: missing return fields ['flow_value', 'display']; output=\"Error executing tool max_flow_value\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "max_flow_value",
+   "operator": "swap_args",
+   "where": "line 8: first two arguments swapped",
+   "killed_by": "differential",
+   "detail": "15/18 Tester cases match the library; first mismatch: max_flow_value({\"edges\": [[\"S\", \"A\", 10], [\"A\", \"T\", 5]], \"source\": \"S\", \"target\": \"T\"}).flow_value return",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "max_flow_value",
+   "operator": "drop_statement",
+   "where": "line 8: statement dropped: G.add_edge(edge[0], edge[1], capacity=edge[2])",
+   "killed_by": "mcp_smoke",
+   "detail": "max_flow_value: missing return fields ['flow_value', 'display']; output=\"Error executing tool max_flow_value\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "max_flow_value",
+   "operator": "drop_statement",
+   "where": "line 2: statement dropped: source = source.strip()",
+   "killed_by": "input_robustness",
+   "detail": "3/4 equivalent-input probes gave identical results: max_flow_value {\"edges\": [[\"S\", \"A\", 10], [\"A\", \"T\", 5]], \"source\": \"  S \", \"target\": \"T\"}",
+   "failed_gates": [
+    "input_robustness"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "highest_betweenness_centrality_node",
+   "operator": "drop_statement",
+   "where": "line 16: statement dropped: centrality_value = centralities[node]",
+   "killed_by": "mcp_smoke",
+   "detail": "highest_betweenness_centrality_node: missing return fields ['node', 'centrality_value', 'display']; output=\"Error executing tool highest_betweenness_centrality_",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "highest_betweenness_centrality_node",
+   "operator": "drop_statement",
+   "where": "line 11: statement dropped: centralities = nx.betweenness_centrality(G, weight=weight_at",
+   "killed_by": "mcp_smoke",
+   "detail": "highest_betweenness_centrality_node: missing return fields ['node', 'centrality_value', 'display']; output=\"Error executing tool highest_betweenness_centrality_",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "highest_betweenness_centrality_node",
+   "operator": "negate_condition",
+   "where": "line 5: condition negated",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "highest_betweenness_centrality_node",
+   "operator": "drop_statement",
+   "where": "line 17: statement dropped: display = f'Node {node} has the highest betweenness centrali",
+   "killed_by": "mcp_smoke",
+   "detail": "highest_betweenness_centrality_node: missing return fields ['node', 'centrality_value', 'display']; output=\"Error executing tool highest_betweenness_centrality_",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "highest_betweenness_centrality_node",
+   "operator": "compare",
+   "where": "line 5: NotEq -> Eq",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "highest_betweenness_centrality_node",
+   "operator": "off_by_one",
+   "where": "line 5: 3 -> 4",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_triangles",
+   "operator": "arithmetic",
+   "where": "line 5: FloorDiv -> Mult",
+   "killed_by": "differential",
+   "detail": "16/18 Tester cases match the library; first mismatch: count_triangles({\"edges\": [[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"A\"]]}).total_triangles returned 9, library gives",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_triangles",
+   "operator": "drop_statement",
+   "where": "line 3: statement dropped: G.add_edges_from(edges)",
+   "killed_by": "differential",
+   "detail": "16/18 Tester cases match the library; first mismatch: count_triangles({\"edges\": [[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"A\"]]}).total_triangles returned 0, library gives",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_triangles",
+   "operator": "drop_statement",
+   "where": "line 2: statement dropped: G = nx.Graph()",
+   "killed_by": "mcp_smoke",
+   "detail": "count_triangles: missing return fields ['total_triangles', 'display']; output=\"Error executing tool count_triangles\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_triangles",
+   "operator": "negate_condition",
+   "where": "line 7: condition negated",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_triangles",
+   "operator": "off_by_one",
+   "where": "line 5: 3 -> 4",
+   "killed_by": "differential",
+   "detail": "16/18 Tester cases match the library; first mismatch: count_triangles({\"edges\": [[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"A\"]]}).total_triangles returned 0, library gives",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "graph_algorithms",
+   "tool": "count_triangles",
+   "operator": "drop_statement",
+   "where": "line 5: statement dropped: total_triangles = sum(tri_dict.values()) // 3",
+   "killed_by": "mcp_smoke",
+   "detail": "count_triangles: missing return fields ['total_triangles', 'display']; output=\"Error executing tool count_triangles\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "convert_gregorian_to_hijri",
+   "operator": "swap_args",
+   "where": "line 7: first two arguments swapped",
+   "killed_by": "mcp_smoke",
+   "detail": "convert_gregorian_to_hijri: missing return fields ['hijri_date', 'year', 'month', 'day', 'month_name', 'day_name', 'year_length', 'month_length', 'isoweekday', ",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "convert_gregorian_to_hijri",
+   "operator": "boolean",
+   "where": "line 7: And -> Or",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "convert_gregorian_to_hijri",
+   "operator": "swap_args",
+   "where": "line 2: first two arguments swapped",
+   "killed_by": "mcp_smoke",
+   "detail": "convert_gregorian_to_hijri: missing return fields ['hijri_date', 'year', 'month', 'day', 'month_name', 'day_name', 'year_length', 'month_length', 'isoweekday', ",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "convert_gregorian_to_hijri",
+   "operator": "drop_statement",
+   "where": "line 7: statement dropped: lang = language.strip() if isinstance(language, str) and lan",
+   "killed_by": "mcp_smoke",
+   "detail": "convert_gregorian_to_hijri: missing return fields ['hijri_date', 'year', 'month', 'day', 'month_name', 'day_name', 'year_length', 'month_length', 'isoweekday', ",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "convert_gregorian_to_hijri",
+   "operator": "swap_args",
+   "where": "line 13: first two arguments swapped",
+   "killed_by": "mcp_smoke",
+   "detail": "convert_gregorian_to_hijri: missing return fields ['hijri_date', 'year', 'month', 'day', 'month_name', 'day_name', 'year_length', 'month_length', 'isoweekday', ",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "convert_gregorian_to_hijri",
+   "operator": "drop_return_field",
+   "where": "line 17: return field 'julian_day_number' dropped",
+   "killed_by": "mcp_smoke",
+   "detail": "convert_gregorian_to_hijri: missing return fields ['julian_day_number']; output={\"hijri_date\": \"1410-08-13\", \"year\": 1410, \"month\": 8, \"day\": 13, \"month_name\": ",
+   "failed_gates": [
+    "mcp_smoke"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "convert_hijri_to_gregorian",
+   "operator": "drop_statement",
+   "where": "line 4: statement dropped: h_str = hijri_date.strip()",
+   "killed_by": "mcp_smoke",
+   "detail": "convert_hijri_to_gregorian: missing return fields ['gregorian_date', 'year', 'month', 'day', 'month_name', 'day_name', 'isoweekday', 'formatted_dmy', 'julian_da",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "convert_hijri_to_gregorian",
+   "operator": "drop_statement",
+   "where": "line 13: statement dropped: greg_iso = f'{g.year:04d}-{g.month:02d}-{g.day:02d}'",
+   "killed_by": "mcp_smoke",
+   "detail": "convert_hijri_to_gregorian: missing return fields ['gregorian_date', 'year', 'month', 'day', 'month_name', 'day_name', 'isoweekday', 'formatted_dmy', 'julian_da",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "convert_hijri_to_gregorian",
+   "operator": "drop_statement",
+   "where": "line 7: statement dropped: lang = language.strip() if isinstance(language, str) and lan",
+   "killed_by": "mcp_smoke",
+   "detail": "convert_hijri_to_gregorian: missing return fields ['gregorian_date', 'year', 'month', 'day', 'month_name', 'day_name', 'isoweekday', 'formatted_dmy', 'julian_da",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "convert_hijri_to_gregorian",
+   "operator": "swap_args",
+   "where": "line 7: first two arguments swapped",
+   "killed_by": "mcp_smoke",
+   "detail": "convert_hijri_to_gregorian: missing return fields ['gregorian_date', 'year', 'month', 'day', 'month_name', 'day_name', 'isoweekday', 'formatted_dmy', 'julian_da",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "convert_hijri_to_gregorian",
+   "operator": "swap_args",
+   "where": "line 2: first two arguments swapped",
+   "killed_by": "mcp_smoke",
+   "detail": "convert_hijri_to_gregorian: missing return fields ['gregorian_date', 'year', 'month', 'day', 'month_name', 'day_name', 'isoweekday', 'formatted_dmy', 'julian_da",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "convert_hijri_to_gregorian",
+   "operator": "drop_return_field",
+   "where": "line 14: return field 'julian_day_number' dropped",
+   "killed_by": "mcp_smoke",
+   "detail": "convert_hijri_to_gregorian: missing return fields ['julian_day_number']; output={\"gregorian_date\": \"1990-03-10\", \"year\": 1990, \"month\": 3, \"day\": 10, \"month_nam",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "get_hijri_date_info",
+   "operator": "drop_statement",
+   "where": "line 2: statement dropped: lang = language.strip() if isinstance(language, str) and lan",
+   "killed_by": "mcp_smoke",
+   "detail": "get_hijri_date_info: missing return fields ['hijri_date', 'year', 'month', 'day', 'month_name', 'day_name', 'year_length', 'month_length', 'isoweekday', 'notati",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "get_hijri_date_info",
+   "operator": "boolean",
+   "where": "line 4: And -> Or",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "get_hijri_date_info",
+   "operator": "negate_condition",
+   "where": "line 4: condition negated",
+   "killed_by": "mcp_smoke",
+   "detail": "get_hijri_date_info: missing return fields ['hijri_date', 'year', 'month', 'day', 'month_name', 'day_name', 'year_length', 'month_length', 'isoweekday', 'notati",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "get_hijri_date_info",
+   "operator": "drop_return_field",
+   "where": "line 14: return field 'gregorian_date' dropped",
+   "killed_by": "mcp_smoke",
+   "detail": "get_hijri_date_info: missing return fields ['gregorian_date']; output={\"hijri_date\": \"1410-08-13\", \"year\": 1410, \"month\": 8, \"day\": 13, \"month_name\": \"Sha'ban\",",
+   "failed_gates": [
+    "mcp_smoke"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "get_hijri_date_info",
+   "operator": "swap_args",
+   "where": "line 2: first two arguments swapped",
+   "killed_by": "mcp_smoke",
+   "detail": "get_hijri_date_info: missing return fields ['hijri_date', 'year', 'month', 'day', 'month_name', 'day_name', 'year_length', 'month_length', 'isoweekday', 'notati",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "hijri_gregorian_conversion",
+   "tool": "get_hijri_date_info",
+   "operator": "drop_statement",
+   "where": "line 10: statement dropped: g = h.to_gregorian()",
+   "killed_by": "mcp_smoke",
+   "detail": "get_hijri_date_info: missing return fields ['hijri_date', 'year', 'month', 'day', 'month_name', 'day_name', 'year_length', 'month_length', 'isoweekday', 'notati",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "isbn_ean_validation",
+   "tool": "validate_and_format_isbn",
+   "operator": "drop_return_field",
+   "where": "line 38: return field 'error' dropped",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "isbn_ean_validation",
+   "tool": "validate_and_format_isbn",
+   "operator": "negate_condition",
+   "where": "line 9: condition negated",
+   "killed_by": "differential",
+   "detail": "3/6 Tester cases match the library; first mismatch: validate_and_format_isbn({\"number\": \"0-85152-629-2\", \"convert_to_isbn13\": false}).is_valid returned false, l",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "isbn_ean_validation",
+   "tool": "validate_and_format_isbn",
+   "operator": "drop_statement",
+   "where": "line 10: statement dropped: compact_num = isbn.compact(number, convert=convert)",
+   "killed_by": "mcp_smoke",
+   "detail": "validate_and_format_isbn: missing return fields ['is_valid', 'compact_number', 'formatted_number', 'isbn13', 'prefix', 'group', 'publisher', 'item_number', 'che",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "isbn_ean_validation",
+   "tool": "validate_and_format_isbn",
+   "operator": "flip_bool",
+   "where": "line 39: False -> True",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "isbn_ean_validation",
+   "tool": "validate_and_format_isbn",
+   "operator": "drop_statement",
+   "where": "line 7: statement dropped: convert = bool(convert_to_isbn13) if convert_to_isbn13 is no",
+   "killed_by": "mcp_smoke",
+   "detail": "validate_and_format_isbn: missing return fields ['is_valid', 'compact_number', 'formatted_number', 'isbn13', 'prefix', 'group', 'publisher', 'item_number', 'che",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "isbn_ean_validation",
+   "tool": "validate_and_format_isbn",
+   "operator": "boolean",
+   "where": "line 4: And -> Or",
+   "killed_by": "mcp_smoke",
+   "detail": "validate_and_format_isbn: missing return fields ['is_valid', 'compact_number', 'formatted_number', 'isbn13', 'prefix', 'group', 'publisher', 'item_number', 'che",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "isbn_ean_validation",
+   "tool": "validate_and_format_ean",
+   "operator": "drop_statement",
+   "where": "line 6: statement dropped: compact_num = ean.validate(number)",
+   "killed_by": "mcp_smoke",
+   "detail": "validate_and_format_ean: missing return fields ['is_valid', 'compact_number', 'length', 'error']; output=\"Error executing tool validate_and_format_ean\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "isbn_ean_validation",
+   "tool": "validate_and_format_ean",
+   "operator": "flip_bool",
+   "where": "line 26: False -> True",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "isbn_ean_validation",
+   "tool": "validate_and_format_ean",
+   "operator": "drop_return_field",
+   "where": "line 25: return field 'error' dropped",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "isbn_ean_validation",
+   "tool": "validate_and_format_ean",
+   "operator": "drop_return_field",
+   "where": "line 7: return field 'error' dropped",
+   "killed_by": "mcp_smoke",
+   "detail": "validate_and_format_ean: missing return fields ['error']; output={\"is_valid\": true, \"compact_number\": \"7501031311309\", \"length\": 13}",
+   "failed_gates": [
+    "mcp_smoke"
+   ]
+  },
+  {
+   "skill": "isbn_ean_validation",
+   "tool": "validate_and_format_ean",
+   "operator": "negate_condition",
+   "where": "line 5: condition negated",
+   "killed_by": "differential",
+   "detail": "5/6 Tester cases match the library; first mismatch: validate_and_format_ean({\"number\": \"7501031311309\"}).is_valid returned false, library gives true",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "isbn_ean_validation",
+   "tool": "validate_and_format_ean",
+   "operator": "flip_bool",
+   "where": "line 8: True -> False",
+   "killed_by": "differential",
+   "detail": "5/6 Tester cases match the library; first mismatch: validate_and_format_ean({\"number\": \"7501031311309\"}).is_valid returned false, library gives true",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_jewish_holiday",
+   "operator": "negate_condition",
+   "where": "line 4: condition negated",
+   "killed_by": "mcp_smoke",
+   "detail": "get_jewish_holiday: missing return fields ['is_holiday', 'holiday_name', 'holiday_english', 'holiday_hebrew']; output=\"Error executing tool get_jewish_holiday\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_jewish_holiday",
+   "operator": "negate_condition",
+   "where": "line 10: condition negated",
+   "killed_by": "mcp_smoke",
+   "detail": "get_jewish_holiday: missing return fields ['is_holiday', 'holiday_name', 'holiday_english', 'holiday_hebrew']; output=\"Error executing tool get_jewish_holiday\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_jewish_holiday",
+   "operator": "off_by_one",
+   "where": "line 19: 3 -> 4",
+   "killed_by": "differential",
+   "detail": "8/9 Tester cases match the library",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_jewish_holiday",
+   "operator": "swap_args",
+   "where": "line 13: first two arguments swapped",
+   "killed_by": "mcp_smoke",
+   "detail": "get_jewish_holiday: missing return fields ['is_holiday', 'holiday_name', 'holiday_english', 'holiday_hebrew']; output=\"Error executing tool get_jewish_holiday\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_jewish_holiday",
+   "operator": "swap_args",
+   "where": "line 22: first two arguments swapped",
+   "killed_by": "differential",
+   "detail": "8/9 Tester cases match the library",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_jewish_holiday",
+   "operator": "compare",
+   "where": "line 27: IsNot -> Is",
+   "killed_by": "differential",
+   "detail": "8/9 Tester cases match the library; first mismatch: get_jewish_holiday({\"hebrew_date\": \"5783-01-15\", \"israel\": true, \"hebrew_language\": true, \"prefix_day\": true",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_jewish_festival",
+   "operator": "flip_bool",
+   "where": "line 26: False -> True",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_jewish_festival",
+   "operator": "drop_statement",
+   "where": "line 13: statement dropped: d = GregorianDate(year, month, day)",
+   "killed_by": "mcp_smoke",
+   "detail": "get_jewish_festival: missing return fields ['is_festival', 'festival_name', 'festival_english', 'festival_hebrew']; output=\"Error executing tool get_jewish_fest",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_jewish_festival",
+   "operator": "drop_statement",
+   "where": "line 26: statement dropped: israel = bool(israel) if israel is not None else False",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_jewish_festival",
+   "operator": "negate_condition",
+   "where": "line 7: condition negated",
+   "killed_by": "mcp_smoke",
+   "detail": "get_jewish_festival: missing return fields ['is_festival', 'festival_name', 'festival_english', 'festival_hebrew']; output=\"Error executing tool get_jewish_fest",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_jewish_festival",
+   "operator": "compare",
+   "where": "line 19: NotEq -> Eq",
+   "killed_by": "differential",
+   "detail": "8/9 Tester cases match the library",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_jewish_festival",
+   "operator": "swap_args",
+   "where": "line 12: first two arguments swapped",
+   "killed_by": "mcp_smoke",
+   "detail": "get_jewish_festival: missing return fields ['is_festival', 'festival_name', 'festival_english', 'festival_hebrew']; output=\"Error executing tool get_jewish_fest",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_fast_day",
+   "operator": "flip_bool",
+   "where": "line 28: False -> True",
+   "killed_by": "differential",
+   "detail": "8/9 Tester cases match the library; first mismatch: get_fast_day({\"gregorian_date\": \"2023-03-06\", \"hebrew_language\": false}).fast_day_english returned \"\\u05ea\\u",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_fast_day",
+   "operator": "compare",
+   "where": "line 32: IsNot -> Is",
+   "killed_by": "differential",
+   "detail": "8/9 Tester cases match the library; first mismatch: get_fast_day({\"gregorian_date\": \"2023-05-10\", \"hebrew_language\": false}).is_fast_day returned true, library ",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_fast_day",
+   "operator": "drop_statement",
+   "where": "line 9: statement dropped: parts = gregorian_date.split('-')",
+   "killed_by": "mcp_smoke",
+   "detail": "get_fast_day: missing return fields ['is_fast_day', 'fast_day_name', 'fast_day_english', 'fast_day_hebrew']; output=\"Error executing tool get_fast_day\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_fast_day",
+   "operator": "swap_args",
+   "where": "line 12: first two arguments swapped",
+   "killed_by": "mcp_smoke",
+   "detail": "get_fast_day: missing return fields ['is_fast_day', 'fast_day_name', 'fast_day_english', 'fast_day_hebrew']; output=\"Error executing tool get_fast_day\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_fast_day",
+   "operator": "swap_args",
+   "where": "line 21: first two arguments swapped",
+   "killed_by": "differential",
+   "detail": "8/9 Tester cases match the library",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "jewish_holidays_and_fasts",
+   "tool": "get_fast_day",
+   "operator": "flip_bool",
+   "where": "line 29: True -> False",
+   "killed_by": "differential",
+   "detail": "8/9 Tester cases match the library; first mismatch: get_fast_day({\"hebrew_date\": \"5783-10-10\", \"hebrew_language\": true}).fast_day_name returned \"10 of Teves\", l",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "iban_validation",
+   "tool": "validate_iban",
+   "operator": "flip_bool",
+   "where": "line 11: False -> True",
+   "killed_by": "differential",
+   "detail": "5/6 Tester cases match the library; first mismatch: validate_iban({\"iban_string\": \"INVALID_IBAN_123\"}).is_valid returned true, library gives false",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "iban_validation",
+   "tool": "validate_iban",
+   "operator": "flip_bool",
+   "where": "line 5: True -> False",
+   "killed_by": "differential",
+   "detail": "5/6 Tester cases match the library; first mismatch: validate_iban({\"iban_string\": \"GR16 0110 1050 0000 1054 7023 795\"}).is_valid returned false, library gives t",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "iban_validation",
+   "tool": "validate_iban",
+   "operator": "drop_statement",
+   "where": "line 2: statement dropped: compact_iban = iban.compact(iban_string)",
+   "killed_by": "mcp_smoke",
+   "detail": "validate_iban: missing return fields ['is_valid', 'compact_iban', 'formatted_iban']; output=\"Error executing tool validate_iban\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "iban_validation",
+   "tool": "validate_iban",
+   "operator": "drop_return_field",
+   "where": "line 4: return field 'formatted_iban' dropped",
+   "killed_by": "mcp_smoke",
+   "detail": "validate_iban: missing return fields ['formatted_iban']; output={\"is_valid\": true, \"compact_iban\": \"GR1601101050000010547023795\"}",
+   "failed_gates": [
+    "mcp_smoke"
+   ]
+  },
+  {
+   "skill": "iban_validation",
+   "tool": "validate_iban",
+   "operator": "negate_condition",
+   "where": "line 3: condition negated",
+   "killed_by": "differential",
+   "detail": "4/6 Tester cases match the library; first mismatch: validate_iban({\"iban_string\": \"GR16 0110 1050 0000 1054 7023 795\"}).is_valid returned false, library gives t",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "iban_validation",
+   "tool": "validate_iban",
+   "operator": "drop_return_field",
+   "where": "line 10: return field 'formatted_iban' dropped",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "iban_validation",
+   "tool": "calculate_iban_check_digits",
+   "operator": "off_by_one",
+   "where": "line 18: 4 -> 5",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "iban_validation",
+   "tool": "calculate_iban_check_digits",
+   "operator": "drop_statement",
+   "where": "line 22: statement dropped: new_compact_iban = new_compact_iban.upper()",
+   "killed_by": "",
+   "detail": "all gates passed",
+   "failed_gates": []
+  },
+  {
+   "skill": "iban_validation",
+   "tool": "calculate_iban_check_digits",
+   "operator": "drop_statement",
+   "where": "line 3: statement dropped: check_digits = iban.calc_check_digits(iban_with_placeholders",
+   "killed_by": "mcp_smoke",
+   "detail": "calculate_iban_check_digits: missing return fields ['check_digits', 'formatted_iban_with_digits']; output=\"Error executing tool calculate_iban_check_digits\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "iban_validation",
+   "tool": "calculate_iban_check_digits",
+   "operator": "drop_statement",
+   "where": "line 21: statement dropped: new_compact_iban = compact_iban_with_placeholders[:2] + chec",
+   "killed_by": "mcp_smoke",
+   "detail": "calculate_iban_check_digits: missing return fields ['check_digits', 'formatted_iban_with_digits']; output=\"Error executing tool calculate_iban_check_digits\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  },
+  {
+   "skill": "iban_validation",
+   "tool": "calculate_iban_check_digits",
+   "operator": "off_by_one",
+   "where": "line 21: 2 -> 3",
+   "killed_by": "differential",
+   "detail": "5/6 Tester cases match the library; first mismatch: calculate_iban_check_digits({\"iban_with_placeholders\": \"GRxx01101050000010547023795\"}).formatted_iban_with_d",
+   "failed_gates": [
+    "differential"
+   ]
+  },
+  {
+   "skill": "iban_validation",
+   "tool": "calculate_iban_check_digits",
+   "operator": "swap_args",
+   "where": "line 8: first two arguments swapped",
+   "killed_by": "mcp_smoke",
+   "detail": "calculate_iban_check_digits: missing return fields ['check_digits', 'formatted_iban_with_digits']; output=\"Error executing tool calculate_iban_check_digits\"",
+   "failed_gates": [
+    "mcp_smoke",
+    "differential"
+   ]
+  }
+ ]
+}
