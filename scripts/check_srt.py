@@ -43,14 +43,19 @@ def main() -> int:
     print("settings:", settings.read_text(encoding="utf-8"))
 
     def srt(*cmd: str) -> subprocess.CompletedProcess:
-        r = subprocess.run([*SRT, "--settings", str(settings), *cmd], cwd=work, capture_output=True, text=True,
-                           timeout=180)
+        r = subprocess.run([*SRT, "--settings", str(settings), "--", *cmd], cwd=work, capture_output=True,
+                           text=True, timeout=180)  # "--": the command's own options are not srt's
         print(f"$ srt {' '.join(cmd)} -> exit {r.returncode}\n  {(r.stdout + r.stderr).strip()[:300]}")
         return r
 
     curl = ["curl", "-sS", "-o", "/dev/null", "--max-time", "20"]
+    control = srt("echo", "ok")
+    if control.returncode != 0 or "ok" not in control.stdout:
+        # every "refused" below would then be srt failing to start, not the settings holding: never count those
+        print("FAIL  srt cannot run a plain command here, so nothing below would mean anything")
+        return 1
     checks = {
-        "a plain command runs": srt("echo", "ok").returncode == 0,
+        "a plain command runs": True,
         f"the allowed host ({ALLOWED}) answers": srt(*curl, f"https://{ALLOWED}").returncode == 0,
         f"another host ({OTHER}) is refused": srt(*curl, f"https://{OTHER}").returncode != 0,
         "nothing can be written": (srt("sh", "-c", "echo x > written.txt").returncode != 0

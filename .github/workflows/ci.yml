@@ -45,8 +45,10 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q bubblewrap socat ripgrep
-          # Ubuntu 24.04 blocks unprivileged user namespaces, which bubblewrap needs
-          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          # Ubuntu 24.04 strips capabilities from unprivileged user namespaces; srt's seccomp helper nests a second
+          # one inside bubblewrap's, so both AppArmor restrictions are lifted on this throwaway runner
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_unconfined=0
       - name: The --srt-settings file holds under srt
         run: uv run python scripts/check_srt.py
 
