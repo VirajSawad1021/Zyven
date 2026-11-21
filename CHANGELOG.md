@@ -6,6 +6,9 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **`zyven verify --connection NAME`.** Checks a server connected on the board, signed in: with its stored API key, or
+  its OAuth sign-in (Notion, Google Docs, ...), so hosted servers behind a login can be verified too. The tokens are
+  used through the board's own store and refreshed there, never copied, so the board stays signed in.
 - **`zyven verify --findings-csv FILE`.** Appends one row per finding (server, check, rule ID, level, text and an empty
   label column) to a CSV file, also with `--discover` and `--config`, for labelling findings by hand to measure how
   precise each rule is. Rows use the same rules and levels as the SARIF output.

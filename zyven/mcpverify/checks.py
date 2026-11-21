@@ -435,6 +435,8 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
     elif obs.get("sandboxed") and obs.get("network"):
         checks.append(Check("isolation", WARN, "ran in Zyven's sandbox (read-only root, no capabilities, non-root) "
                                                "but WITH network access (--allow-network)"))
+    elif not obs.get("sandboxed") and (obs.get("launch") or {}).get("url"):
+        checks.append(Check("isolation", SKIP, "a hosted server: it runs on its own host, not on this machine"))
     else:
         checks.append(Check("isolation", PASS if obs.get("sandboxed") else WARN,
                             "ran in Zyven's sandbox: no network, read-only root, no capabilities, non-root"

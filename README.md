@@ -524,6 +524,12 @@ repos:
 The servers run on your machine as your client would run them, unless you add the `--docker` argument. A failing
 server stops the commit; `git commit --no-verify` skips the hook.
 
+**A hosted server behind a sign-in.** `zyven verify --connection NAME` checks a server connected on the board with
+its stored key or OAuth sign-in, so servers like Notion's or Google's can be verified too. A name prefix is enough
+(`--connection notion`). The tokens are used through the board's own store and refreshed there, never copied, so the
+board stays signed in. Checked live against Notion's hosted server: 77 tools, every check passed, still signed in
+afterwards.
+
 **On the Connections page**, the same checks run every time you press **Test**:
 - **The result is shown on the card.** A server that fails, for example on tool poisoning, offers only a
   **Turn on anyway** button, which asks you to confirm.
