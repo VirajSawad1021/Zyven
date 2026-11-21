@@ -43,6 +43,32 @@ class SandboxPolicy:
     network_name: str = ""  # join this Docker network instead (an --internal one behind the egress proxy)
 
 
+_DOCKER_OK: set[str] = set()  # images already found usable in this process (a check costs a docker call)
+
+
+def docker_problem(image: str = DEFAULT_IMAGE) -> str | None:
+    """Why the sandbox cannot run, in words a user can act on, or None. Without this, a skill whose container never
+    starts shows up as "Connection closed", which says nothing about Docker."""
+    if image in _DOCKER_OK:
+        return None
+    try:
+        info = subprocess.run(["docker", "info", "--format", "{{.ServerVersion}}"], capture_output=True, text=True,
+                              timeout=20)
+    except FileNotFoundError:
+        return "Docker is not installed; Zyven runs skills and --docker checks in a Docker sandbox"
+    except subprocess.TimeoutExpired:
+        return "Docker did not answer within 20 s; is Docker Desktop still starting?"
+    if info.returncode != 0 or not info.stdout.strip():
+        return "Docker is not running; start Docker Desktop (or the docker service) and try again"
+    img = subprocess.run(["docker", "image", "inspect", "-f", "{{.Id}}", image], capture_output=True, text=True,
+                         timeout=20)
+    if img.returncode != 0:
+        return (f"the sandbox image {image} is not built; run `zyven setup`" if image == DEFAULT_IMAGE
+                else f"the image {image} is not available locally; pull or build it first")
+    _DOCKER_OK.add(image)
+    return None
+
+
 def _docker_path(p: Path) -> str:
     return str(p.resolve()).replace("\\", "/")
 

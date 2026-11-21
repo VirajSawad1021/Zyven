@@ -367,6 +367,10 @@ Tested with Codex headless and no board running. Asked "does 1.0.0rc1 satisfy `>
 1.9.12 is newest?", it called `check_version_requirement` and `sort_versions` and answered correctly. The first answer
 is *no*: PEP 440 leaves pre-releases out by default.
 
+Also tested with Claude Code (2.1.327, `claude -p`, no board running): asked for the shortest path weight in a small
+weighted graph, it called `shortest_path_weight` from the verified `graph_algorithms` skill, which ran in the sandbox, and
+answered 11, the same as networkx. Docker must be running: if it is not, the agent is told so in words.
+
 ### Verify any MCP server
 
 `zyven verify` checks an MCP server Zyven did not build, from the outside: a command over stdio or a URL.

@@ -84,6 +84,11 @@ class ToolBox:
         await self._stack.__aexit__(*exc)
 
     async def add_server(self, spec: MCPServerSpec) -> list[str]:
+        if spec.sandbox is not None:  # say why a sandboxed skill cannot start, instead of "Connection closed"
+            from zyven.sandbox.runner import docker_problem
+            why = await asyncio.to_thread(docker_problem)
+            if why:
+                raise RuntimeError(f"skill {spec.name} runs in the sandbox, but {why}")
         if spec.egress_hosts and spec.sandbox is not None:
             # the skill's reviewer-set allowlist: start its egress proxy first; the exit stack closes the client
             # (registered after) before the proxy and network are removed

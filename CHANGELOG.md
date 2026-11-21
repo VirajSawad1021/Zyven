@@ -115,6 +115,10 @@ build, and installs without a clone.
 - Every sandbox container gets the host name `zyven-sandbox`.
 
 ### Fixed
+- **Docker not running is now said in words.** A sandboxed skill served through `zyven mcp` or the hub used to fail
+  with "Connection closed" when Docker was stopped, and the agent saw only that. It now says that Docker is not
+  installed, not running, or that the sandbox image needs `zyven setup`. `zyven verify --docker` stops early with the
+  same message.
 - **Policy gate: lookups inside the wrapped library are allowed again.** The `getattr` rule added for 0.2.0 also refused
   `getattr(phonenumbers.PhoneNumberFormat, fmt)`, the usual way to turn "E164" into a constant, so a phone-number skill
   verified earlier no longer passed gate 1. A non-literal name is allowed when the object is a name inside a source

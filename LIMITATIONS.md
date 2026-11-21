@@ -143,7 +143,7 @@ outside-in checks (section 6), which are not the same as the six gates.**
 - **The community scan in the README is a snapshot** (one day, one version per package, dummy keys, mostly no network). Some
   servers behave differently when they are signed in.
 - **`zyven mcp` with `--connections` has no approval cards.** Write tools are then guarded only by the agent's own permission
-  prompt. Codex was tested live with `zyven mcp`, and Claude Code was not.
+  prompt. Codex and Claude Code (2.1.327, headless, one Docker skill, Windows, 2026-11-21) were tested live with `zyven mcp`.
 - **Agents as compile roles:**
   - **The code and prompts go to the agent's provider.**
   - **Zyven cannot tell which model the agent used.** This is why the open-model check refuses committed skills with a
