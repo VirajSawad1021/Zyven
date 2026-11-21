@@ -11,7 +11,7 @@ from typing import Any
 from zyven.mcpverify.checks import FAIL, PASS, SKIP, WARN, Report, run_checks
 from zyven.mcpverify.probe import observe, server_from
 
-__all__ = ["verify_server", "format_report", "Report"]
+__all__ = ["verify_server", "verify_connection", "format_report", "Report"]
 
 
 def verify_server(command: list[str] | None = None, url: str | None = None, headers: dict[str, str] | None = None,
@@ -49,11 +49,45 @@ def verify_server(command: list[str] | None = None, url: str | None = None, head
             remove_container(name)
         if egress is not None:
             egress.__exit__(None, None, None)
+    return _checked(obs, lock_file)
+
+
+def _checked(obs: dict[str, Any], lock_file: Path | None) -> Report:
     lock = locked = None
     if lock_file and lock_file.exists():
         locked = json.loads(lock_file.read_text(encoding="utf-8"))
         lock = locked.get("tools") or {}
     return run_checks(obs, lock, locked)
+
+
+def verify_connection(board_dir: Path, name: str, probe: bool = False, lock_file: Path | None = None,
+                      timeout: float = 60.0) -> Report:
+    """Check a server connected on the board, signed in: with its stored key, or its OAuth sign-in. The tokens are
+    used through the board's own store and refreshed there, never copied: a copied Notion refresh token would sign the
+    board out (Notion rotates refresh tokens on use)."""
+    from zyven.connections.probe import server_for
+    from zyven.connections.store import ConnectionStore
+
+    store = ConnectionStore(board_dir)
+    conns = store.list()
+    conn = next((c for c in conns if c["id"] == name), None) or \
+        next((c for c in conns if c.get("name", "").lower() == name.lower()), None)
+    if conn is None:  # "notion" for "Notion (hosted by Notion)", if only one name starts that way
+        starts = [c for c in conns if c.get("name", "").lower().startswith(name.lower())]
+        if len(starts) > 1:
+            raise ValueError(f"{name!r} matches several connections: {', '.join(c['name'] for c in starts)}")
+        conn = starts[0] if starts else None
+    if conn is None:
+        known = ", ".join(sorted(c.get("name", c["id"]) for c in conns)) or "none"
+        raise ValueError(f"no connection {name!r} on the board in {board_dir} (connected: {known})")
+    if conn.get("oauth") and not conn.get("signed_in"):
+        raise ValueError(f"{conn['name']} is not signed in: open the board's Connections page and sign in first")
+    where = conn.get("url") or " ".join([conn.get("command", ""), *conn.get("args", [])])
+    obs = asyncio.run(observe(lambda: server_for(store, conn["id"], conn), f"{conn['name']} ({where})", False,
+                              probe=probe, timeout=timeout))
+    obs["launch"] = ({"url": conn["url"]} if conn.get("kind") == "http"
+                     else {"command": [conn.get("command", ""), *conn.get("args", [])]})
+    return _checked(obs, lock_file)
 
 
 _MARK = {PASS: "PASS", WARN: "WARN", FAIL: "FAIL", SKIP: "SKIP"}

@@ -225,6 +225,15 @@ def cmd_verify(args) -> None:
     if args.config or args.discover:
         return cmd_verify_configs(args)
     command = args.server[1:] if args.server[:1] == ["--"] else args.server
+    if args.connection:
+        from zyven.mcpverify import verify_connection
+        lock = Path(args.lock) if args.lock else None
+        try:
+            r = verify_connection((args.board_dir or paths.home()).resolve(), args.connection, probe=args.probe,
+                                  lock_file=None if args.update_lock else lock, timeout=args.timeout)
+        except ValueError as e:
+            sys.exit(f"zyven verify --connection: {e}")
+        return _verify_done(args, r, command)
     if not command and not args.url:
         sys.exit("give the server command after --, e.g.  zyven verify -- npx -y @modelcontextprotocol/server-memory\n"
                  "or a URL:  zyven verify --url https://example.com/mcp")
@@ -246,6 +255,13 @@ def cmd_verify(args) -> None:
     r = verify_server(command or None, args.url, headers, env or None, args.docker, mounts or None, probe=args.probe,
                       lock_file=None if args.update_lock else lock, timeout=args.timeout, network=args.allow_network,
                       allow_hosts=args.allow_host)
+    _verify_done(args, r, command)
+
+
+def _verify_done(args, r, command: list[str]) -> None:
+    """Print and write the report of one server, update its lock file, and exit with its verdict."""
+    from zyven.mcpverify import format_markdown, format_report, write_lock
+    lock = Path(args.lock) if args.lock else None
     print(format_report(r, verbose=args.verbose))
     if args.json:
         Path(args.json).write_text(json.dumps(r.to_dict(), indent=1, ensure_ascii=False), encoding="utf-8")
@@ -398,6 +414,10 @@ def main() -> None:
     s.set_defaults(fn=cmd_compile)
     s = sub.add_parser("verify", help="check any MCP server: schemas, tool poisoning, rug pulls, robustness")
     s.add_argument("--url", help="a streamable HTTP MCP server instead of a command")
+    s.add_argument("--connection", metavar="NAME", help="a server connected on the board (by name or id), checked "
+                   "with its stored key or OAuth sign-in; tokens are used in place, never copied")
+    s.add_argument("--board-dir", type=Path, help="with --connection: the board folder (default ~/.zyven, or "
+                   "workspace/ in a checkout)")
     s.add_argument("--config", action="append", help="check every server in a client config (Claude Desktop/Code, "
                    "Cursor, VS Code mcp.json, Codex config.toml); repeatable")
     s.add_argument("--discover", action="store_true", help="find the usual client config files and check them all")
