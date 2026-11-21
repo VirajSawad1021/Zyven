@@ -6,8 +6,9 @@ that was seen to reach one host, then runs small commands under `srt --settings`
     the allowed host answers          another host is refused        a plain command still runs
     nothing can be written            a credential folder cannot be read
 
-It also reports, without failing, whether an `npx`-launched program can run under "no writes at all": npx writes its
-cache, so a server started that way may need a writable cache folder added by hand.
+The allowed host is fetched with Python, the way an MCP server would, since Python (like Node) brings its own
+certificate roots. curl is also tried and only reported: on macOS, programs that use Apple's TLS stack cannot reach
+the system's certificate service inside srt's sandbox, so their HTTPS fails to verify even for an allowed host.
 
     uv run python scripts/check_srt.py
 """
@@ -57,6 +58,8 @@ def main() -> int:
         return r
 
     curl = ["curl", "-sS", "-o", "/dev/null", "--max-time", "20"]
+    fetch = [sys.executable, "-c", "import certifi, ssl, sys, urllib.request; urllib.request.urlopen(sys.argv[1], "
+             "context=ssl.create_default_context(cafile=certifi.where()), timeout=20)"]
     control = srt("echo", "ok")
     if control.returncode != 0 or "ok" not in control.stdout:
         # every "refused" below would then be srt failing to start, not the settings holding: never count those
@@ -64,19 +67,20 @@ def main() -> int:
         return 1
     checks = {
         "a plain command runs": True,
-        f"the allowed host ({ALLOWED}) answers": srt(*curl, f"https://{ALLOWED}").returncode == 0,
-        f"another host ({OTHER}) is refused": srt(*curl, f"https://{OTHER}").returncode != 0,
+        f"the allowed host ({ALLOWED}) answers (Python)": srt(*fetch, f"https://{ALLOWED}").returncode == 0,
+        f"another host ({OTHER}) is refused (Python)": srt(*fetch, f"https://{OTHER}").returncode != 0,
+        f"another host ({OTHER}) is refused (curl)": srt(*curl, f"https://{OTHER}").returncode != 0,
         "nothing can be written": (srt("sh", "-c", "echo x > written.txt").returncode != 0
                                    and not (work / "written.txt").exists()),
         "a credential folder cannot be read": "secret" not in srt("cat", str(probe)).stdout,
     }
-    npx = srt("npx", "-y", "cowsay@1.6.0", "hi")
+    curl_allowed = srt(*curl, f"https://{ALLOWED}").returncode == 0
     probe.unlink()
     print()
     for what, ok in checks.items():
         print(f"{'PASS' if ok else 'FAIL'}  {what}")
-    print(f"info  an npx-launched program under no-writes: {'runs' if npx.returncode == 0 else 'does not run'}"
-          " (npx writes its cache; such a server needs a writable cache folder added to allowWrite)")
+    print(f"info  curl to the allowed host: {'works' if curl_allowed else 'fails'}"
+          + ("" if curl_allowed else " (on macOS: Apple's TLS stack cannot verify certificates inside the sandbox)"))
     return 0 if all(checks.values()) else 1
 
 
