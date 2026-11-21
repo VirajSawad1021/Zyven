@@ -1,12 +1,13 @@
 """Antigravity's command-line agent (`agy`) as a Control center runtime: `agy ... --output-format stream-json --print`.
 
-NOT WORKING HEADLESS YET (checked live, agy 1.1.9, signed in, models claude-sonnet-4-6 / claude-opus-4-6-thinking /
-gpt-oss-120b-medium): print mode prints one `{"event":"init", ...}` line (with permission_mode "request-review") and then
-waits, with no further output for 90 s, for a plain "reply pong" prompt, for every model, with and without
-stream-json, from Git Bash and from PowerShell. So there is no real answer format to parse, and the parser below is
-a guess. The only flag that might avoid the wait, --dangerously-skip-permissions, is deliberately not used. Because
-a stuck program would hold the queue, this adapter has a short idle timeout. Re-test with ZYVEN_AGY_LIVE=1 after an
-agy update.
+NO ANSWER SEEN YET. agy 1.1.9 (2026-10) printed one `{"event":"init", ...}` line and then waited for every prompt and
+model. Re-checked with agy 1.5.11 on 2026-11-21: a "reply ok" prompt still printed nothing, and agy's own log
+(`--log-file`) showed why: "Resource has been exhausted (e.g. check quota)". agy retries silently instead of reporting
+it, so an exhausted account looks like a hang. Its `--print-timeout` then ends the run with
+`AGY_ERROR: {..."reason":"print_timeout"}` on stderr. So the wait seen so far is the account's quota, not print mode,
+and the parser below is still a guess until an answer is seen. --dangerously-skip-permissions is deliberately not used.
+Because a stuck program would hold the queue, this adapter has a short idle timeout. Re-test with ZYVEN_AGY_LIVE=1
+when the account has quota.
 
 Guard rails from its own options: `--mode accept-edits` and `--sandbox`; never `--dangerously-skip-permissions`.
 `--print` is passed last, directly before the prompt, so the prompt is read correctly whether the flag takes a value
@@ -85,8 +86,9 @@ class AgyAdapter(CLIAgentAdapter):
     sign_in_help = "Install Antigravity's CLI and launch `agy` once with no arguments to sign in."
     open_weight = False
     exposes = {"live_output": True, "tool_calls": True, "approvals": False, "file_changes": True, "tokens": False}
-    note = ("Antigravity's CLI in print mode. Experimental: on the development machine its headless mode printed its "
-            "start line and then waited for ever, so runs are stopped after 2 minutes of silence.")
+    note = ("Antigravity's CLI in print mode. Experimental: no answer seen yet. On the development machine it waited "
+            "without output because the account's quota was exhausted (agy retries silently), so runs are stopped "
+            "after 2 minutes of silence.")
 
     def command(self, cwd: Path | None = None, full: bool = False, hub: dict[str, str] | None = None) -> list[str]:
         exe = self._executable()

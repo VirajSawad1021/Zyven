@@ -207,7 +207,7 @@ off until you switch it on, and none of it is used for any result in this README
 | OpenCode | `opencode run` headless, locked to its task folder | live, on Windows |
 | Qoder CLI | `qodercli -p` headless, built-in tools limited to read and edit, hub tools through a config file | live, on Windows (Qwen3.8-Flash; model host not verified) |
 | Claude Code | `claude -p` headless | unit tests only; not logged in on the dev machine |
-| Antigravity | `agy` print mode | experimental: its headless mode printed one line and then waited, so runs stop after 2 minutes of silence |
+| Antigravity | `agy` print mode | experimental: no answer seen yet. It waited without output because the account's quota was exhausted (agy 1.5.11 retries silently; its log says so), so runs stop after 2 minutes of silence |
 
 The coding agents use whatever provider each program is signed in to (for example a ChatGPT account for Codex) or the
 free hosted models OpenCode offers. They are labelled as not verified open-weight. You turn each one on, and pick a
@@ -656,7 +656,7 @@ Open work is tracked in [issues](https://github.com/VirajSawad1021/Zyven/issues)
 [CONTRIBUTING.md](CONTRIBUTING.md) explains how to help.
 
 Known gaps in the optional extras: Claude Code and the GitHub connector have not been run against the real services;
-Antigravity's headless mode does not work on the development machine; Gmail and hosted Slack sign-in were not run
+Antigravity has not answered yet, because the development account's quota was exhausted; Gmail and hosted Slack sign-in were not run
 against the real services; the Qoder CLI runtime was checked with a Qwen model whose host and exact weights are not
 verified; and everything was checked on Windows only. `LIMITATIONS.md` lists the trust assumptions.
 
