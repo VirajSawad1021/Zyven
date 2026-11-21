@@ -211,6 +211,11 @@ def _write_sarif(path: str, reports: list) -> None:
 
 def cmd_verify(args) -> None:
     from zyven.mcpverify import format_markdown, format_report, verify_server, write_lock
+    if args.docker:
+        from zyven.sandbox.runner import docker_problem
+        why = docker_problem(args.docker)
+        if why:
+            sys.exit(f"zyven verify --docker: {why}")
     if args.files:  # pre-commit passes the changed config files as trailing arguments
         files = [a for a in args.server if a != "--"]
         if not files:
