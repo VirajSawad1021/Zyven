@@ -29,6 +29,41 @@ jobs:
       - name: Unit tests (no network model calls, no API keys)
         run: uv run pytest -q tests
 
+  srt:
+    name: sandbox-runtime settings (srt, ${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false  # nothing here pushes; keep the token out of .git/config
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+        with:
+          python-version: "3.12"
+      - name: Install (locked)
+        run: uv sync --locked
+      - name: srt's Linux dependencies (bubblewrap, socat, ripgrep)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q bubblewrap socat ripgrep
+          # Ubuntu 24.04 strips capabilities from unprivileged user namespaces; srt's seccomp helper nests a second
+          # one inside bubblewrap's, so both AppArmor restrictions are lifted on this throwaway runner
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_unconfined=0
+          bwrap --version
+      - name: The --srt-settings file holds under srt (macOS, the file exactly as Zyven writes it)
+        if: runner.os == 'macOS'
+        run: uv run python scripts/check_srt.py
+      - name: The --srt-settings file holds under srt (Linux, without srt's seccomp helper)
+        if: runner.os == 'Linux'
+        env:
+          ZYVEN_SRT_NO_SECCOMP: "1"
+        run: uv run python scripts/check_srt.py
+
   sandbox:
     name: Sandbox integration
     runs-on: ubuntu-latest
