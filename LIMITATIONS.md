@@ -89,8 +89,8 @@ outside-in checks (section 6), which are not the same as the six gates.**
 - **Each coding agent's containment is that program's own.** Zyven checked it on Windows and configured it (Codex's sandbox with temp
   folders and network closed and without loading the user's plugins; OpenCode's permission file; Claude Code's tool
   allowlist; the Qoder CLI's restricted built-in tools), but relies on those programs enforcing it. The Qoder runtime was run
-  live with a Qwen model whose host and exact weights Zyven cannot verify. Claude Code's was not checked live, and Antigravity's headless mode
-  does not work on the development machine. macOS and Linux were not tried for the agents.
+  live with a Qwen model whose host and exact weights Zyven cannot verify. Claude Code's was not checked live. Antigravity has
+  not answered yet: with agy 1.5.11 its log showed the account's quota exhausted, which agy retries silently. macOS and Linux were not tried for the agents.
 - **Full PC access removes the sandbox on request.** A wrong or manipulated model can then read, change and delete anything the
   user's account can. It is off unless the machine owner sets `ZYVEN_ALLOW_FULL_ACCESS=1`, and each task needs a confirmation.
 - **The board has no login.** The guard refuses a foreign `Host` and cross-site writes, which stops the usual browser-based
@@ -152,7 +152,7 @@ outside-in checks (section 6), which are not the same as the six gates.**
     - Codex compiled and verified one capability (packaging `version_specifiers`, 6/6 gates, first attempt).
     - Qoder answered a structured question.
     - OpenCode hit its free-usage limit.
-    - Antigravity hung in this environment.
+    - Antigravity printed nothing: its log showed the account's quota exhausted (agy retries silently).
     - Claude Code was not run.
   - One verified compile is an example, not a comparison between agents.
 - **`zyven reassemble` trusts the saved differential cases.** It reruns the six gates with the cases the Tester wrote when the
