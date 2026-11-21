@@ -95,8 +95,11 @@ outside-in checks (section 6), which are not the same as the six gates.**
   user's account can. It is off unless the machine owner sets `ZYVEN_ALLOW_FULL_ACCESS=1`, and each task needs a confirmation.
 - **The board has no login.** The guard refuses a foreign `Host` and cross-site writes, which stops the usual browser-based
   routes. It does not stop another program running as the same user from calling the API.
-- **Secrets are stored in plain files** in the board directory (connection keys, OAuth tokens). On Windows the file mode
-  is not a protection. Use a board directory only you can read; an OS secret store would be better.
+- **Secrets are encrypted, with the key in the system keychain** (Windows Credential Manager, the macOS Keychain, the
+  Secret Service on Linux). Anything running as you can still ask the keychain for the key, so this protects against
+  copied or backed-up board folders and other users, not against your own programs. Without a keychain (headless
+  Linux, or `ZYVEN_SECRETS=file`) they stay in a plain file, readable only by you where the system supports that. The
+  key belongs to the board folder's path: moving the folder means signing in again.
 - **The hub token and the OpenCode / Claude Code config files sit in the task folder**, readable by that run's agent. They are
   valid for that run only.
 - **Coding agents send the task text to their provider** (for example OpenAI for Codex), unlike the open-weight roles above.
