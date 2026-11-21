@@ -15,6 +15,7 @@ cache, so a server started that way may need a writable cache folder added by ha
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -38,8 +39,15 @@ def main() -> int:
     report = run_checks({"target": "t", "started": True, "server": {"name": "s"}, "tools": [], "seconds": 1,
                          "sandboxed": True, "egress": {"hosts": [ALLOWED],
                                                       "decisions": [{"host": ALLOWED, "port": 443, "allowed": True}]}})
+    data = srt_settings(report)
+    if os.environ.get("ZYVEN_SRT_NO_SECCOMP"):  # CI on GitHub's Linux runners only (see the workflow)
+        # srt's seccomp helper nests a second user namespace, which these runners refuse; without it bubblewrap uses
+        # --disable-userns instead. This lifts only unix-socket filtering, which nothing below checks: the network and
+        # filesystem rules under test are exactly the ones Zyven wrote.
+        data["network"]["allowAllUnixSockets"] = True
+        print("note: CI-only addition network.allowAllUnixSockets=true (no seccomp helper on this runner)")
     settings = work / "srt.json"
-    settings.write_text(json.dumps(srt_settings(report)), encoding="utf-8")
+    settings.write_text(json.dumps(data), encoding="utf-8")
     print("settings:", settings.read_text(encoding="utf-8"))
 
     def srt(*cmd: str) -> subprocess.CompletedProcess:
