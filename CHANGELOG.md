@@ -101,6 +101,11 @@ build, and installs without a clone.
   the skill's egress proxy with it. That covers the board's agent, the hub and `zyven mcp`.
 
 ### Changed
+- **Connection secrets are encrypted, with the key in the system keychain.** API keys and OAuth tokens move from a
+  plain `connection-secrets.json` into `connection-secrets.enc` (Fernet), whose 44-character key lives in Windows
+  Credential Manager, the macOS Keychain or the Linux Secret Service. The keychain cannot hold the tokens themselves:
+  Windows refuses a value of about 2.4 KB. An existing plain file is migrated on first use and removed only after the
+  encrypted copy reads back. Without a keychain the plain file is kept. New dependency: `keyring`.
 - **`zyven verify` separates findings from capabilities.** A finding is evidence of deceit: hidden text, text that
   addresses the model about its own behaviour, or changed definitions. A capability is what a server can do or
   touches: a description naming a credential file, a secret or a URL, a destructive or open-world tool, a host it

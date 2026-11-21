@@ -1,8 +1,9 @@
 """Connections: MCP servers a user connects to (a hosted URL, or a local command), with local secret storage.
 
-Public metadata lives in `connections.json`; tokens and API keys live in a separate `connection-secrets.json`
-that is never returned by the API, never sent to the browser after it is entered, and never shown to a model.
-Both files sit in the board directory, which is git-ignored.
+Public metadata lives in `connections.json`. Tokens and API keys live apart from it (`vault.py`): encrypted in
+`connection-secrets.enc` with the key in the operating system's keychain, or in a plain `connection-secrets.json`
+where there is no keychain. They are never returned by the API, never sent to the browser after they are entered,
+and never shown to a model. Both sit in the board directory, which is git-ignored.
 
 Local-command (stdio) connectors run code on this machine with the user's permissions, so they are refused
 unless ZYVEN_ALLOW_STDIO_CONNECTORS=1: a web page that can reach the local board must not be able to start a
@@ -44,7 +45,8 @@ class ConnectionStore:
         self.dir = Path(directory) / "connections"
         self.dir.mkdir(parents=True, exist_ok=True)
         self._meta = self.dir / "connections.json"
-        self._secrets = self.dir / "connection-secrets.json"
+        from zyven.connections.vault import SecretFile
+        self._vault = SecretFile(self.dir)
         self._lock = threading.Lock()
 
     # --- file helpers -------------------------------------------------------------------------------
@@ -74,14 +76,14 @@ class ConnectionStore:
         return out
 
     def list(self) -> list[dict[str, Any]]:
-        meta, secrets = self._read(self._meta), self._read(self._secrets)
+        meta, secrets = self._read(self._meta), self._vault.read()
         return [self._public(cid, c, secrets) for cid, c in meta.items()]
 
     def get(self, cid: str) -> dict[str, Any]:
         meta = self._read(self._meta)
         if cid not in meta:
             raise KeyError(cid)
-        return self._public(cid, meta[cid], self._read(self._secrets))
+        return self._public(cid, meta[cid], self._vault.read())
 
     def add(self, *, name: str, kind: str, url: str = "", command: str = "", args: list[str] | None = None,
             secrets: dict[str, str] | None = None, oauth: bool = False, oauth_client_id: str = "",
@@ -119,12 +121,12 @@ class ConnectionStore:
             secrets = {"_oauth_client": json.dumps({"client_id": oauth_client_id.strip(),
                                                     "client_secret": oauth_client_secret or None})}
         with self._lock:
-            meta, sec = self._read(self._meta), self._read(self._secrets)
+            meta, sec = self._read(self._meta), self._vault.read()
             meta[cid] = entry
             if secrets:
                 sec[cid] = secrets
             self._write(self._meta, meta)
-            self._write(self._secrets, sec, private=True)
+            self._vault.write(sec)
         return self.get(cid)
 
     def update(self, cid: str, **fields: Any) -> dict[str, Any]:
@@ -144,29 +146,29 @@ class ConnectionStore:
 
     def remove(self, cid: str) -> None:
         with self._lock:
-            meta, sec = self._read(self._meta), self._read(self._secrets)
+            meta, sec = self._read(self._meta), self._vault.read()
             if cid not in meta:
                 raise KeyError(cid)
             meta.pop(cid)
             sec.pop(cid, None)
             self._write(self._meta, meta)
-            self._write(self._secrets, sec, private=True)
+            self._vault.write(sec)
 
     def set_secret(self, cid: str, key: str, value: str) -> None:
         with self._lock:
-            sec = self._read(self._secrets)
+            sec = self._vault.read()
             sec.setdefault(cid, {})[key] = value
-            self._write(self._secrets, sec, private=True)
+            self._vault.write(sec)
 
     def delete_secret(self, cid: str, key: str) -> None:
         with self._lock:
-            sec = self._read(self._secrets)
+            sec = self._vault.read()
             if sec.get(cid, {}).pop(key, None) is not None:
-                self._write(self._secrets, sec, private=True)
+                self._vault.write(sec)
 
     def secret(self, cid: str, key: str) -> str | None:
-        return self._read(self._secrets).get(cid, {}).get(key)
+        return self._vault.read().get(cid, {}).get(key)
 
     def secrets_for(self, cid: str) -> dict[str, str]:
         """Internal: the values, for launching or calling the server. Never expose this over the API."""
-        return dict(self._read(self._secrets).get(cid, {}))
+        return dict(self._vault.read().get(cid, {}))
