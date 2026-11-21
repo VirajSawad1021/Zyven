@@ -29,6 +29,25 @@ jobs:
       - name: Unit tests (no network model calls, no API keys)
         run: uv run pytest -q tests
 
+  board:
+    name: Board starts (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false  # nothing here pushes; keep the token out of .git/config
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+        with:
+          python-version: "3.12"
+      - name: Install (locked)
+        run: uv sync --locked
+      - name: The board starts, serves its pages and APIs, and refuses a foreign Host
+        run: uv run python scripts/smoke_board.py
+
   sandbox:
     name: Sandbox integration
     runs-on: ubuntu-latest
