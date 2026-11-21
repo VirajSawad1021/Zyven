@@ -508,6 +508,11 @@ srt --settings srt.json python server/server.py
 The check makes only a few calls, so a server can need more hosts or a writable folder in real use; add them to the
 file by hand.
 
+CI runs the file under srt 0.0.83 on macOS and Linux (`scripts/check_srt.py`): the allowed host answers, another
+host is refused, nothing can be written, and a credential folder cannot be read. On macOS, programs that use Apple's
+own TLS stack (the system `curl`) cannot verify certificates inside srt's sandbox; Python and Node servers bring their
+own certificate roots and are not affected. Windows needs srt's one-time `windows-install` and was not tried.
+
 **As a pre-commit hook.** Checks every server in an MCP client config you commit (`.mcp.json`, `.cursor/mcp.json`,
 `.vscode/mcp.json`, `claude_desktop_config.json`, `.codex/config.toml`):
 

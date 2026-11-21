@@ -175,6 +175,11 @@ outside-in checks (section 6), which are not the same as the six gates.**
   - **For compiled skills, only a reviewer sets it** (`zyven compile --allow-host`). A model never can. The gates
     run under it and so does the skill at run time, except with `ZYVEN_SKILL_RUNTIME=host`, which is for
     development only and logs that the allowlist is not enforced.
+- **`--srt-settings` was checked under srt 0.0.83 on macOS and Linux in CI, not on Windows.** On GitHub's Linux
+  runners srt's seccomp helper cannot create its nested user namespace, so the Linux run adds
+  `network.allowAllUnixSockets` (CI only; it lifts unix-socket filtering, which the check does not test). On macOS,
+  programs using Apple's TLS stack cannot verify certificates inside the sandbox even for an allowed host. A server
+  launched with `npx` or `uvx` also needs its package registry and a writable cache added by hand.
 - **`zyven export` copies the evidence; it does not re-verify.** The exported Docker image installs the library from git
   at the verified commit. If that commit or repository disappears upstream, the image cannot be rebuilt.
 - **`zyven outdated` maps symbols to files by module path.** A symbol re-exported from another module, or code moved
