@@ -624,3 +624,36 @@ def test_compiler_raises_when_nothing_comes_back(analysis):
         compiler(_ScriptedProvider([err, err, err]), analysis, _spec(_tool("first"), _tool("second")))
     with pytest.raises(ProviderError):  # a single tool has nothing to split
         compiler(_ScriptedProvider([err]), analysis, _spec(_tool("first")))
+
+
+def test_import_list_entries_that_name_a_symbol_become_imports():
+    from zyven.compiler.build import import_line
+    assert import_line("pyluach.dates.GregorianDate") == "import pyluach.dates"
+    assert import_line("networkx") == "import networkx"
+    assert import_line("from pyluach import dates") == "from pyluach import dates"
+    assert import_line("  import networkx as nx ") == "import networkx as nx"
+
+
+def test_library_modules_used_by_dotted_name_are_imported():
+    from zyven.compiler.build import missing_imports
+    syms = ["pyluach.dates.GregorianDate", "pyluach.hebrewcal.holiday"]
+    body = "d = pyluach.dates.GregorianDate.from_pydate(x)\nreturn pyluach.hebrewcal.holiday(d)"
+    assert missing_imports(body, [], syms) == ["import pyluach.dates", "import pyluach.hebrewcal"]
+    assert missing_imports(body, ["import pyluach.dates"], syms) == []  # already bound
+    assert missing_imports("return dates.GregorianDate(1, 2, 3)", ["from pyluach import dates"], syms) == []
+    assert missing_imports("return os.path.join(a)", [], syms) == []  # only the library's own modules
+
+
+def test_spec_symbols_used_by_bare_name_are_imported():
+    from zyven.compiler.build import missing_imports
+    syms = ["pyluach.dates.GregorianDate"]
+    assert missing_imports("d = GregorianDate(2026, 1, 1)", [], syms) == ["from pyluach.dates import GregorianDate"]
+    assert missing_imports("d = GregorianDate(2026, 1, 1)", ["from pyluach.dates import GregorianDate"], syms) == []
+    assert missing_imports("x = 'no use'", [], syms) == []
+
+
+def test_names_inside_strings_are_not_imports():
+    from zyven.compiler.build import missing_imports
+    syms = ["networkx.algorithms.cluster.triangles"]
+    body = "import networkx as nx\nt = nx.triangles(G)\nreturn {'display': f'{t} unique triangles'}"
+    assert missing_imports(body, [], syms) == []

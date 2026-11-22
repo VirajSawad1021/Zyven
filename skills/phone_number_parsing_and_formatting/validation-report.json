@@ -1,0 +1,341 @@
+{
+ "passed": true,
+ "verified_for": [
+  "policy",
+  "import",
+  "upstream_tests",
+  "input_robustness",
+  "mcp_smoke",
+  "differential"
+ ],
+ "gates": [
+  {
+   "name": "policy",
+   "passed": true,
+   "detail": "imports and builtins within policy",
+   "data": {}
+  },
+  {
+   "name": "import",
+   "passed": true,
+   "detail": "server module imports cleanly",
+   "data": {}
+  },
+  {
+   "name": "upstream_tests",
+   "passed": true,
+   "detail": "166 tests ran, 0 failures, 0 errors (python/tests/examplenumberstest.py, python/tests/phonenumberutiltest.py, python/tests/carriertest.py)",
+   "data": {
+    "ran": 166,
+    "failures": 0,
+    "errors": 0
+   }
+  },
+  {
+   "name": "input_robustness",
+   "passed": true,
+   "detail": "5/5 equivalent-input probes gave identical results",
+   "data": {
+    "probes": [
+     {
+      "tool": "parse_and_analyze_phone_number",
+      "args": {
+       "phone_number_string": "  +1 415 555 2671 ",
+       "default_region": "US"
+      },
+      "ok": true,
+      "output": {
+       "is_valid": true,
+       "is_possible": true,
+       "number_type": "2",
+       "region_code": "US",
+       "e164_format": "+14155552671",
+       "international_format": "+1 415-555-2671",
+       "boolean_display": "Valid: True, Type: 2, Region: US",
+       "error": null,
+       "error_type": null
+      }
+     },
+     {
+      "tool": "parse_and_analyze_phone_number",
+      "args": {
+       "phone_number_string": "+1 415 555 2671",
+       "default_region": "  US "
+      },
+      "ok": true,
+      "output": {
+       "is_valid": true,
+       "is_possible": true,
+       "number_type": "2",
+       "region_code": "US",
+       "e164_format": "+14155552671",
+       "international_format": "+1 415-555-2671",
+       "boolean_display": "Valid: True, Type: 2, Region: US",
+       "error": null,
+       "error_type": null
+      }
+     },
+     {
+      "tool": "format_phone_number",
+      "args": {
+       "e164_number": "  +14155552671 ",
+       "format_type": "INTERNATIONAL"
+      },
+      "ok": true,
+      "output": {
+       "format_number_string": "+1 415-555-2671",
+       "success": true,
+       "error": null
+      }
+     },
+     {
+      "tool": "format_phone_number",
+      "args": {
+       "e164_number": "+14155552671",
+       "format_type": "  INTERNATIONAL "
+      },
+      "ok": true,
+      "output": {
+       "format_number_string": "+1 415-555-2671",
+       "success": true,
+       "error": null
+      }
+     },
+     {
+      "tool": "get_carrier_info",
+      "args": {
+       "e164_number": "  +14155552671 "
+      },
+      "ok": true,
+      "output": {
+       "carrier_name": null,
+       "success": false,
+       "error": "module 'phonenumbers' has no attribute 'carrier'"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "mcp_smoke",
+   "passed": true,
+   "detail": "3 tools called with example args; invalid input rejected",
+   "data": {
+    "server_started": true,
+    "listed_tools": [
+     "parse_and_analyze_phone_number",
+     "format_phone_number",
+     "get_carrier_info"
+    ],
+    "missing_tools": [],
+    "calls": [
+     {
+      "tool": "parse_and_analyze_phone_number",
+      "args": {
+       "phone_number_string": "+1 415 555 2671",
+       "default_region": "US"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "is_valid": true,
+       "is_possible": true,
+       "number_type": "2",
+       "region_code": "US",
+       "e164_format": "+14155552671",
+       "international_format": "+1 415-555-2671",
+       "boolean_display": "Valid: True, Type: 2, Region: US",
+       "error": null,
+       "error_type": null
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "format_phone_number",
+      "args": {
+       "e164_number": "+14155552671",
+       "format_type": "INTERNATIONAL"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "format_number_string": "+1 415-555-2671",
+       "success": true,
+       "error": null
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "get_carrier_info",
+      "args": {
+       "e164_number": "+14155552671"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "carrier_name": null,
+       "success": false,
+       "error": "module 'phonenumbers' has no attribute 'carrier'"
+      },
+      "missing_fields": []
+     }
+    ],
+    "invalid_calls": [
+     {
+      "ok": true,
+      "tool": "parse_and_analyze_phone_number",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "format_phone_number",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "get_carrier_info",
+      "detail": "rejected cleanly"
+     }
+    ],
+    "robustness": [
+     {
+      "tool": "parse_and_analyze_phone_number",
+      "args": {
+       "phone_number_string": "  +1 415 555 2671 ",
+       "default_region": "US"
+      },
+      "ok": true,
+      "output": {
+       "is_valid": true,
+       "is_possible": true,
+       "number_type": "2",
+       "region_code": "US",
+       "e164_format": "+14155552671",
+       "international_format": "+1 415-555-2671",
+       "boolean_display": "Valid: True, Type: 2, Region: US",
+       "error": null,
+       "error_type": null
+      }
+     },
+     {
+      "tool": "parse_and_analyze_phone_number",
+      "args": {
+       "phone_number_string": "+1 415 555 2671",
+       "default_region": "  US "
+      },
+      "ok": true,
+      "output": {
+       "is_valid": true,
+       "is_possible": true,
+       "number_type": "2",
+       "region_code": "US",
+       "e164_format": "+14155552671",
+       "international_format": "+1 415-555-2671",
+       "boolean_display": "Valid: True, Type: 2, Region: US",
+       "error": null,
+       "error_type": null
+      }
+     },
+     {
+      "tool": "format_phone_number",
+      "args": {
+       "e164_number": "  +14155552671 ",
+       "format_type": "INTERNATIONAL"
+      },
+      "ok": true,
+      "output": {
+       "format_number_string": "+1 415-555-2671",
+       "success": true,
+       "error": null
+      }
+     },
+     {
+      "tool": "format_phone_number",
+      "args": {
+       "e164_number": "+14155552671",
+       "format_type": "  INTERNATIONAL "
+      },
+      "ok": true,
+      "output": {
+       "format_number_string": "+1 415-555-2671",
+       "success": true,
+       "error": null
+      }
+     },
+     {
+      "tool": "get_carrier_info",
+      "args": {
+       "e164_number": "  +14155552671 "
+      },
+      "ok": true,
+      "output": {
+       "carrier_name": null,
+       "success": false,
+       "error": "module 'phonenumbers' has no attribute 'carrier'"
+      }
+     }
+    ],
+    "still_alive_after_calls": true
+   }
+  },
+  {
+   "name": "differential",
+   "passed": true,
+   "detail": "3/3 Tester cases match the library; 1 reference expressions invalid (ignored); no valid case for: get_carrier_info",
+   "data": {
+    "results": [
+     {
+      "tool": "parse_and_analyze_phone_number",
+      "args": {
+       "phone_number_string": "+44 7911 123456",
+       "default_region": "GB"
+      },
+      "field": "is_valid",
+      "expr": "phonenumbers.is_valid_number(phonenumbers.parse('+44 7911 123456', 'GB'))",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "parse_and_analyze_phone_number",
+      "args": {
+       "phone_number_string": "020 7946 0000",
+       "default_region": "GB"
+      },
+      "field": "region_code",
+      "expr": "phonenumbers.region_code_for_number(phonenumbers.parse('020 7946 0000', 'GB'))",
+      "expected": "GB",
+      "got": "GB",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "format_phone_number",
+      "args": {
+       "e164_number": "+447911123456",
+       "format_type": "E164"
+      },
+      "field": "format_number_string",
+      "expr": "phonenumbers.format_number(phonenumbers.parse('+447911123456', None), phonenumbers.PhoneNumberFormat.E164)",
+      "expected": "+447911123456",
+      "got": "+447911123456",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_carrier_info",
+      "args": {
+       "e164_number": "+14155552671"
+      },
+      "field": "carrier_name",
+      "expr": "phonenumbers.carrier(phonenumbers.parse('+14155552671', None))",
+      "status": "invalid_reference",
+      "detail": "AttributeError(\"module 'phonenumbers' has no attribute 'carrier'\")"
+     }
+    ]
+   }
+  }
+ ],
+ "failing_tools": {}
+}

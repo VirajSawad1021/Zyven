@@ -1,0 +1,180 @@
+{
+ "cases": [
+  {
+   "tool": "convert_hijri_to_gregorian",
+   "args": {
+    "hijri_date_iso": "1418-10-02"
+   },
+   "field": "gregorian_date_iso",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Hijri(1418, 10, 2).to_gregorian().isoformat()"
+  },
+  {
+   "tool": "convert_hijri_to_gregorian",
+   "args": {
+    "hijri_date_iso": "2 Shawwal 1418"
+   },
+   "field": "gregorian_date_iso",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Hijri(1418, 10, 2).to_gregorian().isoformat()"
+  },
+  {
+   "tool": "convert_hijri_to_gregorian",
+   "args": {
+    "hijri_date_iso": "2 Shawwal 1418 AH"
+   },
+   "field": "gregorian_date_iso",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Hijri(1418, 10, 2).to_gregorian().isoformat()"
+  },
+  {
+   "tool": "convert_hijri_to_gregorian",
+   "args": {
+    "hijri_date_iso": "15 Rabi' al-Awwal 1440"
+   },
+   "field": "gregorian_date_iso",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Hijri(1440, 3, 15).to_gregorian().isoformat()"
+  },
+  {
+   "tool": "convert_hijri_to_gregorian",
+   "args": {
+    "hijri_date_iso": "1 Muharram 1446"
+   },
+   "field": "gregorian_date_iso",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Hijri(1446, 1, 1).to_gregorian().isoformat()"
+  },
+  {
+   "tool": "convert_hijri_to_gregorian",
+   "args": {
+    "hijri_date_iso": "10 Dhu al-Hijjah 1444"
+   },
+   "field": "gregorian_date_iso",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Hijri(1444, 12, 10).to_gregorian().isoformat()"
+  },
+  {
+   "tool": "convert_hijri_to_gregorian",
+   "args": {
+    "hijri_date_iso": "Ramadan 27, 1450"
+   },
+   "field": "gregorian_date_iso",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Hijri(1450, 9, 27).to_gregorian().isoformat()"
+  },
+  {
+   "tool": "convert_hijri_to_gregorian",
+   "args": {
+    "hijri_date_iso": "29 Jumada al-Akhirah 1400"
+   },
+   "field": "gregorian_date_iso",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Hijri(1400, 6, 29).to_gregorian().isoformat()"
+  },
+  {
+   "tool": "convert_hijri_to_gregorian",
+   "args": {
+    "hijri_date_iso": "1 Sha'ban 1420"
+   },
+   "field": "gregorian_date_iso",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Hijri(1420, 8, 1).to_gregorian().isoformat()"
+  },
+  {
+   "tool": "convert_gregorian_to_hijri",
+   "args": {
+    "gregorian_date_iso": "1998-01-30"
+   },
+   "field": "hijri_date_iso",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Gregorian(1998, 1, 30).to_hijri().isoformat()"
+  },
+  {
+   "tool": "convert_gregorian_to_hijri",
+   "args": {
+    "gregorian_date_iso": "2023-04-24"
+   },
+   "field": "hijri_date_iso",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Gregorian(2023, 4, 24).to_hijri().isoformat()"
+  },
+  {
+   "tool": "convert_gregorian_to_hijri",
+   "args": {
+    "gregorian_date_iso": "1937-03-14"
+   },
+   "field": "hijri_date_iso",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Gregorian(1937, 3, 14).to_hijri().isoformat()"
+  },
+  {
+   "tool": "convert_gregorian_to_hijri",
+   "args": {
+    "gregorian_date_iso": "2076-11-16"
+   },
+   "field": "hijri_date_iso",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Gregorian(2076, 11, 16).to_hijri().isoformat()"
+  },
+  {
+   "tool": "convert_gregorian_to_hijri",
+   "args": {
+    "gregorian_date_iso": "2000-02-29"
+   },
+   "field": "hijri_date_iso",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Gregorian(2000, 2, 29).to_hijri().isoformat()"
+  },
+  {
+   "tool": "get_hijri_date_properties",
+   "args": {
+    "hijri_date_iso": "9 Ramadan 1445"
+   },
+   "field": "month_length_days",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Hijri(1445, 9, 9).month_length()"
+  },
+  {
+   "tool": "get_hijri_date_properties",
+   "args": {
+    "hijri_date_iso": "1445-09-09"
+   },
+   "field": "month_name",
+   "reference_imports": [
+    "from hijridate import Hijri, Gregorian"
+   ],
+   "reference_expr": "Hijri(1445, 9, 9).month_name('en')"
+  }
+ ]
+}

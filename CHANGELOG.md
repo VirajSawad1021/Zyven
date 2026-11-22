@@ -6,6 +6,15 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **Verified calendar and phone skills in `skills/`.** Hijri ↔ Gregorian conversion (hijridate) and phone number
+  parsing and formatting (phonenumbers), compiled with an open model; all six gates pass. The Hijri tools also accept a
+  date written with the month by name ("2 Shawwal 1418"), checked by 16 new differential cases. With them, the small
+  open model Gemma 4 E4B answered 24/24 calendar and phone questions (8/24 alone)
+  (`eval/results/e4b-global-20261122.md`).
+- **Compiled skills get the imports their code needs.** When a tool's import list names a symbol
+  (`pyluach.dates.GregorianDate`) instead of an import, or the code uses a library module or one of the spec's symbols
+  without importing it, the harness adds the import. Only the library's own modules are added, so the policy gate
+  sees nothing new. Small models often leave these out.
 - **Compiled tools explain what was wrong with their input.** The MCP SDK passes only `ToolError` messages to the
   model, so a tool's own message ("each edge must have at least two nodes") arrived as a bare "Error executing tool".
   The harness now wraps every tool so its message reaches the model, which can then fix its call. Existing skills get

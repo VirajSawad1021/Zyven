@@ -1,0 +1,137 @@
+[
+ {
+  "t": 0.0,
+  "event": "architect.start",
+  "detail": "Phone Number Parsing, Validation, and Formatting"
+ },
+ {
+  "t": 220.78,
+  "event": "architect.done",
+  "detail": "3 tools: parse_and_analyze_phone_number, format_phone_number, get_carrier_info",
+  "resolved": {
+   "phonenumbers.parse": "phonenumbers.phonenumberutil.parse",
+   "phonenumbers.format_number": "phonenumbers.phonenumberutil.format_number",
+   "phonenumbers.is_valid_number": "phonenumbers.phonenumberutil.is_valid_number",
+   "phonenumbers.is_possible_number": "phonenumbers.phonenumberutil.is_possible_number",
+   "phonenumbers.number_type": "phonenumbers.phonenumberutil.number_type",
+   "phonenumbers.region_code_for_number": "phonenumbers.phonenumberutil.region_code_for_number"
+  },
+  "dropped": [
+   "included_symbols: phonenumbers.carrier",
+   "get_carrier_info.implementation: phonenumbers.carrier"
+  ],
+  "fixes": []
+ },
+ {
+  "t": 220.78,
+  "event": "compiler.start",
+  "detail": "writing 3 tool bodies"
+ },
+ {
+  "t": 240.09,
+  "event": "compiler.done",
+  "detail": "all tools implemented"
+ },
+ {
+  "t": 240.09,
+  "event": "tester.start",
+  "detail": "writing differential tests from the spec and library (adapter code not shown)"
+ },
+ {
+  "t": 255.97,
+  "event": "tester.done",
+  "detail": "5 cases for 3 tools"
+ },
+ {
+  "t": 255.97,
+  "event": "verify.start",
+  "detail": "attempt 1"
+ },
+ {
+  "t": 277.64,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 277.64,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 277.64,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 166 tests ran, 0 failures, 0 errors (python/tests/examplenumberstest.py, python/tests/phonenumberutiltest.py, python/tests/carriertest.py)",
+  "passed": true
+ },
+ {
+  "t": 277.64,
+  "event": "gate.input_robustness",
+  "detail": "FAIL 4/5 equivalent-input probes gave identical results: format_phone_number {\"e164_number\": \"+14155552671\", \"format_type\": \"  INTERNATIONAL \"}",
+  "passed": false
+ },
+ {
+  "t": 277.64,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 3 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 277.64,
+  "event": "gate.differential",
+  "detail": "PASS 3/3 cases match the library; 1 reference expressions invalid (ignored); 1 rejected by policy; no valid case for: get_carrier_info",
+  "passed": true
+ },
+ {
+  "t": 277.64,
+  "event": "repair.start",
+  "detail": "1 failing tool(s): format_phone_number"
+ },
+ {
+  "t": 284.58,
+  "event": "repair.done",
+  "detail": "patched format_phone_number"
+ },
+ {
+  "t": 284.58,
+  "event": "verify.start",
+  "detail": "attempt 2"
+ },
+ {
+  "t": 306.66,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 306.66,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 306.66,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 166 tests ran, 0 failures, 0 errors (python/tests/examplenumberstest.py, python/tests/phonenumberutiltest.py, python/tests/carriertest.py)",
+  "passed": true
+ },
+ {
+  "t": 306.66,
+  "event": "gate.input_robustness",
+  "detail": "PASS 5/5 equivalent-input probes gave identical results",
+  "passed": true
+ },
+ {
+  "t": 306.66,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 3 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 306.66,
+  "event": "gate.differential",
+  "detail": "PASS 3/3 cases match the library; 1 reference expressions invalid (ignored); 1 rejected by policy; no valid case for: get_carrier_info",
+  "passed": true
+ }
+]

@@ -1,0 +1,51 @@
+{
+ "cases": [
+  {
+   "tool": "parse_and_analyze_phone_number",
+   "args": {
+    "phone_number_string": "+44 7911 123456",
+    "default_region": "GB"
+   },
+   "field": "is_valid",
+   "reference_imports": [
+    "import phonenumbers"
+   ],
+   "reference_expr": "phonenumbers.is_valid_number(phonenumbers.parse('+44 7911 123456', 'GB'))"
+  },
+  {
+   "tool": "parse_and_analyze_phone_number",
+   "args": {
+    "phone_number_string": "020 7946 0000",
+    "default_region": "GB"
+   },
+   "field": "region_code",
+   "reference_imports": [
+    "import phonenumbers"
+   ],
+   "reference_expr": "phonenumbers.region_code_for_number(phonenumbers.parse('020 7946 0000', 'GB'))"
+  },
+  {
+   "tool": "format_phone_number",
+   "args": {
+    "e164_number": "+447911123456",
+    "format_type": "E164"
+   },
+   "field": "format_number_string",
+   "reference_imports": [
+    "import phonenumbers"
+   ],
+   "reference_expr": "phonenumbers.format_number(phonenumbers.parse('+447911123456', None), phonenumbers.PhoneNumberFormat.E164)"
+  },
+  {
+   "tool": "get_carrier_info",
+   "args": {
+    "e164_number": "+14155552671"
+   },
+   "field": "carrier_name",
+   "reference_imports": [
+    "import phonenumbers"
+   ],
+   "reference_expr": "phonenumbers.carrier(phonenumbers.parse('+14155552671', None))"
+  }
+ ]
+}
