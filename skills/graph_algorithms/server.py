@@ -7,25 +7,53 @@ Model-written code is limited to tool bodies and imports; the harness writes the
 
 from __future__ import annotations
 
+import functools
 from typing import Annotated, Any
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
 server = MCPServer(name="graph_algorithms", instructions="Provides tools to analyze graphs given as edge lists, computing shortest paths, connectivity, minimum spanning trees, maximum flow, centrality, and triangle counts.")
 
+
+def _explained(fn):
+    """The tool's own error message reaches the model. The MCP SDK shows only "Error executing tool <name>" for
+    any exception but ToolError, which would hide messages like "each edge must have at least two nodes"."""
+    @functools.wraps(fn)
+    def tool(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except ToolError:
+            raise
+        except Exception as e:
+            raise ToolError(f"{type(e).__name__}: {e}") from e
+    return tool
+
 @server.tool(name="shortest_path_weight", annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, open_world_hint=False))
-def shortest_path_weight(edges: Annotated[list, Field(description="A list of edges, where each edge is represented as [node1, node2, weight]. If weight is omitted, it defaults to 1.")], source: Annotated[str, Field(description="The starting node for the path.")], target: Annotated[str, Field(description="The ending node for the path.")]) -> dict[str, Any]:
+@_explained
+def shortest_path_weight(edges: Annotated[list, Field(description="A list of edges, where each edge is represented as [node1, node2, weight]. If weight is omitted, it defaults to 1. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').")], source: Annotated[str, Field(description="The starting node for the path.")], target: Annotated[str, Field(description="The ending node for the path.")]) -> dict[str, Any]:
     """Computes the shortest weighted path length between two nodes in a graph.
 
-    edges: A list of edges, where each edge is represented as [node1, node2, weight]. If weight is omitted, it defaults to 1.
+    edges: A list of edges, where each edge is represented as [node1, node2, weight]. If weight is omitted, it defaults to 1. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').
     source: The starting node for the path.
     target: The ending node for the path.
 
     Returns: weight (number): The shortest path length (sum of weights)., path_exists (boolean): Whether a path exists between the source and target., display (string): A human-readable summary of the result (e.g., 'Shortest path weight from A to C is 15' or 'No path exists').
     """
     import networkx as nx
+    parsed = []
+    for e in edges:
+        if isinstance(e, str):  # "A-B" or "A-B:3", the way a question often writes an edge
+            pair, _, w = e.partition(":")
+            a, _, b = pair.replace("->", "-").strip().rpartition("-")  # A-B, A->B
+            if not a.strip() or not b.strip():
+                raise ValueError(f"edge {e!r}: give each edge as [node1, node2, weight] or as 'A-B:3'")
+            w = w.strip()
+            e = [a.strip(), b.strip()] + ([float(w) if "." in w else int(w)] if w else [])
+        parsed.append(e)
+    edges = parsed
     source = source.strip()
     target = target.strip()
     if not edges:
@@ -55,15 +83,29 @@ def shortest_path_weight(edges: Annotated[list, Field(description="A list of edg
 
 
 @server.tool(name="count_connected_components", annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, open_world_hint=False))
-def count_connected_components(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2].")]) -> dict[str, Any]:
+@_explained
+def count_connected_components(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').")], nodes: Annotated[list | None, Field(description="Optional: every node of the graph, including nodes with no edges; each such node is a component of its own. Give it when the graph has isolated nodes.")] = None) -> dict[str, Any]:
     """Returns the number of connected components in an undirected graph.
 
-    edges: A list of edges, where each edge is [node1, node2].
+    edges: A list of edges, where each edge is [node1, node2]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').
+    nodes: Optional: every node of the graph, including nodes with no edges; each such node is a component of its own. Give it when the graph has isolated nodes.
 
     Returns: count (integer): The number of connected components., display (string): A human-readable summary (e.g., 'The graph has 2 connected components')., is_connected (boolean): True if the graph is connected (count == 1), False otherwise.
     """
     import networkx as nx
+    parsed = []
+    for e in edges:
+        if isinstance(e, str):  # "A-B" or "A-B:3", the way a question often writes an edge
+            pair, _, w = e.partition(":")
+            a, _, b = pair.replace("->", "-").strip().rpartition("-")  # A-B, A->B
+            if not a.strip() or not b.strip():
+                raise ValueError(f"edge {e!r}: give each edge as [node1, node2, weight] or as 'A-B:3'")
+            w = w.strip()
+            e = [a.strip(), b.strip()] + ([float(w) if "." in w else int(w)] if w else [])
+        parsed.append(e)
+    edges = parsed
     G = nx.Graph()
+    G.add_nodes_from(nodes or [])  # nodes with no edges are components too
     G.add_edges_from(edges)
     count = nx.number_connected_components(G)
     is_connected = (count == 1)
@@ -73,14 +115,26 @@ def count_connected_components(edges: Annotated[list, Field(description="A list 
 
 
 @server.tool(name="mst_total_weight", annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, open_world_hint=False))
-def mst_total_weight(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2, weight].")]) -> dict[str, Any]:
+@_explained
+def mst_total_weight(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2, weight]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').")]) -> dict[str, Any]:
     """Computes the total weight of the minimum spanning tree (or forest) of an undirected graph.
 
-    edges: A list of edges, where each edge is [node1, node2, weight].
+    edges: A list of edges, where each edge is [node1, node2, weight]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').
 
     Returns: total_weight (number): The sum of the weights of the edges in the minimum spanning tree., mst_edges (array): The edges included in the MST, formatted as [node1, node2, weight]., display (string): A human-readable summary (e.g., 'The total weight of the MST is 3').
     """
     import networkx as nx
+    parsed = []
+    for e in edges:
+        if isinstance(e, str):  # "A-B" or "A-B:3", the way a question often writes an edge
+            pair, _, w = e.partition(":")
+            a, _, b = pair.replace("->", "-").strip().rpartition("-")  # A-B, A->B
+            if not a.strip() or not b.strip():
+                raise ValueError(f"edge {e!r}: give each edge as [node1, node2, weight] or as 'A-B:3'")
+            w = w.strip()
+            e = [a.strip(), b.strip()] + ([float(w) if "." in w else int(w)] if w else [])
+        parsed.append(e)
+    edges = parsed
     G = nx.Graph()
     for edge in edges:
         if len(edge) != 3:
@@ -96,16 +150,28 @@ def mst_total_weight(edges: Annotated[list, Field(description="A list of edges, 
 
 
 @server.tool(name="max_flow_value", annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, open_world_hint=False))
-def max_flow_value(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2, capacity].")], source: Annotated[str, Field(description="The source node.")], target: Annotated[str, Field(description="The sink node.")]) -> dict[str, Any]:
+@_explained
+def max_flow_value(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2, capacity]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').")], source: Annotated[str, Field(description="The source node.")], target: Annotated[str, Field(description="The sink node.")]) -> dict[str, Any]:
     """Computes the maximum flow value between a source and a sink node in a capacitated graph.
 
-    edges: A list of edges, where each edge is [node1, node2, capacity].
+    edges: A list of edges, where each edge is [node1, node2, capacity]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').
     source: The source node.
     target: The sink node.
 
     Returns: flow_value (number): The value of the maximum flow., display (string): A human-readable summary (e.g., 'The maximum flow from S to T is 5').
     """
     import networkx as nx
+    parsed = []
+    for e in edges:
+        if isinstance(e, str):  # "A-B" or "A-B:3", the way a question often writes an edge
+            pair, _, w = e.partition(":")
+            a, _, b = pair.replace("->", "-").strip().rpartition("-")  # A-B, A->B
+            if not a.strip() or not b.strip():
+                raise ValueError(f"edge {e!r}: give each edge as [node1, node2, weight] or as 'A-B:3'")
+            w = w.strip()
+            e = [a.strip(), b.strip()] + ([float(w) if "." in w else int(w)] if w else [])
+        parsed.append(e)
+    edges = parsed
     source = source.strip()
     target = target.strip()
     G = nx.DiGraph()
@@ -124,15 +190,27 @@ def max_flow_value(edges: Annotated[list, Field(description="A list of edges, wh
 
 
 @server.tool(name="highest_betweenness_centrality_node", annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, open_world_hint=False))
-def highest_betweenness_centrality_node(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2].")], weight_attribute: Annotated[str | None, Field(description="The attribute name for edge weights. If omitted, weights are assumed to be 1.")] = None) -> dict[str, Any]:
+@_explained
+def highest_betweenness_centrality_node(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').")], weight_attribute: Annotated[str | None, Field(description="The attribute name for edge weights. If omitted, weights are assumed to be 1.")] = None) -> dict[str, Any]:
     """Identifies the node with the highest betweenness centrality in a graph.
 
-    edges: A list of edges, where each edge is [node1, node2].
+    edges: A list of edges, where each edge is [node1, node2]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').
     weight_attribute: The attribute name for edge weights. If omitted, weights are assumed to be 1.
 
     Returns: node (string): The node with the highest betweenness centrality., centrality_value (number): The betweenness centrality value of that node., display (string): A human-readable summary (e.g., 'Node B has the highest betweenness centrality of 0.6').
     """
     import networkx as nx
+    parsed = []
+    for e in edges:
+        if isinstance(e, str):  # "A-B" or "A-B:3", the way a question often writes an edge
+            pair, _, w = e.partition(":")
+            a, _, b = pair.replace("->", "-").strip().rpartition("-")  # A-B, A->B
+            if not a.strip() or not b.strip():
+                raise ValueError(f"edge {e!r}: give each edge as [node1, node2, weight] or as 'A-B:3'")
+            w = w.strip()
+            e = [a.strip(), b.strip()] + ([float(w) if "." in w else int(w)] if w else [])
+        parsed.append(e)
+    edges = parsed
     G = nx.Graph()
     if weight_attribute:
         for edge in edges:
@@ -154,14 +232,26 @@ def highest_betweenness_centrality_node(edges: Annotated[list, Field(description
 
 
 @server.tool(name="count_triangles", annotations=ToolAnnotations(read_only_hint=True, destructive_hint=False, open_world_hint=False))
-def count_triangles(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2].")]) -> dict[str, Any]:
+@_explained
+def count_triangles(edges: Annotated[list, Field(description="A list of edges, where each edge is [node1, node2]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').")]) -> dict[str, Any]:
     """Computes the total number of unique triangles in an undirected graph.
 
-    edges: A list of edges, where each edge is [node1, node2].
+    edges: A list of edges, where each edge is [node1, node2]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').
 
     Returns: total_triangles (integer): The total number of unique triangles in the graph., display (string): A human-readable summary (e.g., 'The graph contains 1 unique triangle').
     """
     import networkx as nx
+    parsed = []
+    for e in edges:
+        if isinstance(e, str):  # "A-B" or "A-B:3", the way a question often writes an edge
+            pair, _, w = e.partition(":")
+            a, _, b = pair.replace("->", "-").strip().rpartition("-")  # A-B, A->B
+            if not a.strip() or not b.strip():
+                raise ValueError(f"edge {e!r}: give each edge as [node1, node2, weight] or as 'A-B:3'")
+            w = w.strip()
+            e = [a.strip(), b.strip()] + ([float(w) if "." in w else int(w)] if w else [])
+        parsed.append(e)
+    edges = parsed
     G = nx.Graph()
     G.add_edges_from(edges)
     tri_dict = nx.triangles(G)

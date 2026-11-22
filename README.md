@@ -91,6 +91,16 @@ truth is computed by the source library itself, and the raw records are in `eval
 | Model alone | 8192 tokens | 12 | **3/12** |
 | Model + compiled skill | 8192 tokens | 12 | **11/12** |
 
+**networkx with a small model** (`gemma-4-e4b-it`, Gemma 4 E4B on a free Kaggle GPU, same 24 tasks, 4096-token cap)
+
+| Condition | Total | Avg sec/task |
+|---|---|---|
+| Model alone | **22/24** | 77.8 |
+| Model + compiled skill | **24/24** | 12.9 |
+
+The small model answers most of these questions on its own, but slowly; with the verified skill it gets every one right
+and is about six times faster. Details in `eval/results/e4b-networkx-20261122.md`.
+
 At the 4096-token cap, 23 of 24 runs without the skill used up the budget working the answer out by hand and gave none,
 and all 5 misses with the skill were the same cap, not wrong tool results. Doubling the cap helps both conditions; the
 skill still adds the most (3/12 to 11/12). The second run is a smaller sample (12 questions per condition), so read

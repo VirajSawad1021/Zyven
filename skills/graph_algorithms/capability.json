@@ -11,7 +11,7 @@
     {
      "name": "edges",
      "type": "array",
-     "description": "A list of edges, where each edge is represented as [node1, node2, weight]. If weight is omitted, it defaults to 1.",
+     "description": "A list of edges, where each edge is represented as [node1, node2, weight]. If weight is omitted, it defaults to 1. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').",
      "required": true,
      "example": "[[\"A\", \"B\", 5], [\"B\", \"C\", 10], [\"A\", \"C\", 20]]"
     },
@@ -64,9 +64,16 @@
     {
      "name": "edges",
      "type": "array",
-     "description": "A list of edges, where each edge is [node1, node2].",
+     "description": "A list of edges, where each edge is [node1, node2]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').",
      "required": true,
      "example": "[[\"A\", \"B\"], [\"C\", \"D\"]]"
+    },
+    {
+     "name": "nodes",
+     "type": "array",
+     "required": false,
+     "example": null,
+     "description": "Optional: every node of the graph, including nodes with no edges; each such node is a component of its own. Give it when the graph has isolated nodes."
     }
    ],
    "returns": [
@@ -101,7 +108,7 @@
     {
      "name": "edges",
      "type": "array",
-     "description": "A list of edges, where each edge is [node1, node2, weight].",
+     "description": "A list of edges, where each edge is [node1, node2, weight]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').",
      "required": true,
      "example": "[[\"A\", \"B\", 1], [\"B\", \"C\", 2], [\"A\", \"C\", 3]]"
     }
@@ -138,7 +145,7 @@
     {
      "name": "edges",
      "type": "array",
-     "description": "A list of edges, where each edge is [node1, node2, capacity].",
+     "description": "A list of edges, where each edge is [node1, node2, capacity]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').",
      "required": true,
      "example": "[[\"S\", \"A\", 10], [\"A\", \"T\", 5]]"
     },
@@ -186,7 +193,7 @@
     {
      "name": "edges",
      "type": "array",
-     "description": "A list of edges, where each edge is [node1, node2].",
+     "description": "A list of edges, where each edge is [node1, node2]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').",
      "required": true,
      "example": "[[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"D\"]]"
     },
@@ -230,7 +237,7 @@
     {
      "name": "edges",
      "type": "array",
-     "description": "A list of edges, where each edge is [node1, node2].",
+     "description": "A list of edges, where each edge is [node1, node2]. Each edge may also be written as a string 'A-B' or 'A-B:3' (or 'A->B:3').",
      "required": true,
      "example": "[[\"A\", \"B\"], [\"B\", \"C\"], [\"C\", \"A\"]]"
     }

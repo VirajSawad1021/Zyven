@@ -29,6 +29,24 @@
    "generator": "zyven 0.1.0",
    "at": "2026-11-06",
    "gates_rerun": true
+  },
+  {
+   "generator": "zyven 0.1.0",
+   "at": "2026-11-22",
+   "gates_rerun": true
+  },
+  {
+   "generator": "zyven 0.1.0",
+   "at": "2026-11-22",
+   "gates_rerun": true
+  }
+ ],
+ "edits": [
+  {
+   "at": "2026-11-22",
+   "what": "tool code edited after review, not by the compile's model: every tool also accepts edges written as 'A-B', 'A-B:3' or 'A->B:3'; count_connected_components takes an optional node list (isolated nodes are components too); 4 differential cases added for both",
+   "why": "found by an evaluation run with a small model (Gemma 4 E4B)",
+   "verified": "zyven reassemble: all six gates passed again"
   }
  ]
 }
