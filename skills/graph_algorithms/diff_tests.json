@@ -459,6 +459,85 @@
     "import networkx as nx"
    ],
    "reference_expr": "G = nx.Graph()\nG.add_edges_from({edges})\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3"
+  },
+  {
+   "tool": "count_connected_components",
+   "args": {
+    "edges": [
+     [
+      "n1",
+      "n2"
+     ],
+     [
+      "n3",
+      "n4"
+     ]
+    ],
+    "nodes": [
+     "n1",
+     "n2",
+     "n3",
+     "n4",
+     "n5",
+     "n6"
+    ]
+   },
+   "field": "count",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_nodes_from({nodes})\nG.add_edges_from({edges})\nnx.number_connected_components(G)"
+  },
+  {
+   "tool": "mst_total_weight",
+   "args": {
+    "edges": [
+     "A-B:4",
+     "B-C:1",
+     "A-C:2",
+     "C-D:7"
+    ]
+   },
+   "field": "total_weight",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph()\nG.add_weighted_edges_from([('A', 'B', 4), ('B', 'C', 1), ('A', 'C', 2), ('C', 'D', 7)])\nsum(d['weight'] for _, _, d in nx.minimum_spanning_tree(G).edges(data=True))"
+  },
+  {
+   "tool": "count_triangles",
+   "args": {
+    "edges": [
+     "A-B",
+     "B-C",
+     "C-A",
+     "C-D",
+     "D-A"
+    ]
+   },
+   "field": "total_triangles",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.Graph([('A', 'B'), ('B', 'C'), ('C', 'A'), ('C', 'D'), ('D', 'A')])\nsum(nx.triangles(G).values()) // 3"
+  },
+  {
+   "tool": "max_flow_value",
+   "args": {
+    "edges": [
+     "A->B:5",
+     "B->C:3",
+     "A->C:2",
+     "C->D:4"
+    ],
+    "source": "A",
+    "target": "D"
+   },
+   "field": "flow_value",
+   "reference_imports": [
+    "import networkx as nx"
+   ],
+   "reference_expr": "G = nx.DiGraph()\nG.add_edge('A', 'B', capacity=5)\nG.add_edge('B', 'C', capacity=3)\nG.add_edge('A', 'C', capacity=2)\nG.add_edge('C', 'D', capacity=4)\nnx.maximum_flow_value(G, 'A', 'D')"
   }
  ]
 }

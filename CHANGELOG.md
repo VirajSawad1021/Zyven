@@ -6,6 +6,15 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **Compiled tools explain what was wrong with their input.** The MCP SDK passes only `ToolError` messages to the
+  model, so a tool's own message ("each edge must have at least two nodes") arrived as a bare "Error executing tool".
+  The harness now wraps every tool so its message reaches the model, which can then fix its call. Existing skills get
+  it through `zyven reassemble`.
+- **The graph skill takes edges the way questions write them, and isolated nodes.** Every graph tool also accepts
+  `'A-B'` and `'A-B:3'`, and `count_connected_components` takes an optional node list, so nodes with no edges count as
+  components, and `'A->B:3'` for directed graphs. Four differential cases cover them; all six gates passed again.
+  With these changes, the small open model Gemma 4 E4B answered 24/24 graph questions with the skill (22/24
+  alone) at 12.9 s per task instead of 77.8 s (`eval/results/e4b-networkx-20261122.md`).
 - **`zyven verify --connection NAME`.** Checks a server connected on the board, signed in: with its stored API key, or
   its OAuth sign-in (Notion, Google Docs, ...), so hosted servers behind a login can be verified too. The tokens are
   used through the board's own store and refreshed there, never copied, so the board stays signed in.

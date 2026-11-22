@@ -488,7 +488,7 @@
   {
    "name": "differential",
    "passed": true,
-   "detail": "18/18 cases match the library",
+   "detail": "22/22 Tester cases + 45/45 generated cases match the library (13 generated not scored: the library or the tool rejected the input)",
    "data": {
     "results": [
      {
@@ -518,7 +518,8 @@
       "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 5], ['B', 'C', 10], ['A', 'C', 20]])\nnx.dijkstra_path_length(G, 'A', 'C', weight='weight')",
       "expected": 15,
       "got": 15,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "shortest_path_weight",
@@ -542,7 +543,8 @@
       "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 5], ['C', 'D', 10]])\ntry:\n    nx.dijkstra_path_length(G, 'A', 'D', weight='weight')\n    exists = True\nexcept nx.NetworkXNoPath:\n    exists = False\nexists",
       "expected": false,
       "got": false,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "shortest_path_weight",
@@ -571,7 +573,8 @@
       "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 1], ['B', 'C', 1], ['C', 'D', 1]])\nnx.dijkstra_path_length(G, 'A', 'D', weight='weight')",
       "expected": 3,
       "got": 3,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "count_connected_components",
@@ -591,7 +594,8 @@
       "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['C', 'D']])\nnx.number_connected_components(G)",
       "expected": 2,
       "got": 2,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "count_connected_components",
@@ -615,7 +619,8 @@
       "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'A']])\nnx.number_connected_components(G) == 1",
       "expected": true,
       "got": true,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "count_connected_components",
@@ -626,7 +631,8 @@
       "expr": "G = nx.Graph()\nG.add_edges_from([])\nnx.number_connected_components(G)",
       "expected": 0,
       "got": 0,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "mst_total_weight",
@@ -653,7 +659,8 @@
       "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 1], ['B', 'C', 2], ['A', 'C', 3]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
       "expected": 3,
       "got": 3,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "mst_total_weight",
@@ -675,7 +682,8 @@
       "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 1], ['C', 'D', 1]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
       "expected": 2,
       "got": 2,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "mst_total_weight",
@@ -702,7 +710,8 @@
       "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 10], ['B', 'C', 10], ['A', 'C', 1]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
       "expected": 11,
       "got": 11,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "max_flow_value",
@@ -726,7 +735,8 @@
       "expr": "G = nx.DiGraph()\nfor u, v, c in [['S', 'A', 10], ['A', 'T', 5]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
       "expected": 5,
       "got": 5,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "max_flow_value",
@@ -760,7 +770,8 @@
       "expr": "G = nx.DiGraph()\nfor u, v, c in [['S', 'A', 10], ['S', 'B', 10], ['A', 'T', 5], ['B', 'T', 5]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
       "expected": 10,
       "got": 10,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "max_flow_value",
@@ -789,7 +800,8 @@
       "expr": "G = nx.DiGraph()\nfor u, v, c in [['S', 'A', 10], ['A', 'B', 10], ['B', 'T', 1]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
       "expected": 1,
       "got": 1,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "highest_betweenness_centrality_node",
@@ -813,7 +825,8 @@
       "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'D']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities, key=centralities.get)",
       "expected": "B",
       "got": "B",
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "highest_betweenness_centrality_node",
@@ -841,7 +854,8 @@
       "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'A'], ['C', 'D']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities, key=centralities.get)",
       "expected": "C",
       "got": "C",
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "highest_betweenness_centrality_node",
@@ -861,7 +875,8 @@
       "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['C', 'D']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities.values())",
       "expected": 0.0,
       "got": 0.0,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "count_triangles",
@@ -885,7 +900,8 @@
       "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'A']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
       "expected": 1,
       "got": 1,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "count_triangles",
@@ -921,7 +937,8 @@
       "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'A'], ['A', 'D'], ['D', 'B'], ['D', 'C']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
       "expected": 4,
       "got": 4,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
      },
      {
       "tool": "count_triangles",
@@ -949,7 +966,1604 @@
       "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'D'], ['D', 'A']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
       "expected": 0,
       "got": 0,
-      "status": "match"
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "count_connected_components",
+      "args": {
+       "edges": [
+        [
+         "n1",
+         "n2"
+        ],
+        [
+         "n3",
+         "n4"
+        ]
+       ],
+       "nodes": [
+        "n1",
+        "n2",
+        "n3",
+        "n4",
+        "n5",
+        "n6"
+       ]
+      },
+      "field": "count",
+      "expr": "G = nx.Graph()\nG.add_nodes_from(['n1', 'n2', 'n3', 'n4', 'n5', 'n6'])\nG.add_edges_from([['n1', 'n2'], ['n3', 'n4']])\nnx.number_connected_components(G)",
+      "expected": 4,
+      "got": 4,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": [
+        "A-B:4",
+        "B-C:1",
+        "A-C:2",
+        "C-D:7"
+       ]
+      },
+      "field": "total_weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([('A', 'B', 4), ('B', 'C', 1), ('A', 'C', 2), ('C', 'D', 7)])\nsum(d['weight'] for _, _, d in nx.minimum_spanning_tree(G).edges(data=True))",
+      "expected": 10,
+      "got": 10,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": [
+        "A-B",
+        "B-C",
+        "C-A",
+        "C-D",
+        "D-A"
+       ]
+      },
+      "field": "total_triangles",
+      "expr": "G = nx.Graph([('A', 'B'), ('B', 'C'), ('C', 'A'), ('C', 'D'), ('D', 'A')])\nsum(nx.triangles(G).values()) // 3",
+      "expected": 2,
+      "got": 2,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        "A->B:5",
+        "B->C:3",
+        "A->C:2",
+        "C->D:4"
+       ],
+       "source": "A",
+       "target": "D"
+      },
+      "field": "flow_value",
+      "expr": "G = nx.DiGraph()\nG.add_edge('A', 'B', capacity=5)\nG.add_edge('B', 'C', capacity=3)\nG.add_edge('A', 'C', capacity=2)\nG.add_edge('C', 'D', capacity=4)\nnx.maximum_flow_value(G, 'A', 'D')",
+      "expected": 4,
+      "got": 4,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         1
+        ],
+        [
+         "B",
+         "C",
+         1
+        ]
+       ],
+       "source": "A",
+       "target": "D"
+      },
+      "field": "weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 1], ['B', 'C', 1]])\nnx.dijkstra_path_length(G, 'A', 'D', weight='weight')",
+      "status": "inconclusive",
+      "detail": "NetworkXNoPath('Node D not reachable from A')",
+      "generated": true
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         5
+        ],
+        [
+         "B",
+         "C",
+         10
+        ]
+       ],
+       "source": "A",
+       "target": "C"
+      },
+      "field": "path_exists",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 5], ['B', 'C', 10]])\ntry:\n    nx.dijkstra_path_length(G, 'A', 'C', weight='weight')\n    exists = True\nexcept nx.NetworkXNoPath:\n    exists = False\nexists",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [],
+       "source": "A",
+       "target": "D"
+      },
+      "field": "weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([])\nnx.dijkstra_path_length(G, 'A', 'D', weight='weight')",
+      "status": "inconclusive",
+      "detail": "NodeNotFound('Node A not found in graph')",
+      "generated": true
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "C",
+         "D",
+         10
+        ],
+        [
+         "A",
+         "B",
+         5
+        ]
+       ],
+       "source": "A",
+       "target": "C"
+      },
+      "field": "weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['C', 'D', 10], ['A', 'B', 5]])\nnx.dijkstra_path_length(G, 'A', 'C', weight='weight')",
+      "status": "inconclusive",
+      "detail": "NetworkXNoPath('Node C not reachable from A')",
+      "generated": true
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [],
+       "source": "A",
+       "target": "C"
+      },
+      "field": "path_exists",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([])\ntry:\n    nx.dijkstra_path_length(G, 'A', 'C', weight='weight')\n    exists = True\nexcept nx.NetworkXNoPath:\n    exists = False\nexists",
+      "status": "inconclusive",
+      "detail": "NodeNotFound('Node A not found in graph')",
+      "generated": true
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         5
+        ],
+        [
+         "C",
+         "D",
+         10
+        ],
+        [
+         "A",
+         "B",
+         5
+        ]
+       ],
+       "source": "A",
+       "target": "D"
+      },
+      "field": "weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 5], ['C', 'D', 10], ['A', 'B', 5]])\nnx.dijkstra_path_length(G, 'A', 'D', weight='weight')",
+      "status": "inconclusive",
+      "detail": "NetworkXNoPath('Node D not reachable from A')",
+      "generated": true
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         5
+        ],
+        [
+         "B",
+         "C",
+         10
+        ],
+        [
+         "A",
+         "C",
+         20
+        ]
+       ],
+       "source": "A",
+       "target": "D"
+      },
+      "field": "weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 5], ['B', 'C', 10], ['A', 'C', 20]])\nnx.dijkstra_path_length(G, 'A', 'D', weight='weight')",
+      "status": "inconclusive",
+      "detail": "NetworkXNoPath('Node D not reachable from A')",
+      "generated": true
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         5
+        ],
+        [
+         "C",
+         "D",
+         10
+        ]
+       ],
+       "source": "A",
+       "target": "C"
+      },
+      "field": "path_exists",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 5], ['C', 'D', 10]])\ntry:\n    nx.dijkstra_path_length(G, 'A', 'C', weight='weight')\n    exists = True\nexcept nx.NetworkXNoPath:\n    exists = False\nexists",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         5
+        ]
+       ],
+       "source": "A",
+       "target": "C"
+      },
+      "field": "weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 5]])\nnx.dijkstra_path_length(G, 'A', 'C', weight='weight')",
+      "status": "inconclusive",
+      "detail": "NetworkXNoPath('Node C not reachable from A')",
+      "generated": true
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         1
+        ],
+        [
+         "B",
+         "C",
+         1
+        ],
+        [
+         "C",
+         "D",
+         1
+        ]
+       ],
+       "source": "A",
+       "target": "C"
+      },
+      "field": "weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 1], ['B', 'C', 1], ['C', 'D', 1]])\nnx.dijkstra_path_length(G, 'A', 'C', weight='weight')",
+      "expected": 2,
+      "got": 2,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         5
+        ],
+        [
+         "C",
+         "D",
+         10
+        ],
+        [
+         "A",
+         "B",
+         5
+        ]
+       ],
+       "source": "A",
+       "target": "C"
+      },
+      "field": "path_exists",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 5], ['C', 'D', 10], ['A', 'B', 5]])\ntry:\n    nx.dijkstra_path_length(G, 'A', 'C', weight='weight')\n    exists = True\nexcept nx.NetworkXNoPath:\n    exists = False\nexists",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "shortest_path_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         5
+        ]
+       ],
+       "source": "A",
+       "target": "D"
+      },
+      "field": "weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 5]])\nnx.dijkstra_path_length(G, 'A', 'D', weight='weight')",
+      "status": "inconclusive",
+      "detail": "NetworkXNoPath('Node D not reachable from A')",
+      "generated": true
+     },
+     {
+      "tool": "count_connected_components",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "count",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B']])\nnx.number_connected_components(G)",
+      "expected": 1,
+      "got": 1,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "count_connected_components",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "C",
+         "D"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "is_connected",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['C', 'D'], ['A', 'B']])\nnx.number_connected_components(G) == 1",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "count_connected_components",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ]
+       ]
+      },
+      "field": "count",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C']])\nnx.number_connected_components(G)",
+      "expected": 1,
+      "got": 1,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "count_connected_components",
+      "args": {
+       "edges": [
+        [
+         "C",
+         "D"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "count",
+      "expr": "G = nx.Graph()\nG.add_nodes_from({nodes})\nG.add_edges_from([['C', 'D'], ['A', 'B']])\nnx.number_connected_components(G)",
+      "status": "inconclusive",
+      "detail": "NameError(\"name 'nodes' is not defined\")",
+      "generated": true
+     },
+     {
+      "tool": "count_connected_components",
+      "args": {
+       "edges": [
+        [
+         "C",
+         "A"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "count",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['C', 'A'], ['B', 'C'], ['A', 'B']])\nnx.number_connected_components(G)",
+      "expected": 1,
+      "got": 1,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "count_connected_components",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "A"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "is_connected",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'A'], ['A', 'B']])\nnx.number_connected_components(G) == 1",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": []
+      },
+      "field": "total_weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
+      "expected": 0,
+      "got": 0,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         1
+        ],
+        [
+         "B",
+         "C",
+         2
+        ]
+       ]
+      },
+      "field": "total_weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 1], ['B', 'C', 2]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
+      "expected": 3,
+      "got": 3,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "C",
+         1
+        ],
+        [
+         "B",
+         "C",
+         10
+        ],
+        [
+         "A",
+         "B",
+         10
+        ]
+       ]
+      },
+      "field": "total_weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'C', 1], ['B', 'C', 10], ['A', 'B', 10]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
+      "expected": 11,
+      "got": 11,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         1
+        ]
+       ]
+      },
+      "field": "total_weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 1]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
+      "expected": 1,
+      "got": 1,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         1
+        ],
+        [
+         "C",
+         "D",
+         1
+        ],
+        [
+         "A",
+         "B",
+         1
+        ]
+       ]
+      },
+      "field": "total_weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 1], ['C', 'D', 1], ['A', 'B', 1]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
+      "expected": 2,
+      "got": 2,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         10
+        ],
+        [
+         "B",
+         "C",
+         10
+        ]
+       ]
+      },
+      "field": "total_weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 10], ['B', 'C', 10]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
+      "expected": 20,
+      "got": 20,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": [
+        [
+         "C",
+         "D",
+         1
+        ],
+        [
+         "A",
+         "B",
+         1
+        ]
+       ]
+      },
+      "field": "total_weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['C', 'D', 1], ['A', 'B', 1]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
+      "expected": 2,
+      "got": 2,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         1
+        ],
+        [
+         "B",
+         "C",
+         2
+        ],
+        [
+         "A",
+         "C",
+         3
+        ],
+        [
+         "A",
+         "B",
+         1
+        ]
+       ]
+      },
+      "field": "total_weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 1], ['B', 'C', 2], ['A', 'C', 3], ['A', 'B', 1]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
+      "expected": 3,
+      "got": 3,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "C",
+         3
+        ],
+        [
+         "B",
+         "C",
+         2
+        ],
+        [
+         "A",
+         "B",
+         1
+        ]
+       ]
+      },
+      "field": "total_weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'C', 3], ['B', 'C', 2], ['A', 'B', 1]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
+      "expected": 3,
+      "got": 3,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "mst_total_weight",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B",
+         10
+        ],
+        [
+         "B",
+         "C",
+         10
+        ],
+        [
+         "A",
+         "C",
+         1
+        ],
+        [
+         "A",
+         "B",
+         10
+        ]
+       ]
+      },
+      "field": "total_weight",
+      "expr": "G = nx.Graph()\nG.add_weighted_edges_from([['A', 'B', 10], ['B', 'C', 10], ['A', 'C', 1], ['A', 'B', 10]])\nT = nx.minimum_spanning_tree(G, weight='weight')\nsum(d['weight'] for u, v, d in T.edges(data=True))",
+      "expected": 11,
+      "got": 11,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "S",
+         "A",
+         10
+        ],
+        [
+         "A",
+         "B",
+         10
+        ]
+       ],
+       "source": "S",
+       "target": "T"
+      },
+      "field": "flow_value",
+      "expr": "G = nx.DiGraph()\nfor u, v, c in [['S', 'A', 10], ['A', 'B', 10]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
+      "status": "inconclusive",
+      "detail": "NetworkXError('node T not in graph')",
+      "generated": true
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "S",
+         "A",
+         10
+        ]
+       ],
+       "source": "S",
+       "target": "T"
+      },
+      "field": "flow_value",
+      "expr": "G = nx.DiGraph()\nfor u, v, c in [['S', 'A', 10]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
+      "status": "inconclusive",
+      "detail": "NetworkXError('node T not in graph')",
+      "generated": true
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "T",
+         5
+        ],
+        [
+         "S",
+         "A",
+         10
+        ]
+       ],
+       "source": "S",
+       "target": "T"
+      },
+      "field": "flow_value",
+      "expr": "G = nx.DiGraph()\nfor u, v, c in [['A', 'T', 5], ['S', 'A', 10]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
+      "expected": 5,
+      "got": 5,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "S",
+         "A",
+         10
+        ],
+        [
+         "A",
+         "T",
+         5
+        ],
+        [
+         "S",
+         "A",
+         10
+        ]
+       ],
+       "source": "S",
+       "target": "T"
+      },
+      "field": "flow_value",
+      "expr": "G = nx.DiGraph()\nfor u, v, c in [['S', 'A', 10], ['A', 'T', 5], ['S', 'A', 10]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
+      "expected": 5,
+      "got": 5,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [],
+       "source": "S",
+       "target": "T"
+      },
+      "field": "flow_value",
+      "expr": "G = nx.DiGraph()\nfor u, v, c in []:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
+      "status": "inconclusive",
+      "detail": "NetworkXError('node S not in graph')",
+      "generated": true
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "S",
+         "A",
+         10
+        ],
+        [
+         "S",
+         "B",
+         10
+        ],
+        [
+         "A",
+         "T",
+         5
+        ]
+       ],
+       "source": "S",
+       "target": "T"
+      },
+      "field": "flow_value",
+      "expr": "G = nx.DiGraph()\nfor u, v, c in [['S', 'A', 10], ['S', 'B', 10], ['A', 'T', 5]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
+      "expected": 5,
+      "got": 5,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "S",
+         "A",
+         10
+        ],
+        [
+         "S",
+         "B",
+         10
+        ],
+        [
+         "A",
+         "T",
+         5
+        ],
+        [
+         "B",
+         "T",
+         5
+        ],
+        [
+         "S",
+         "A",
+         10
+        ]
+       ],
+       "source": "S",
+       "target": "T"
+      },
+      "field": "flow_value",
+      "expr": "G = nx.DiGraph()\nfor u, v, c in [['S', 'A', 10], ['S', 'B', 10], ['A', 'T', 5], ['B', 'T', 5], ['S', 'A', 10]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
+      "expected": 10,
+      "got": 10,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "B",
+         "T",
+         1
+        ],
+        [
+         "A",
+         "B",
+         10
+        ],
+        [
+         "S",
+         "A",
+         10
+        ]
+       ],
+       "source": "S",
+       "target": "T"
+      },
+      "field": "flow_value",
+      "expr": "G = nx.DiGraph()\nfor u, v, c in [['B', 'T', 1], ['A', 'B', 10], ['S', 'A', 10]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
+      "expected": 1,
+      "got": 1,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "B",
+         "T",
+         5
+        ],
+        [
+         "A",
+         "T",
+         5
+        ],
+        [
+         "S",
+         "B",
+         10
+        ],
+        [
+         "S",
+         "A",
+         10
+        ]
+       ],
+       "source": "S",
+       "target": "T"
+      },
+      "field": "flow_value",
+      "expr": "G = nx.DiGraph()\nfor u, v, c in [['B', 'T', 5], ['A', 'T', 5], ['S', 'B', 10], ['S', 'A', 10]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
+      "expected": 10,
+      "got": 10,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "max_flow_value",
+      "args": {
+       "edges": [
+        [
+         "S",
+         "A",
+         10
+        ],
+        [
+         "A",
+         "B",
+         10
+        ],
+        [
+         "B",
+         "T",
+         1
+        ],
+        [
+         "S",
+         "A",
+         10
+        ]
+       ],
+       "source": "S",
+       "target": "T"
+      },
+      "field": "flow_value",
+      "expr": "G = nx.DiGraph()\nfor u, v, c in [['S', 'A', 10], ['A', 'B', 10], ['B', 'T', 1], ['S', 'A', 10]]:\n    G.add_edge(u, v, capacity=c)\nnx.maximum_flow_value(G, 'S', 'T', capacity='capacity')",
+      "expected": 1,
+      "got": 1,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "highest_betweenness_centrality_node",
+      "args": {
+       "edges": [
+        [
+         "C",
+         "D"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "node",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['C', 'D'], ['B', 'C'], ['A', 'B']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities, key=centralities.get)",
+      "expected": "C",
+      "got": "C",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "highest_betweenness_centrality_node",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "A"
+        ],
+        [
+         "C",
+         "D"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "node",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'A'], ['C', 'D'], ['A', 'B']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities, key=centralities.get)",
+      "expected": "C",
+      "got": "C",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "highest_betweenness_centrality_node",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "D"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "centrality_value",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'D'], ['A', 'B']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities.values())",
+      "expected": 0.6666666666666666,
+      "got": 0.6666666666666666,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "highest_betweenness_centrality_node",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "node",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities, key=centralities.get)",
+      "expected": "A",
+      "got": "A",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "highest_betweenness_centrality_node",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ]
+       ]
+      },
+      "field": "node",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities, key=centralities.get)",
+      "expected": "B",
+      "got": "B",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "highest_betweenness_centrality_node",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "C",
+         "D"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "centrality_value",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['C', 'D'], ['A', 'B']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities.values())",
+      "expected": 0.0,
+      "got": 0.0,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "highest_betweenness_centrality_node",
+      "args": {
+       "edges": [
+        [
+         "C",
+         "D"
+        ],
+        [
+         "C",
+         "A"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "node",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['C', 'D'], ['C', 'A'], ['B', 'C'], ['A', 'B']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities, key=centralities.get)",
+      "expected": "C",
+      "got": "C",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "highest_betweenness_centrality_node",
+      "args": {
+       "edges": [
+        [
+         "C",
+         "D"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "node",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['C', 'D'], ['A', 'B']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities, key=centralities.get)",
+      "expected": "C",
+      "got": "C",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "highest_betweenness_centrality_node",
+      "args": {
+       "edges": []
+      },
+      "field": "centrality_value",
+      "expr": "G = nx.Graph()\nG.add_edges_from([])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities.values())",
+      "status": "inconclusive",
+      "detail": "ValueError('max() iterable argument is empty')",
+      "generated": true
+     },
+     {
+      "tool": "highest_betweenness_centrality_node",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "A"
+        ]
+       ]
+      },
+      "field": "node",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'A']])\ncentralities = nx.betweenness_centrality(G)\nmax(centralities, key=centralities.get)",
+      "expected": "A",
+      "got": "A",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ]
+       ]
+      },
+      "field": "total_triangles",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
+      "expected": 0,
+      "got": 0,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "D"
+        ]
+       ]
+      },
+      "field": "total_triangles",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'D']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
+      "expected": 0,
+      "got": 0,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": [
+        [
+         "D",
+         "C"
+        ],
+        [
+         "D",
+         "B"
+        ],
+        [
+         "A",
+         "D"
+        ],
+        [
+         "C",
+         "A"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "total_triangles",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['D', 'C'], ['D', 'B'], ['A', 'D'], ['C', 'A'], ['B', 'C'], ['A', 'B']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
+      "expected": 4,
+      "got": 4,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "A"
+        ],
+        [
+         "A",
+         "D"
+        ],
+        [
+         "D",
+         "B"
+        ]
+       ]
+      },
+      "field": "total_triangles",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'A'], ['A', 'D'], ['D', 'B']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
+      "expected": 2,
+      "got": 2,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": [
+        [
+         "D",
+         "A"
+        ],
+        [
+         "C",
+         "D"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "total_triangles",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['D', 'A'], ['C', 'D'], ['B', 'C'], ['A', 'B']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
+      "expected": 0,
+      "got": 0,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": [
+        [
+         "C",
+         "A"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "total_triangles",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['C', 'A'], ['B', 'C'], ['A', 'B']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
+      "expected": 1,
+      "got": 1,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "D"
+        ],
+        [
+         "D",
+         "A"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "total_triangles",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'D'], ['D', 'A'], ['A', 'B']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
+      "expected": 0,
+      "got": 0,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "A"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "total_triangles",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'A'], ['A', 'B']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
+      "expected": 1,
+      "got": 1,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": []
+      },
+      "field": "total_triangles",
+      "expr": "G = nx.Graph()\nG.add_edges_from([])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
+      "expected": 0,
+      "got": 0,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "count_triangles",
+      "args": {
+       "edges": [
+        [
+         "A",
+         "B"
+        ],
+        [
+         "B",
+         "C"
+        ],
+        [
+         "C",
+         "A"
+        ],
+        [
+         "A",
+         "D"
+        ],
+        [
+         "D",
+         "B"
+        ],
+        [
+         "D",
+         "C"
+        ],
+        [
+         "A",
+         "B"
+        ]
+       ]
+      },
+      "field": "total_triangles",
+      "expr": "G = nx.Graph()\nG.add_edges_from([['A', 'B'], ['B', 'C'], ['C', 'A'], ['A', 'D'], ['D', 'B'], ['D', 'C'], ['A', 'B']])\ntri_dict = nx.triangles(G)\nsum(tri_dict.values()) // 3",
+      "expected": 4,
+      "got": 4,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
      }
     ]
    }
