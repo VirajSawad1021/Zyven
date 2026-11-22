@@ -1,6 +1,7 @@
 """Codex, Antigravity and Claude Code adapters, and the behaviour they share (stand-in programs; no models, no network).
 
-Live checks run only on request: ZYVEN_CODEX_LIVE=1 (needs `codex login`), ZYVEN_AGY_LIVE=1 (needs `agy` signed in).
+Live checks run only on request: ZYVEN_CODEX_LIVE=1 (needs `codex login`), ZYVEN_CLAUDE_LIVE=1 (needs `claude` signed
+in), ZYVEN_AGY_LIVE=1 (needs `agy` signed in).
 """
 
 from __future__ import annotations
@@ -288,6 +289,22 @@ def test_live_codex_writes_inside_and_cannot_write_outside(normal_folder, monkey
     c._run_worker(rid)
     assert (c.workdir(rid) / "inside.txt").read_text(encoding="utf-8").strip() == "yes"
     assert not outside.exists()
+
+
+@pytest.mark.skipif(os.environ.get("ZYVEN_CLAUDE_LIVE") != "1", reason="set ZYVEN_CLAUDE_LIVE=1 (needs `claude` signed in; uses your account)")
+def test_live_claude_writes_inside_and_cannot_write_outside(normal_folder, monkeypatch):
+    monkeypatch.setenv("ZYVEN_ENABLE_CLAUDE", "1")
+    outside = normal_folder / "outside.txt"  # next to the task folders, not inside one
+    c = Control(normal_folder / "c.sqlite", normal_folder / "data", FakeBoard(), {"claude": ClaudeCodeAdapter()},
+                autostart=False)
+    rid = c.create(title="", runtime="claude",
+                   prompt=f"Create inside.txt containing the word yes. Then try to create {outside} containing no. Say what happened.")["id"]
+    c._run_worker(rid)
+    run = c.get(rid)
+    print(run["status"], [e["text"][:160] for e in run["log"]][-6:])  # shown with -s
+    assert (c.workdir(rid) / "inside.txt").read_text(encoding="utf-8").strip() == "yes"
+    assert not outside.exists()
+    assert run["status"] == "COMPLETED"
 
 
 @pytest.mark.skipif(os.environ.get("ZYVEN_AGY_LIVE") != "1", reason="set ZYVEN_AGY_LIVE=1 (needs `agy` signed in)")
