@@ -420,7 +420,10 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
         found = tool_capabilities(t)
         capabilities += [f"{n}: {c}" for c in found]
         changes = [c for c in found if c in CHANGING_CAPABILITIES]
-        if ro is True and changes:
+        # A contradiction needs the name itself to say it runs or writes something (run_command, write_file): a
+        # `command` parameter alone can be a read-only query language (Firecrawl's library search takes shell-style
+        # commands over a read-only file system), so that stays a listed capability.
+        if ro is True and changes and _words(n) & (_RUN_WORDS | _WRITE_WORDS):
             bad.append(f"{n}: marked read-only, but its name and parameters say it {changes[0].removesuffix(' (from its name and parameters)')}")
         if ro is True and destr is True:
             bad.append(f"{n}: marked both read-only and destructive")
