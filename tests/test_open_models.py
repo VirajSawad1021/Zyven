@@ -115,3 +115,21 @@ def test_main_prints_each_finding_and_exits_nonzero(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "Proprietary model references found" in out
     assert ".env.example: MODEL_NAME: gpt-4o" in out
+
+
+def test_a_coding_agent_counts_as_open_only_when_its_catalogue_says_so(tmp_path, monkeypatch):
+    import json as _json
+    from zyven.ai import agent_provider as ap
+    monkeypatch.setattr(ap, "_catalogue", {"beam-free": {"id": "beam-free", "open_weights": True,
+                                                         "canonical_id": "reflection/beam-1.0-501b-a23b"},
+                                           "big-pickle": {"id": "big-pickle", "open_weights": False}})
+    assert ap.open_weight_model("opencode", "opencode/beam-free") == "reflection/beam-1.0-501b-a23b"
+    assert ap.open_weight_model("opencode", "opencode/big-pickle") is None
+    assert ap.open_weight_model("codex", "gpt-5.5") is None and ap.open_weight_model("opencode", None) is None
+    _write_clean_repo(tmp_path)
+    skill = tmp_path / "skills" / "s"
+    open_label = "OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model]"
+    _write(skill / "provenance.json", _json.dumps({"model": open_label, "roles": {"compiler": open_label}}))
+    assert scan(tmp_path) == []
+    _write(skill / "provenance.json", _json.dumps({"model": "OpenCode (opencode/big-pickle) [coding agent]"}))
+    assert scan(tmp_path)

@@ -657,3 +657,18 @@ def test_names_inside_strings_are_not_imports():
     syms = ["networkx.algorithms.cluster.triangles"]
     body = "import networkx as nx\nt = nx.triangles(G)\nreturn {'display': f'{t} unique triangles'}"
     assert missing_imports(body, [], syms) == []
+
+
+def test_a_named_test_file_that_must_be_skipped_is_not_run(monkeypatch):
+    """pytest's --ignore does not stop a file named on the command line; one needing a missing package (pyluach's
+    test_hebrewcal.py imports bs4) would stop the whole run before test_dates.py ran."""
+    from pathlib import Path
+    from zyven.sandbox import runner
+    cmds = []
+    monkeypatch.setattr(runner, "run", lambda cmd, mounts, policy: cmds.append(cmd))
+    monkeypatch.setattr(runner, "parse_pytest", lambda r: r)
+    runner.run_upstream_tests(Path("."), ["tests/test_dates.py", "tests/test_hebrewcal.py"],
+                              ignore=["tests/test_hebrewcal.py"])
+    assert cmds[0][-1] == "tests/test_dates.py" and "tests/test_hebrewcal.py" not in cmds[0][-2:]
+    runner.run_upstream_tests(Path("."), ["tests/test_hebrewcal.py"], ignore=["tests/test_hebrewcal.py"])
+    assert cmds[1][-1] == "tests" and "--ignore=tests/test_hebrewcal.py" in cmds[1]

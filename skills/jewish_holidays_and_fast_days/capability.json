@@ -1,0 +1,346 @@
+{
+ "name": "jewish_holidays_and_fast_days",
+ "title": "Jewish Holidays, Festivals, Fast Days, and Shabbat",
+ "summary": "Look up the Jewish holiday, festival, fast day, or Shabbat associated with a Gregorian civil date, with optional Israel/diaspora scheduling and Hebrew or transliterated English names.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "get_jewish_holiday",
+   "description": "Determine whether a Gregorian date is a Jewish holiday, including both major/minor festivals and fast days, and return its name and category.",
+   "params": [
+    {
+     "name": "date",
+     "type": "string",
+     "description": "Gregorian civil date in YYYY-MM-DD format.",
+     "required": true,
+     "example": "2023-04-06"
+    },
+    {
+     "name": "israel",
+     "type": "boolean",
+     "description": "Use the Israel holiday schedule when true; otherwise use the diaspora schedule.",
+     "required": false,
+     "example": false
+    },
+    {
+     "name": "hebrew",
+     "type": "boolean",
+     "description": "Return names in Hebrew letters when true; otherwise return transliterated English names.",
+     "required": false,
+     "example": false
+    },
+    {
+     "name": "prefix_day",
+     "type": "boolean",
+     "description": "Prefix multi-day festival names with the day number, such as '1 Pesach'. Fast-day names are not prefixed by the library.",
+     "required": false,
+     "example": true
+    }
+   ],
+   "returns": [
+    {
+     "name": "date",
+     "type": "string",
+     "description": "The queried Gregorian date in YYYY-MM-DD format."
+    },
+    {
+     "name": "holiday",
+     "type": "string",
+     "description": "Combined holiday name in the requested language, or null if the date is not a holiday."
+    },
+    {
+     "name": "is_holiday",
+     "type": "boolean",
+     "description": "True if the date is a Jewish holiday."
+    },
+    {
+     "name": "kind",
+     "type": "string",
+     "description": "Either 'fast_day' or 'festival' when a holiday is present, otherwise null."
+    },
+    {
+     "name": "fast_day",
+     "type": "string",
+     "description": "Fast-day name in the requested language, or null if the date is not a fast day."
+    },
+    {
+     "name": "is_fast_day",
+     "type": "boolean",
+     "description": "True if the date is a fast day."
+    },
+    {
+     "name": "festival",
+     "type": "string",
+     "description": "Festival name in the requested language, or null if the date is not a festival."
+    },
+    {
+     "name": "is_festival",
+     "type": "boolean",
+     "description": "True if the date is a festival."
+    }
+   ],
+   "implementation_symbols": [
+    "pyluach.dates.BaseDate.fast_day",
+    "pyluach.dates.BaseDate.festival",
+    "pyluach.dates.BaseDate.holiday",
+    "pyluach.hebrewcal.fast_day",
+    "pyluach.hebrewcal.festival",
+    "pyluach.hebrewcal.holiday"
+   ],
+   "implementation_notes": "Parse the YYYY-MM-DD string into integers and construct `date_obj = GregorianDate(year, month, day)` from `pyluach.dates`. Import `fast_day`, `festival`, and `holiday` from `pyluach.hebrewcal`. Call `fast_name = fast_day(date_obj, hebrew=hebrew)`, `festival_name = festival(date_obj, israel=israel, hebrew=hebrew, include_working_days=True, prefix_day=prefix_day)`, and `holiday_name = holiday(date_obj, israel=israel, hebrew=hebrew, prefix_day=prefix_day)`. Set `kind` to 'fast_day' when `fast_name` is not None, otherwise 'festival' when `festival_name` is not None. Return the input date string unchanged as `date`.",
+   "example_args": {
+    "date": "2023-04-06",
+    "israel": false,
+    "hebrew": false,
+    "prefix_day": true
+   }
+  },
+  {
+   "name": "get_jewish_festival",
+   "description": "Look up only Jewish festivals for a Gregorian date, with control over working days (Chol Hamoed, Pesach Sheni, etc.) and day-number prefixes.",
+   "params": [
+    {
+     "name": "date",
+     "type": "string",
+     "description": "Gregorian civil date in YYYY-MM-DD format.",
+     "required": true,
+     "example": "2023-04-06"
+    },
+    {
+     "name": "israel",
+     "type": "boolean",
+     "description": "Use the Israel festival schedule when true; otherwise use the diaspora schedule.",
+     "required": false,
+     "example": true
+    },
+    {
+     "name": "hebrew",
+     "type": "boolean",
+     "description": "Return the festival name in Hebrew letters when true; otherwise return transliterated English.",
+     "required": false,
+     "example": false
+    },
+    {
+     "name": "include_working_days",
+     "type": "boolean",
+     "description": "Include festival days on which work is allowed, such as Chol Hamoed and Pesach Sheni.",
+     "required": false,
+     "example": false
+    },
+    {
+     "name": "prefix_day",
+     "type": "boolean",
+     "description": "Prefix multi-day festivals with the day number, such as '2 Rosh Hashana'.",
+     "required": false,
+     "example": true
+    }
+   ],
+   "returns": [
+    {
+     "name": "date",
+     "type": "string",
+     "description": "The queried Gregorian date in YYYY-MM-DD format."
+    },
+    {
+     "name": "festival",
+     "type": "string",
+     "description": "Festival name in the requested language, or null if the date is not a festival."
+    },
+    {
+     "name": "is_festival",
+     "type": "boolean",
+     "description": "True if the date is a festival under the selected options."
+    },
+    {
+     "name": "holiday",
+     "type": "string",
+     "description": "Combined holiday name in the requested language, or null if the date is not a holiday."
+    },
+    {
+     "name": "is_holiday",
+     "type": "boolean",
+     "description": "True if the date is a Jewish holiday."
+    },
+    {
+     "name": "fast_day",
+     "type": "string",
+     "description": "Fast-day name in the requested language, or null if the date is not a fast day."
+    },
+    {
+     "name": "is_fast_day",
+     "type": "boolean",
+     "description": "True if the date is a fast day."
+    }
+   ],
+   "implementation_symbols": [
+    "pyluach.dates.BaseDate.festival",
+    "pyluach.hebrewcal.festival",
+    "pyluach.dates.BaseDate.holiday",
+    "pyluach.hebrewcal.holiday",
+    "pyluach.dates.BaseDate.fast_day",
+    "pyluach.hebrewcal.fast_day"
+   ],
+   "implementation_notes": "Parse the YYYY-MM-DD string into integers and construct `date_obj = GregorianDate(year, month, day)` from `pyluach.dates`. Import `festival`, `holiday`, and `fast_day` from `pyluach.hebrewcal`. Call `festival_name = festival(date_obj, israel=israel, hebrew=hebrew, include_working_days=include_working_days, prefix_day=prefix_day)`, `holiday_name = holiday(date_obj, israel=israel, hebrew=hebrew, prefix_day=prefix_day)`, and `fast_day_name = fast_day(date_obj, hebrew=hebrew)`. Return those values as `festival`, `holiday`, and `fast_day`, and set each boolean to whether the corresponding value is not None.",
+   "example_args": {
+    "date": "2023-04-06",
+    "israel": true,
+    "include_working_days": false,
+    "prefix_day": true
+   }
+  },
+  {
+   "name": "get_fast_day",
+   "description": "Look up whether a Gregorian date is a Jewish fast day and return its name.",
+   "params": [
+    {
+     "name": "date",
+     "type": "string",
+     "description": "Gregorian civil date in YYYY-MM-DD format.",
+     "required": true,
+     "example": "2023-12-21"
+    },
+    {
+     "name": "hebrew",
+     "type": "boolean",
+     "description": "Return the fast-day name in Hebrew letters when true; otherwise return transliterated English.",
+     "required": false,
+     "example": true
+    }
+   ],
+   "returns": [
+    {
+     "name": "date",
+     "type": "string",
+     "description": "The queried Gregorian date in YYYY-MM-DD format."
+    },
+    {
+     "name": "fast_day",
+     "type": "string",
+     "description": "Fast-day name in the requested language, or null if the date is not a fast day."
+    },
+    {
+     "name": "is_fast_day",
+     "type": "boolean",
+     "description": "True if the date is a fast day."
+    },
+    {
+     "name": "holiday",
+     "type": "string",
+     "description": "Combined holiday name in the requested language, or null if the date is not a holiday."
+    },
+    {
+     "name": "is_holiday",
+     "type": "boolean",
+     "description": "True if the date is a Jewish holiday."
+    },
+    {
+     "name": "festival",
+     "type": "string",
+     "description": "Festival name in the requested language, or null if the date is not a festival."
+    },
+    {
+     "name": "is_festival",
+     "type": "boolean",
+     "description": "True if the date is a festival."
+    }
+   ],
+   "implementation_symbols": [
+    "pyluach.dates.BaseDate.fast_day",
+    "pyluach.hebrewcal.fast_day",
+    "pyluach.dates.BaseDate.holiday",
+    "pyluach.hebrewcal.holiday",
+    "pyluach.dates.BaseDate.festival",
+    "pyluach.hebrewcal.festival"
+   ],
+   "implementation_notes": "Parse the YYYY-MM-DD string into integers and construct `date_obj = GregorianDate(year, month, day)` from `pyluach.dates`. Import `fast_day`, `holiday`, and `festival` from `pyluach.hebrewcal`. Call `fast_name = fast_day(date_obj, hebrew=hebrew)`, `holiday_name = holiday(date_obj, israel=False, hebrew=hebrew, prefix_day=False)`, and `festival_name = festival(date_obj, israel=False, hebrew=hebrew, include_working_days=True, prefix_day=False)`. Return those values as `fast_day`, `holiday`, and `festival`, and set each boolean to whether the corresponding value is not None. The library's fast-day lookup has no Israel/diaspora parameter, so related holiday and festival lookups use the diaspora schedule.",
+   "example_args": {
+    "date": "2023-12-21",
+    "hebrew": true
+   }
+  },
+  {
+   "name": "get_shabbat_for_date",
+   "description": "Find the Shabbat on or following a Gregorian date, including how many days away it is.",
+   "params": [
+    {
+     "name": "date",
+     "type": "string",
+     "description": "Gregorian civil date in YYYY-MM-DD format.",
+     "required": true,
+     "example": "2024-01-01"
+    }
+   ],
+   "returns": [
+    {
+     "name": "date",
+     "type": "string",
+     "description": "The queried Gregorian date in YYYY-MM-DD format."
+    },
+    {
+     "name": "shabbat_date",
+     "type": "string",
+     "description": "Gregorian date of the Shabbat on or following the queried date, in YYYY-MM-DD format."
+    },
+    {
+     "name": "is_shabbat",
+     "type": "boolean",
+     "description": "True if the queried date itself is Shabbat."
+    },
+    {
+     "name": "days_until_shabbat",
+     "type": "integer",
+     "description": "Number of days from the queried date to that Shabbat, where 0 means the queried date is Shabbat."
+    }
+   ],
+   "implementation_symbols": [
+    "pyluach.dates.BaseDate.shabbos"
+   ],
+   "implementation_notes": "Parse the YYYY-MM-DD string into integers and construct `date_obj = GregorianDate(year, month, day)` from `pyluach.dates`. Call `shabbat_obj = date_obj.shabbos()`, which returns a GregorianDate when called on a GregorianDate. Format `shabbat_date` as `f\"{shabbat_obj.year:04d}-{shabbat_obj.month:02d}-{shabbat_obj.day:02d}\"`. Compute `days_until_shabbat` from the library date objects' subtraction (`shabbat_obj - date_obj`), and set `is_shabbat` to whether that value is 0.",
+   "example_args": {
+    "date": "2024-01-01"
+   }
+  }
+ ],
+ "included_symbols": [
+  "pyluach.dates.BaseDate.fast_day",
+  "pyluach.dates.BaseDate.festival",
+  "pyluach.dates.BaseDate.holiday",
+  "pyluach.dates.BaseDate.shabbos",
+  "pyluach.hebrewcal.fast_day",
+  "pyluach.hebrewcal.festival",
+  "pyluach.hebrewcal.holiday"
+ ],
+ "excluded_symbols": [
+  {
+   "symbol": "pyluach.dates.BaseDate._day_of_holiday",
+   "reason": "Internal helper used for prefix_day formatting; not part of the public agent-facing lookup API."
+  },
+  {
+   "symbol": "pyluach.utils._fast_day_string",
+   "reason": "Internal string-formatting helper behind fast_day; callers should use fast_day instead."
+  },
+  {
+   "symbol": "pyluach.utils._festival_string",
+   "reason": "Internal string-formatting helper behind festival; callers should use festival instead."
+  }
+ ],
+ "dependencies": [
+  "pyluach"
+ ],
+ "side_effects": [
+  "No side effects; all operations are pure in-memory date lookups."
+ ],
+ "relevant_tests": [
+  "tests/test_dates.py",
+  "tests/test_hebrewcal.py"
+ ],
+ "uncertainties": [
+  "The interface accepts Gregorian civil dates only; Hebrew calendar dates must be converted to Gregorian before calling.",
+  "The fast_day lookup has no Israel/diaspora parameter in this library, so fast-day names do not vary by the israel flag.",
+  "The combined holiday lookup checks fast days before festivals, so a date that could be interpreted both ways is reported as a fast day.",
+  "Name strings depend on the installed pyluach version and its transliteration or Hebrew-letter output.",
+  "Invalid YYYY-MM-DD input is expected to raise a normal date-construction error from pyluach.",
+  "Shabbat is computed as the Shabbat on or following the queried date, not the preceding Shabbat.",
+  "Related holiday and festival lookups from the fast-day tool use the diaspora schedule because that tool has no israel parameter."
+ ]
+}
