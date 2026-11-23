@@ -1,0 +1,31 @@
+{
+ "repository": "https://github.com/arthurdejong/python-stdnum",
+ "commit": "006192e59be8ed6e08fd680256868a6c31eb2ba9",
+ "license": "LGPL",
+ "generator": "zyven 0.1.0",
+ "model": "gemma-4-26b-a4b-it@generativelanguage.googleapis.com",
+ "capability": "iban_validation",
+ "mode": "wrap",
+ "included_symbols": [
+  "stdnum.iban.validate",
+  "stdnum.iban.is_valid",
+  "stdnum.iban.compact",
+  "stdnum.iban.format",
+  "stdnum.iban.calc_check_digits"
+ ],
+ "source_checkout": "C:\\Users\\Viraj\\Downloads\\ZYVEN\\workspace\\repos\\python-stdnum",
+ "generated_files": [
+  "server.py"
+ ],
+ "compile_seconds": 91.6,
+ "attempts": 2,
+ "dropped_tools": {},
+ "model_calls": 4,
+ "reassembled": [
+  {
+   "generator": "zyven 0.1.0",
+   "at": "2026-11-23",
+   "gates_rerun": true
+  }
+ ]
+}

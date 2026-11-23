@@ -1,0 +1,85 @@
+{
+ "tools": {
+  "calculate_luhn_checksum": {
+   "args": {
+    "number": "4992739871"
+   },
+   "returns": [
+    "checksum_value",
+    "is_valid",
+    "display_result"
+   ],
+   "required": [
+    "number"
+   ],
+   "variants": [
+    {
+     "number": "  4992739871 "
+    },
+    {
+     "number": "4992 7398 71"
+    }
+   ]
+  },
+  "calculate_verhoeff_checksum": {
+   "args": {
+    "number": "654"
+   },
+   "returns": [
+    "checksum_value",
+    "is_valid",
+    "display_result"
+   ],
+   "required": [
+    "number"
+   ],
+   "variants": [
+    {
+     "number": "  654 "
+    }
+   ]
+  },
+  "calculate_iso7064_mod_97_10_checksum": {
+   "args": {
+    "number": "123456789"
+   },
+   "returns": [
+    "checksum_value",
+    "is_valid",
+    "display_result"
+   ],
+   "required": [
+    "number"
+   ],
+   "variants": [
+    {
+     "number": "  123456789 "
+    },
+    {
+     "number": "1234 5678 9"
+    }
+   ]
+  },
+  "calculate_iso7064_mod_37_2_checksum": {
+   "args": {
+    "number": "G123489654321Y"
+   },
+   "returns": [
+    "checksum_value",
+    "is_valid",
+    "display_result"
+   ],
+   "required": [
+    "number"
+   ],
+   "variants": [
+    {
+     "number": "  G123489654321Y "
+    },
+    {
+     "number": "G123 4896 5432 1Y"
+    }
+   ]
+  }
+ }
+}

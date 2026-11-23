@@ -306,6 +306,69 @@
     "import pint"
    ],
    "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\n_base_quantity = _ureg.Quantity({value}, '{unit}').to_base_units()\n_base_value = float(_base_quantity.magnitude)\n_base_unit = str(_base_quantity.units)\nstr({value}) + ' ' + '{unit}' + ' = ' + str(_base_value) + ' ' + _base_unit"
+  },
+  {
+   "tool": "convert_units",
+   "args": {
+    "value": 8077.48,
+    "from_unit": "Gibibit",
+    "to_unit": "Megabyte"
+   },
+   "field": "converted_value",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "_u = pint.UnitRegistry()\n_u.convert(8077.48, 'gibibit', 'megabyte')"
+  },
+  {
+   "tool": "convert_units",
+   "args": {
+    "value": 3.5,
+    "from_unit": "Gibit",
+    "to_unit": "MB"
+   },
+   "field": "converted_value",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "_u = pint.UnitRegistry()\n_u.convert(3.5, 'Gibit', 'MB')"
+  },
+  {
+   "tool": "convert_units",
+   "args": {
+    "value": 100,
+    "from_unit": "Degree_Fahrenheit",
+    "to_unit": "Kelvin"
+   },
+   "field": "converted_value",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "_u = pint.UnitRegistry()\n_u.convert(100, 'degree_Fahrenheit', 'kelvin')"
+  },
+  {
+   "tool": "check_unit_compatibility",
+   "args": {
+    "unit_a": "Mebibyte",
+    "unit_b": "gigabit"
+   },
+   "field": "compatible",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "_u = pint.UnitRegistry()\n_u.Unit('mebibyte').dimensionality == _u.Unit('gigabit').dimensionality"
+  },
+  {
+   "tool": "convert_to_base_si_units",
+   "args": {
+    "value": 2,
+    "unit": "Kilowatt_hour"
+   },
+   "field": "base_value",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "_u = pint.UnitRegistry()\n_u.Quantity(2, 'kilowatt_hour').to_base_units().magnitude"
   }
  ]
 }

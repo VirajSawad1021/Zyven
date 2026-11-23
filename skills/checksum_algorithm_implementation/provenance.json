@@ -1,0 +1,30 @@
+{
+ "repository": "https://github.com/arthurdejong/python-stdnum",
+ "commit": "006192e59be8ed6e08fd680256868a6c31eb2ba9",
+ "license": "LGPL",
+ "generator": "zyven 0.1.0",
+ "model": "gemma-4-26b-a4b-it@generativelanguage.googleapis.com",
+ "capability": "checksum_algorithm_implementation",
+ "mode": "wrap",
+ "included_symbols": [
+  "stdnum.luhn.checksum",
+  "stdnum.verhoeff.checksum",
+  "stdnum.iso7064.mod_97_10.checksum",
+  "stdnum.iso7064.mod_37_2.checksum"
+ ],
+ "source_checkout": "C:\\Users\\Viraj\\Downloads\\ZYVEN\\workspace\\repos\\python-stdnum",
+ "generated_files": [
+  "server.py"
+ ],
+ "compile_seconds": 161.8,
+ "attempts": 3,
+ "dropped_tools": {},
+ "model_calls": 6,
+ "reassembled": [
+  {
+   "generator": "zyven 0.1.0",
+   "at": "2026-11-23",
+   "gates_rerun": true
+  }
+ ]
+}

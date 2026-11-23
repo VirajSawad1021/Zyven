@@ -35,5 +35,25 @@
  "attempts": 3,
  "dropped_tools": {},
  "model_calls": 7,
- "lint_warnings": 3
+ "lint_warnings": 3,
+ "reassembled": [
+  {
+   "generator": "zyven 0.1.0",
+   "at": "2026-11-24",
+   "gates_rerun": true
+  },
+  {
+   "generator": "zyven 0.1.0",
+   "at": "2026-11-24",
+   "gates_rerun": true
+  }
+ ],
+ "edits": [
+  {
+   "at": "2026-11-24",
+   "what": "tool code edited after review, not by the compile's models: unit names are accepted whatever their case ('Gibibit', 'Degree_Fahrenheit'), and an unknown unit gets a message with pint's spelling (in pint 'b' is the barn, so gibibits are 'Gibit'); 5 differential cases added",
+   "why": "found by an evaluation run with a small model (Gemma 4 E4B), which wrote Gib and then Gibibit",
+   "verified": "zyven reassemble: all six gates passed, differential 30/30"
+  }
+ ]
 }

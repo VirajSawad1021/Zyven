@@ -6,6 +6,12 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **Verified dateutil and pint skills, and a small model gets 101 of 102 across four suites.** `date_arithmetic`
+  (python-dateutil 4.0.0) and `unit_conversion` (pint 0.26.2), compiled through OpenCode by Reflection Beam 1.0 (501B,
+  open weights) with DeepSeek V4.1 Flash as the Tester, all six gates. With the verified skills, Gemma 4 E4B answered
+  24/24 date questions (11/24 alone), 29/30 unit conversions (22/30), 18/18 IBAN and Luhn checks (6/18) and 30/30
+  calendar and phone questions (10/30) (`eval/results/e4b-four-suites-20261124.md`). New suites:
+  `run_eval --suite dateutil|pint`. The stdnum skills are now in `skills/`. Closes #100.
 - **Verified Jewish holidays and fast days skill (pyluach).** Four tools (holiday, festival, fast day, Shabbat for a
   date), compiled through OpenCode by Reflection Beam 1.0, a 501B open-weight model, and verified by all six gates:
   45 upstream tests, differential 41/41 Tester cases plus generated ones. Closes #99.

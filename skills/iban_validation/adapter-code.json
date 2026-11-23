@@ -1,0 +1,18 @@
+{
+ "tools": [
+  {
+   "tool": "validate_iban",
+   "imports": [
+    "from stdnum import iban"
+   ],
+   "body": "compact_iban = iban.compact(iban_string)\nif iban.is_valid(iban_string):\n    return {\n        \"is_valid\": True,\n        \"compact_iban\": compact_iban,\n        \"formatted_iban\": iban.format(compact_iban)\n    }\nelse:\n    return {\n        \"is_valid\": False,\n        \"compact_iban\": compact_iban,\n        \"formatted_iban\": iban_string\n    }"
+  },
+  {
+   "tool": "calculate_iban_check_digits",
+   "imports": [
+    "from stdnum import iban"
+   ],
+   "body": "compact_iban_with_placeholders = iban.compact(iban_with_placeholders)\ncheck_digits = iban.calc_check_digits(iban_with_placeholders)\n# Replace 'xx' or 'XX' in the compact IBAN at indices 2 and 3\n# The compact IBAN structure is CC DD BB... where CC is country code, DD is check digits\n# We replace the 2 characters at index 2 and 3 with the calculated check digits\nimport re\npattern = re.compile(r'^.{2}[xX]{2}', re.IGNORECASE)\n# We need to find the pattern in the compact version. \n# However, the spec says 'xx' is in the check digit position. \n# In a compact IBAN, the check digits are at index 2 and 3.\n# Let's just use string slicing to be safe and replace the 2 chars at index 2 and 3.\n# The input might have spaces, but compact() handles that.\n# The check digits are 2 digits.\n# We replace the 2 characters at index 2 and 3 of the compact version.\n# We use the compact version as the base.\n# We need to ensure the compact version is long enough.\nif len(compact_iban_with_placeholders) < 4:\n    raise ValueError(\"IBAN is too short to contain check digits at index 2 and 3\")\n\nnew_compact_iban = compact_iban_with_placeholders[:2] + check_digits + compact_iban_with_placeholders[4:]\nnew_compact_iban = new_compact_iban.upper()\nreturn {\n    \"check_digits\": check_digits,\n    \"formatted_iban_with_digits\": iban.format(new_compact_iban)\n}\n"
+  }
+ ]
+}

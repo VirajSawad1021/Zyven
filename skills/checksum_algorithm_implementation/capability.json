@@ -1,0 +1,186 @@
+{
+ "name": "checksum_algorithm_implementation",
+ "title": "Checksum Algorithm Implementation",
+ "summary": "Provides implementations of standard checksum algorithms like Luhn, Verhoeff, and ISO 7064, used to validate identification numbers.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "calculate_luhn_checksum",
+   "description": "Calculates the Luhn checksum for a given number and an optional alphabet. A valid number should have a checksum of 0.",
+   "params": [
+    {
+     "name": "number",
+     "type": "string",
+     "description": "The number or string to calculate the Luhn checksum for.",
+     "required": true,
+     "example": "4992739871"
+    },
+    {
+     "name": "alphabet",
+     "type": "string",
+     "description": "The alphabet used for the checksum calculation. Defaults to '0123456789'.",
+     "required": false,
+     "example": "abcdef"
+    }
+   ],
+   "returns": [
+    {
+     "name": "checksum_value",
+     "type": "integer",
+     "description": "The calculated Luhn checksum value."
+    },
+    {
+     "name": "is_valid",
+     "type": "boolean",
+     "description": "True if the checksum is 0, indicating a valid number according to the Luhn algorithm."
+    },
+    {
+     "name": "display_result",
+     "type": "string",
+     "description": "A human-readable summary of the result, e.g., 'Valid (checksum: 0)' or 'Invalid (checksum: 5)'."
+    }
+   ],
+   "implementation_symbols": [
+    "stdnum.luhn.checksum"
+   ],
+   "implementation_notes": "Call stdnum.luhn.checksum(number=number, alphabet=alphabet). The result is an integer. To determine if the number is valid, check if the result is 0.",
+   "example_args": {
+    "number": "4992739871"
+   }
+  },
+  {
+   "name": "calculate_verhoeff_checksum",
+   "description": "Calculates the Verhoeff checksum for a given number. A valid number should have a checksum of 0.",
+   "params": [
+    {
+     "name": "number",
+     "type": "string",
+     "description": "The number or string to calculate the Verhoeff checksum for.",
+     "required": true,
+     "example": "654"
+    }
+   ],
+   "returns": [
+    {
+     "name": "checksum_value",
+     "type": "integer",
+     "description": "The calculated Verhoeff checksum value."
+    },
+    {
+     "name": "is_valid",
+     "type": "boolean",
+     "description": "True if the checksum is 0, indicating a valid number according to the Verhoeff algorithm."
+    },
+    {
+     "name": "display_result",
+     "type": "string",
+     "description": "A human-readable summary of the result, e.g., 'Valid (checksum: 0)' or 'Invalid (checksum: 5)'."
+    }
+   ],
+   "implementation_symbols": [
+    "stdnum.verhoeff.checksum"
+   ],
+   "implementation_notes": "Call stdnum.verhoeff.checksum(number=number). The result is an integer. To determine if the number is valid, check if the result is 0.",
+   "example_args": {
+    "number": "654"
+   }
+  },
+  {
+   "name": "calculate_iso7064_mod_97_10_checksum",
+   "description": "Calculates the ISO 7064 Mod 97-10 checksum. A valid number should have a checksum of 1.",
+   "params": [
+    {
+     "name": "number",
+     "type": "string",
+     "description": "The number or string to calculate the ISO 7064 Mod 97-10 checksum for.",
+     "required": true,
+     "example": "123456789"
+    }
+   ],
+   "returns": [
+    {
+     "name": "checksum_value",
+     "type": "integer",
+     "description": "The calculated ISO 7064 Mod 97-10 checksum value."
+    },
+    {
+     "name": "is_valid",
+     "type": "boolean",
+     "description": "True if the checksum is 1, indicating a valid number according to the ISO 7064 Mod 97-10 algorithm."
+    },
+    {
+     "name": "display_result",
+     "type": "string",
+     "description": "A human-readable summary of the result, e.g., 'Valid (checksum: 1)' or 'Invalid (checksum: 42)'."
+    }
+   ],
+   "implementation_symbols": [
+    "stdnum.iso7064.mod_97_10.checksum"
+   ],
+   "implementation_notes": "Call stdnum.iso7064.mod_97_10.checksum(number=number). The result is an integer. To determine if the number is valid, check if the result is 1.",
+   "example_args": {
+    "number": "123456789"
+   }
+  },
+  {
+   "name": "calculate_iso7064_mod_37_2_checksum",
+   "description": "Calculates the ISO 7064 Mod 37, 2 checksum. This algorithm can be used for alphanumeric numbers. A valid number should have a checksum of 1.",
+   "params": [
+    {
+     "name": "number",
+     "type": "string",
+     "description": "The number or string to calculate the ISO 7064 Mod 37, 2 checksum for.",
+     "required": true,
+     "example": "G123489654321Y"
+    },
+    {
+     "name": "name",
+     "type": "string",
+     "description": "The alphabet used for the checksum calculation. Defaults to '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ*'.",
+     "required": false,
+     "example": "0123456789X"
+    }
+   ],
+   "returns": [
+    {
+     "name": "checksum_value",
+     "type": "integer",
+     "description": "The calculated ISO 7064 Mod 37, 2 checksum value."
+    },
+    {
+     "name": "is_valid",
+     "type": "boolean",
+     "description": "True if the checksum is 1, indicating a valid number according to the ISO 7064 Mod 37, 2 algorithm."
+    },
+    {
+     "name": "display_result",
+     "type": "string",
+     "description": "A human-readable summary of the result, e.g., 'Valid (checksum: 1)' or 'Invalid (checksum: 12)'."
+    }
+   ],
+   "implementation_symbols": [
+    "stdnum.iso7064.mod_37_2.checksum"
+   ],
+   "implementation_notes": "Call stdnum.iso7064.mod_37_2.checksum(number=number, alphabet=alphabet). The result is an integer. To determine if the number is valid, check if the result is 1.",
+   "example_args": {
+    "number": "G123489654321Y"
+   }
+  }
+ ],
+ "included_symbols": [
+  "stdnum.luhn.checksum",
+  "stdnum.verhoeff.checksum",
+  "stdnum.iso7064.mod_97_10.checksum",
+  "stdnum.iso7064.mod_37_2.checksum"
+ ],
+ "excluded_symbols": [],
+ "dependencies": [],
+ "side_effects": [],
+ "relevant_tests": [
+  "tests/test_luhn.doctest",
+  "tests/test_verhoeff.doctest"
+ ],
+ "uncertainties": [
+  "The exact validity check (checksum == 0 or checksum == 1) depends on the specific ISO 7064 variant used."
+ ]
+}

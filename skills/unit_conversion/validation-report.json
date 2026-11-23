@@ -290,7 +290,7 @@
   {
    "name": "differential",
    "passed": true,
-   "detail": "25/25 Tester cases + 13/13 generated cases match the library (23 generated not scored: the library or the tool rejected the input)",
+   "detail": "30/30 Tester cases + 13/13 generated cases match the library (23 generated not scored: the library or the tool rejected the input)",
    "data": {
     "results": [
      {
@@ -628,6 +628,74 @@
      {
       "tool": "convert_units",
       "args": {
+       "value": 8077.48,
+       "from_unit": "Gibibit",
+       "to_unit": "Megabyte"
+      },
+      "field": "converted_value",
+      "expr": "_u = pint.UnitRegistry()\n_u.convert(8077.48, 'gibibit', 'megabyte')",
+      "expected": 1084141.01356544,
+      "got": 1084141.01356544,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 3.5,
+       "from_unit": "Gibit",
+       "to_unit": "MB"
+      },
+      "field": "converted_value",
+      "expr": "_u = pint.UnitRegistry()\n_u.convert(3.5, 'Gibit', 'MB')",
+      "expected": 469.762048,
+      "got": 469.762048,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 100,
+       "from_unit": "Degree_Fahrenheit",
+       "to_unit": "Kelvin"
+      },
+      "field": "converted_value",
+      "expr": "_u = pint.UnitRegistry()\n_u.convert(100, 'degree_Fahrenheit', 'kelvin')",
+      "expected": 310.9277777777778,
+      "got": 310.9277777777778,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "Mebibyte",
+       "unit_b": "gigabit"
+      },
+      "field": "compatible",
+      "expr": "_u = pint.UnitRegistry()\n_u.Unit('mebibyte').dimensionality == _u.Unit('gigabit').dimensionality",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 2,
+       "unit": "Kilowatt_hour"
+      },
+      "field": "base_value",
+      "expr": "_u = pint.UnitRegistry()\n_u.Quantity(2, 'kilowatt_hour').to_base_units().magnitude",
+      "expected": 7200000.0,
+      "got": 7200000.0,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_units",
+      "args": {
        "value": -1000,
        "from_unit": "Cged",
        "to_unit": "m/"
@@ -792,7 +860,7 @@
       "field": "compatible",
       "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, '/s', 's/m')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible",
       "status": "tool_rejected",
-      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: missing unary operator '/'\n",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing unary operator '/'\n",
       "generated": true
      },
      {
@@ -818,7 +886,7 @@
       "field": "reason",
       "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, '/s', 'm/')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason",
       "status": "tool_rejected",
-      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: missing unary operator '/'\n",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing unary operator '/'\n",
       "generated": true
      },
      {
@@ -830,7 +898,7 @@
       "field": "reason",
       "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 's/m', '/s')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason",
       "status": "tool_rejected",
-      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: missing unary operator '/'\n",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing unary operator '/'\n",
       "generated": true
      },
      {
@@ -856,7 +924,7 @@
       "field": "reason",
       "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'm/', '/s')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason",
       "status": "tool_rejected",
-      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: missing operand\n",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing operand\n",
       "generated": true
      },
      {
@@ -868,7 +936,7 @@
       "field": "compatible",
       "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'm', '/s')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible",
       "status": "tool_rejected",
-      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: missing unary operator '/'\n",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing unary operator '/'\n",
       "generated": true
      },
      {
@@ -880,7 +948,7 @@
       "field": "compatible",
       "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'm/', 'm/')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible",
       "status": "tool_rejected",
-      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: missing operand\n",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing operand\n",
       "generated": true
      },
      {
@@ -920,7 +988,7 @@
       "field": "compatible",
       "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 's/m', 'm/')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible",
       "status": "tool_rejected",
-      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: missing operand\n",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing operand\n",
       "generated": true
      },
      {
@@ -932,7 +1000,7 @@
       "field": "reason",
       "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'km/', 's')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason",
       "status": "tool_rejected",
-      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: missing operand\n",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing operand\n",
       "generated": true
      },
      {

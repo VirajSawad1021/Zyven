@@ -45,6 +45,25 @@ def convert_units(value: Annotated[float, Field(description="Numeric quantity to
     import pint
     _ureg = pint.UnitRegistry()
 
+    def _unit(name):
+        """The unit name pint knows: as given, else lowercased (pint's names are case-sensitive: 'gibibit', not
+        'Gibibit'). Symbols keep their case ('MB', 'Gibit'); in pint 'b' is the barn, so gibibits are 'Gibit', not 'Gib'."""
+        try:
+            _ureg.Unit(name)
+            return name
+        except pint.errors.UndefinedUnitError:
+            pass
+        s = name.strip()
+        for cand in (s.lower(), s[:1].lower() + s[1:]):  # 'Gibibit' -> 'gibibit'; 'Degree_Fahrenheit' -> 'degree_Fahrenheit'
+            try:
+                _ureg.Unit(cand)
+                return cand
+            except pint.errors.UndefinedUnitError:
+                pass
+        raise ValueError(f"unknown unit {name!r}: use a pint unit name (lowercase words such as 'gibibit', "
+                             f"'megabyte', 'kilometer / hour', 'degree_Fahrenheit') or a symbol (such as 'Gibit', 'MB', "
+                             f"'km/h', 'degF'); in pint 'b' is the barn, so bits are 'bit' or 'Gibit'") from None
+
     def _coerce_number(item):
         if isinstance(item, (list, tuple)):
             return [_coerce_number(x) for x in item]
@@ -74,6 +93,8 @@ def convert_units(value: Annotated[float, Field(description="Numeric quantity to
     if not isinstance(to_unit, str) or not to_unit.strip():
         raise ValueError("to_unit must be a non-empty string")
 
+    from_unit = _unit(from_unit)
+    to_unit = _unit(to_unit)
     try:
         normalized_from = str(_ureg.Unit(from_unit))
         normalized_to = str(_ureg.Unit(to_unit))
@@ -107,11 +128,32 @@ def check_unit_compatibility(unit_a: Annotated[str, Field(description="First uni
     import pint
     _ureg = pint.UnitRegistry()
 
+    def _unit(name):
+        """The unit name pint knows: as given, else lowercased (pint's names are case-sensitive: 'gibibit', not
+        'Gibibit'). Symbols keep their case ('MB', 'Gibit'); in pint 'b' is the barn, so gibibits are 'Gibit', not 'Gib'."""
+        try:
+            _ureg.Unit(name)
+            return name
+        except pint.errors.UndefinedUnitError:
+            pass
+        s = name.strip()
+        for cand in (s.lower(), s[:1].lower() + s[1:]):  # 'Gibibit' -> 'gibibit'; 'Degree_Fahrenheit' -> 'degree_Fahrenheit'
+            try:
+                _ureg.Unit(cand)
+                return cand
+            except pint.errors.UndefinedUnitError:
+                pass
+        raise ValueError(f"unknown unit {name!r}: use a pint unit name (lowercase words such as 'gibibit', "
+                             f"'megabyte', 'kilometer / hour', 'degree_Fahrenheit') or a symbol (such as 'Gibit', 'MB', "
+                             f"'km/h', 'degF'); in pint 'b' is the barn, so bits are 'bit' or 'Gibit'") from None
+
     if not isinstance(unit_a, str) or not unit_a.strip():
         raise ValueError("unit_a must be a non-empty string")
     if not isinstance(unit_b, str) or not unit_b.strip():
         raise ValueError("unit_b must be a non-empty string")
 
+    unit_a = _unit(unit_a)
+    unit_b = _unit(unit_b)
     try:
         normalized_a = str(_ureg.Unit(unit_a))
         dimensionality_a = str(_ureg.Quantity(1, unit_a).dimensionality)
@@ -153,6 +195,25 @@ def convert_to_base_si_units(value: Annotated[float, Field(description="Numeric 
     import pint
     _ureg = pint.UnitRegistry()
 
+    def _unit(name):
+        """The unit name pint knows: as given, else lowercased (pint's names are case-sensitive: 'gibibit', not
+        'Gibibit'). Symbols keep their case ('MB', 'Gibit'); in pint 'b' is the barn, so gibibits are 'Gibit', not 'Gib'."""
+        try:
+            _ureg.Unit(name)
+            return name
+        except pint.errors.UndefinedUnitError:
+            pass
+        s = name.strip()
+        for cand in (s.lower(), s[:1].lower() + s[1:]):  # 'Gibibit' -> 'gibibit'; 'Degree_Fahrenheit' -> 'degree_Fahrenheit'
+            try:
+                _ureg.Unit(cand)
+                return cand
+            except pint.errors.UndefinedUnitError:
+                pass
+        raise ValueError(f"unknown unit {name!r}: use a pint unit name (lowercase words such as 'gibibit', "
+                             f"'megabyte', 'kilometer / hour', 'degree_Fahrenheit') or a symbol (such as 'Gibit', 'MB', "
+                             f"'km/h', 'degF'); in pint 'b' is the barn, so bits are 'bit' or 'Gibit'") from None
+
     def _coerce_number(item):
         if isinstance(item, (list, tuple)):
             return [_coerce_number(x) for x in item]
@@ -180,6 +241,7 @@ def convert_to_base_si_units(value: Annotated[float, Field(description="Numeric 
     if not isinstance(unit, str) or not unit.strip():
         raise ValueError("unit must be a non-empty string")
 
+    unit = _unit(unit)
     try:
         quantity = _ureg.Quantity(value, unit)
         base_quantity = quantity.to_base_units()
