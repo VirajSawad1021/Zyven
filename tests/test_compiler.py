@@ -438,7 +438,8 @@ def test_tester_imports_naming_a_class_are_repaired(analysis, monkeypatch):
     body = {"choices": [{"message": {"role": "assistant", "content": json.dumps(cases)}, "finish_reason": "stop"}]}
     p._client = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(200, json=body)))
     out = run_tester(p, analysis, _spec(_tool("first")))
-    assert out.cases[0].reference_imports == ["import calc._core"]
+    # the module, and the name the model meant: with only the module, a reference using `Converter` hit NameError
+    assert out.cases[0].reference_imports == ["import calc._core", "from calc._core import Converter"]
 
 
 def test_too_deep_generated_module_is_skipped_not_fatal(tmp_path):

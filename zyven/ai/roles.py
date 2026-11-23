@@ -506,17 +506,22 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
     tests.cases = [c for c in tests.cases if usable(c)]
     modules = {m.name for m in a.modules}
 
-    def fix_import(line: str) -> str:
-        """`import pkg.mod.Class` is a common slip (a class is not a module): import the module instead."""
+    def fix_import(line: str) -> list[str]:
+        """`import pkg.mod.Class` is a common slip (a class is not a module): import the module, AND bind the name the
+        model meant to import. Models write `hijridate.convert.Hijri` and then use `Hijri`; importing only the module
+        left `Hijri` unbound, and Gemma 4 E4B lost most of its hijridate references to that NameError."""
         line = line.strip()
         if not line.startswith(("import ", "from ")):
             line = f"import {line}"  # models often list bare module paths
         if line.startswith("import ") and " as " not in line and "," not in line:
             target = line[len("import "):].strip()
+            cut = ""
             while "." in target and target not in modules and target.split(".")[0] in {p for p in a.packages}:
-                target = target.rsplit(".", 1)[0]
-            line = f"import {target}"
-        return line
+                target, cut = target.rsplit(".", 1)[0], target.rsplit(".", 1)[1]
+            if cut:  # both spellings then work: pkg.mod.Class(...) and Class(...)
+                return [f"import {target}", f"from {target} import {cut}"]
+            return [f"import {target}"]
+        return [line]
 
     # Cover every tool: a tool without a usable case can never pass the differential gate, so ask once more,
     # for just the tools that are missing.
@@ -550,7 +555,7 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
             log.warning("tester coverage re-query for %s failed: %s", sorted(gaps), str(e)[:200])
 
     for c in tests.cases:
-        c.reference_imports = [fix_import(ln) for ln in c.reference_imports if ln.strip()]
+        c.reference_imports = list(dict.fromkeys(x for ln in c.reference_imports if ln.strip() for x in fix_import(ln)))
         root = c.reference_expr.strip().split(".")[0].split("(")[0]
         if root in {p.split(".")[0] for p in a.packages} and not any(
                 ln.startswith(f"import {root}") for ln in c.reference_imports):
