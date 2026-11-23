@@ -228,3 +228,29 @@ def test_the_tester_adds_the_submodule_imports(analysis, monkeypatch):
 
     out = roles.tester(One(), analysis, _spec(), followups=False)
     assert out.cases[0].reference_imports == ["import minical", "import minical.cal", "import minical.dates"]
+
+
+def test_a_tool_argument_used_as_a_variable_is_pointed_at_its_placeholder(analysis):
+    """E4B wrote `GregorianDate(date_str[0:4], ...)` and `validate(iban_string)`: the tool's argument as a variable."""
+    from zyven.compiler.pipeline import missing_import
+    name, advice, ids = missing_import("NameError(\"name 'date_str' is not defined\") running: f(date_str)", analysis,
+                                       {"date_str"})
+    assert name == "date_str" and "{date_str}" in advice and ids == []
+
+
+def test_the_reask_asks_once_per_tool_and_skips_tools_without_parameters(analysis, monkeypatch):
+    import zyven.compiler.pipeline as pl
+    base = _spec().tools[0]
+    spec = _spec().model_copy(update={"tools": [base, base.model_copy(update={"name": "festival_on"}),
+                                                base.model_copy(update={"name": "today", "params": [],
+                                                                        "example_args": {}})]})
+    asked = []
+
+    def fake_tester(provider, a, sub, feedback="", followups=True):
+        asked.append([t.name for t in sub.tools])
+        return DiffTests(cases=[])
+
+    monkeypatch.setattr(pl, "tester", fake_tester)
+    pl._reask_unusable(None, analysis, spec, DiffTests(cases=[]), lambda cases: [None] * len(cases),
+                       lambda *a, **k: None)
+    assert asked == [["holiday_on"], ["festival_on"]]  # one focused request each; `today` can never get a case

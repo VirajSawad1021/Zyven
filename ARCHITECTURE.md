@@ -318,11 +318,16 @@ The Tester's coverage is checked deterministically (`coverage_gaps`):
 
 Coverage is judged only on valid reference programs: the static checks (`reference_problem`), then a run of each
 program in the sandbox on its own arguments (`reference_problems`), right after the Tester answers and before any
-gate. Tools with gaps are asked about once more (one re-ask per compile, whatever the reasons). The re-ask quotes each
+gate. Tools with gaps are asked about once more: one re-ask round, with one short request per tool (a small model
+returned nothing when asked for four tools at once), and none for a tool without parameters, which can never get a
+case. The re-ask quotes each
 rejected reference with the exception it raised, and the exact signatures of the library symbols it called, resolved
 against the analysis (`describe_symbols`). A `NameError` gets the line that fixes it (`missing_import`): the import
-of a bare library class or function, the alias the library's own code uses for a module (`import networkx as nx`), or
-else a note that the name must be built in the reference's setup lines. The harness never rewrites a reference itself:
+of a bare library class or function, the alias the library's own code uses for a module (`import networkx as nx`),
+the placeholder for a tool argument used as a variable (`{date_str}`), or else a note that the name must be built in
+the reference's setup lines. The harness also adds an import for every library module a reference reaches by dotted
+path (`import pyluach.hebrewcal`), and keeps the name a model imports from a module path
+(`hijridate.convert.Hijri` becomes `import hijridate.convert` plus `from hijridate.convert import Hijri`). The harness never rewrites a reference itself:
 it would stop being an independent check of the library.
 
 The Tester's evidence starts with how to build every library object it may need (`construction_signatures`):

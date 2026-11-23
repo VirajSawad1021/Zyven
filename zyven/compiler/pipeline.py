@@ -268,19 +268,25 @@ def reference_names(c, a: Analysis, resolver: RefResolver) -> tuple[list[str], l
 _NAME_ERROR = re.compile(r"""NameError\(["']name '([A-Za-z_][A-Za-z0-9_]*)' is not defined""")
 
 
-def missing_import(problem: str, a: Analysis) -> tuple[str, str, list[str]]:
+def missing_import(problem: str, a: Analysis, params: frozenset[str] | set[str] = frozenset()
+                   ) -> tuple[str, str, list[str]]:
     """What a reference that failed with NameError is missing, as (name, advice, symbol ids to show signatures for).
 
     - a bare library class or function (`Hijri.fromisoformat(...)` with only `import hijridate.convert`): the import
       line for each public, non-test symbol with exactly that name (at most three); a symbol in a private module counts
       only through its public re-export (`pkg._impl.Thing` as `pkg.Thing`)
     - an alias the library's own code or tests give one of its modules (`nx` for networkx): that import line
+    - one of the tool's own arguments used as a variable (`date_str`): it must be written as the placeholder
+      `{date_str}`, which the harness fills with the case's value
     - anything else (`G`, a graph the reference never built): it must be defined in the reference's own setup lines
     ("", "", []) when the problem is not a NameError. The harness only advises; it never edits the reference."""
     m = _NAME_ERROR.search(problem or "")
     if not m:
         return "", "", []
     name = m.group(1)
+    if name in params:
+        return name, (f"it is the tool's argument: write it as the placeholder {{{name}}} (with the braces, inside the "
+                      "program), which is replaced by the case's value; never as a bare variable"), []
     tests = {mod.name for mod in a.modules if mod.is_test}
     homes: list[tuple[str, str]] = []
     for s in a.symbols:
@@ -312,7 +318,8 @@ def _reask_unusable(provider, a, spec, diff_tests, check, emit):
     GregorianDate("2024-09-02") comes back with GregorianDate(year, month, day). The harness never rewrites a
     reference itself: that would stop it being an independent check of the library.
 
-    One re-ask, whatever the reason: a compile has a fixed upper bound of model calls. Without it a tool whose
+    One re-ask round, whatever the reason, with one request per tool that still lacks coverage: a compile keeps a fixed
+    upper bound of model calls (at most one per tool). Without it a tool whose
     references all fail has no differential check at all (a mutation test showed one losing every case to syntax
     errors; a small model lost all 18 pyluach cases to constructor misuse).
 
@@ -331,11 +338,17 @@ def _reask_unusable(provider, a, spec, diff_tests, check, emit):
     lacking = [t for t in spec.tools if t.name in gaps]
     if not lacking:
         return diff_tests, problems
-    emit("tester.retry", detail=f"{len(lacking)} tool(s) need more valid cases: {', '.join(t.name for t in lacking)}")
+    # A tool without parameters can never get a case (a reference must be tied to the tool's inputs), so asking again
+    # only costs a model call.
+    askable = [t for t in lacking if t.params]
+    if not askable:
+        return diff_tests, problems
+    emit("tester.retry", detail=f"{len(askable)} tool(s) need more valid cases: {', '.join(t.name for t in askable)}")
     resolver = RefResolver(a)
-    lines = []
-    for t in lacking:
-        lines.append(f"- {t.name}: still needed: {'; '.join(gaps[t.name])}")
+    added: list = []
+    for t in askable:  # one short, focused request per tool: a small model returned nothing for four tools at once
+        lines = [f"- {t.name}: still needed: {'; '.join(gaps[t.name])}"]
+        params = {p.name for p in t.params}
         seen: set[str] = set()
         for c, why in rejected.get(t.name, []):
             if why in seen or len(seen) >= 3:  # a few distinct reasons say it; more only cost a small model context
@@ -343,7 +356,7 @@ def _reask_unusable(provider, a, spec, diff_tests, check, emit):
             seen.add(why)
             lines.append(f"  - this reference could not be used: {why[:400]}")
             ids, unknown = reference_names(c, a, resolver)
-            name, advice, homes = missing_import(why, a)
+            name, advice, homes = missing_import(why, a, params)
             if name:
                 lines.append(f"    `{name}` is not defined in that reference: {advice}")
                 ids = list(dict.fromkeys(ids + homes))
@@ -353,18 +366,17 @@ def _reask_unusable(provider, a, spec, diff_tests, check, emit):
                              + "\n".join(f"      {x}" for x in sigs[:8]))
             if unknown:
                 lines.append(f"    not in the library: {', '.join(unknown[:4])}")
-    feedback = ("WRITE NEW TEST CASES FOR THESE TOOLS. Earlier cases left these gaps or could not be used. Call the "
-                "library exactly as its signatures below say:\n" + "\n".join(lines))
-    try:
-        extra = tester(provider, a, spec.model_copy(update={"tools": lacking}), feedback=feedback, followups=False)
-    except ProviderError as e:
-        emit("tester.error", detail=f"re-ask failed: {str(e)[:200]}")
-        return diff_tests, problems
-    names = {t.name for t in lacking}
-    mine = [c for c in extra.cases if c.tool in names]
-    added = [c for c, why in zip(mine, check(mine)) if why is None]
+        feedback = ("WRITE NEW TEST CASES FOR THIS TOOL. Earlier cases left these gaps or could not be used. Call the "
+                    "library exactly as its signatures below say:\n" + "\n".join(lines))
+        try:
+            extra = tester(provider, a, spec.model_copy(update={"tools": [t]}), feedback=feedback, followups=False)
+        except ProviderError as e:
+            emit("tester.error", detail=f"re-ask for {t.name} failed: {str(e)[:200]}")
+            continue
+        mine = [c for c in extra.cases if c.tool == t.name]
+        added += [c for c, why in zip(mine, check(mine)) if why is None]
     emit("tester.retry.done", detail=f"{len(added)} valid case(s) added for "
-         f"{len({c.tool for c in added})}/{len(lacking)} tool(s)")
+         f"{len({c.tool for c in added})}/{len(askable)} tool(s)")
     return DiffTests(cases=list(diff_tests.cases) + added), list(problems) + [None] * len(added)
 
 
