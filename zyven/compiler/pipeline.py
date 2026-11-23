@@ -145,7 +145,7 @@ def compile_capability(
         # coverage of the valid reference programs only: a reference that cannot run covers nothing
         gaps = coverage_gaps(spec, [c for c, why in zip(diff_tests.cases, problems) if why is None])
         emit("tester.done", detail=f"{len(diff_tests.cases)} cases for {len({c.tool for c in diff_tests.cases})} tools"
-             + (f"; still uncovered: " + "; ".join(f"{t}: {len(n)}" for t, n in gaps.items()) if gaps else "; full coverage"),
+             + ("; still uncovered: " + "; ".join(f"{t}: {len(n)}" for t, n in gaps.items()) if gaps else "; full coverage"),
              coverage_gaps=gaps)
     except ProviderError as e:
         diff_tests = None
