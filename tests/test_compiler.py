@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT))
 
 from zyven.ai import provider as prov  # noqa: E402
 from zyven.ai.provider import ModelProvider  # noqa: E402
-from zyven.ai.roles import _covers, _snake, _PARTIAL_MISSING_THRESHOLD, lint_interface, related_facts
+from zyven.ai.roles import _covers, _snake, lint_interface, related_facts
 from zyven.ai.roles import tester as run_tester  # name must not start with "test" (pytest collection)
 from zyven.ai.schemas import AdapterCode, CapabilitySpec, ReturnField, ToolImpl, ToolParam, ToolSpec  # noqa: E402
 from zyven.analysis.analyzer import analyze  # noqa: E402
