@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from zyven.ai.provider import ModelProvider, ProviderError
 from zyven.ai.schemas import AdapterCode, CandidateCapability, CapabilitySpec, DiffTests, ScoutResult, ToolImpl
 from zyven.analysis.analyzer import Analysis
-from zyven.analysis.miner import evidence_packet, repo_digest
+from zyven.analysis.miner import construction_signatures, evidence_packet, repo_digest
 from zyven.analysis.refs import RefResolver
 
 log = logging.getLogger(__name__)
@@ -381,6 +381,17 @@ def _impl_evidence(a: Analysis, spec: CapabilitySpec) -> str:
     return evidence_packet(a, ids or spec.included_symbols, max_chars=14000)
 
 
+def _tester_evidence(a: Analysis, spec: CapabilitySpec) -> str:
+    """The Tester's evidence: first how to build every library object it may need (constructor and factory
+    signatures, each with a real call from the library's tests), then the source evidence. Only the source evidence is
+    ever cut to fit; the signatures are what a reference program must get right."""
+    ids = list(dict.fromkeys(s for t in spec.tools for s in t.implementation_symbols)) or spec.included_symbols
+    build = construction_signatures(a, ids)
+    head = (f"HOW TO BUILD THE LIBRARY'S OBJECTS (exact constructor and factory signatures; call them exactly "
+            f"like this)\n{build}\n\n") if build else ""
+    return head + _impl_evidence(a, spec)
+
+
 def compiler(provider: ModelProvider, a: Analysis, spec: CapabilitySpec) -> AdapterCode:
     system = ("You are the Compiler role of a capability compiler. You write the bodies of MCP tool functions "
               f"that wrap an existing Python library. {UNTRUSTED_NOTE}\n{_CODE_RULES}\n"
@@ -474,7 +485,7 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
               "one-element input, zero, and the value right at a threshold. Write more cases than "
               f"{per_tool} if that is what coverage takes. "
               f"{UNTRUSTED_NOTE}")
-    user = f"CAPABILITY SPEC\n{spec.model_dump_json(indent=1)}\n\nLIBRARY EVIDENCE\n{_impl_evidence(a, spec)}"
+    user = f"CAPABILITY SPEC\n{spec.model_dump_json(indent=1)}\n\nLIBRARY EVIDENCE\n{_tester_evidence(a, spec)}"
     if feedback:  # earlier cases for these tools could not be used, and why
         user = f"{feedback}\n\n{user}"
     tests = provider.generate_structured([{"role": "system", "content": system}, {"role": "user", "content": user}],
@@ -514,7 +525,7 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
     if missing and followups:
         sub_spec = spec.model_copy(update={"tools": missing})
         sub_user = (f"CAPABILITY SPEC (WRITE TEST CASES FOR THESE MISSED TOOLS ONLY)\n"
-                    f"{sub_spec.model_dump_json(indent=1)}\n\nLIBRARY EVIDENCE\n{_impl_evidence(a, sub_spec)}")
+                    f"{sub_spec.model_dump_json(indent=1)}\n\nLIBRARY EVIDENCE\n{_tester_evidence(a, sub_spec)}")
         try:
             extra = provider.generate_structured(
                 [{"role": "system", "content": system}, {"role": "user", "content": sub_user}], DiffTests)
@@ -530,7 +541,7 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
         gap_user = ("ADD TEST CASES THAT COVER WHAT THE EXISTING ONES MISS. Write only the new cases.\n"
                     + "\n".join(f"- {tool}: " + "; ".join(need) for tool, need in gaps.items())
                     + f"\n\nCAPABILITY SPEC (THESE TOOLS)\n{gap_spec.model_dump_json(indent=1)}"
-                    f"\n\nLIBRARY EVIDENCE\n{_impl_evidence(a, gap_spec)}")
+                    f"\n\nLIBRARY EVIDENCE\n{_tester_evidence(a, gap_spec)}")
         try:
             extra = provider.generate_structured(
                 [{"role": "system", "content": system}, {"role": "user", "content": gap_user}], DiffTests)

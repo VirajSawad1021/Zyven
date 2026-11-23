@@ -6,6 +6,7 @@ validates references, enforces policy, runs the sandbox, and alone decides wheth
 
 from __future__ import annotations
 
+import ast
 import json
 import time
 from collections.abc import Callable
@@ -16,10 +17,12 @@ from zyven import __version__
 from zyven.ai.provider import ModelProvider, ProviderError
 from zyven.ai.roles import architect, compiler, coverage_gaps, lint_interface, repair, tester
 from zyven.ai.schemas import AdapterCode, CandidateCapability, CapabilitySpec, DiffTests
-from zyven.analysis.analyzer import Analysis
+from zyven.analysis.analyzer import Analysis, _dotted
+from zyven.analysis.miner import describe_symbols
+from zyven.analysis.refs import RefResolver
 from zyven.compiler.build import assemble
 from zyven.compiler.policy import check_adapter
-from zyven.compiler.verify import VerificationReport, reference_problem
+from zyven.compiler.verify import VerificationReport, reference_problems
 from zyven.compiler.verify import verify as _verify
 
 EventFn = Callable[[str, dict], None]
@@ -65,6 +68,14 @@ def compile_capability(
         from zyven.sandbox.egress import Egress
         with Egress(allow_hosts) as eg:
             return _verify(*args, egress=eg, **kw)
+
+    def check_references(cases: list) -> list[str | None]:  # the Tester's references, run as the gates will run them
+        # references.json lands in the skill folder, next to the smoke.json and diff_tests.json the gates write
+        if not allow_hosts:
+            return reference_problems(cases, spec, repo, a.source_root, package_roots, skill_dir)
+        from zyven.sandbox.egress import Egress
+        with Egress(allow_hosts) as eg:
+            return reference_problems(cases, spec, repo, a.source_root, package_roots, skill_dir, egress=eg)
 
     started = time.monotonic()
     roles = roles or {}
@@ -130,9 +141,9 @@ def compile_capability(
                                 f"{by('tester').label})")
     try:
         diff_tests = tester(by("tester"), a, spec)
-        diff_tests = _reask_unusable(by("tester"), a, spec, diff_tests, package_roots, emit)
-        # coverage of the cases that can actually run: a broken reference covers nothing
-        gaps = coverage_gaps(spec, [c for c in diff_tests.cases if reference_problem(c, package_roots) is None])
+        diff_tests, problems = _reask_unusable(by("tester"), a, spec, diff_tests, check_references, emit)
+        # coverage of the valid reference programs only: a reference that cannot run covers nothing
+        gaps = coverage_gaps(spec, [c for c, why in zip(diff_tests.cases, problems) if why is None])
         emit("tester.done", detail=f"{len(diff_tests.cases)} cases for {len({c.tool for c in diff_tests.cases})} tools"
              + (f"; still uncovered: " + "; ".join(f"{t}: {len(n)}" for t, n in gaps.items()) if gaps else "; full coverage"),
              coverage_gaps=gaps)
@@ -217,42 +228,101 @@ def compile_capability(
     return CompileResult(skill_dir, spec, verified, attempt, report, events, seconds)
 
 
-def _reask_unusable(provider, a, spec, diff_tests, package_roots, emit):
-    """Ask the Tester once more for every tool whose cases all fail the sandbox's own reference checks (a syntax
-    error, a last line that is not the value, print(...), a policy violation), quoting why. Without this, such a tool
-    has no differential check at all: a mutation test showed one losing every case to syntax errors."""
-    problems: dict[str, list[str]] = {}
+def reference_names(c, a: Analysis, resolver: RefResolver) -> tuple[list[str], list[str]]:
+    """The library symbols a reference program calls, resolved through its own imports to symbol ids, and the
+    library names it calls that do not exist (e.g. a made-up `GregorianDate.fromisoformat`)."""
+    aliases: dict[str, str] = {}
+    for line in c.reference_imports:
+        try:
+            node = ast.parse(line.strip()).body[0]
+        except (SyntaxError, IndexError):
+            continue
+        if isinstance(node, ast.Import):
+            for n in node.names:
+                aliases[n.asname or n.name.split(".")[0]] = n.name if n.asname else n.name.split(".")[0]
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            for n in node.names:
+                aliases[n.asname or n.name] = f"{node.module}.{n.name}"
+    try:
+        tree = ast.parse(c.reference_expr)
+    except SyntaxError:
+        return [], []
+    roots = {p.split(".")[0] for p in a.packages}
+    found, unknown = [], []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = _dotted(node.func)
+        if not name:
+            continue
+        head, _, tail = name.partition(".")
+        fq = aliases.get(head, head) + (f".{tail}" if tail else "")
+        if fq.split(".")[0] not in roots:
+            continue
+        sid = resolver.resolve(fq)
+        (found if sid else unknown).append(sid or fq)
+    return list(dict.fromkeys(found)), list(dict.fromkeys(unknown))
+
+
+def _reask_unusable(provider, a, spec, diff_tests, check, emit):
+    """Ask the Tester once more for every tool its valid reference programs leave with a coverage gap, quoting why
+    each rejected reference could not be used. `check(cases)` gives each case's problem or None: the static checks
+    (a syntax error, a last line that is not the value, print(...), a policy violation), then a run of the program in
+    the sandbox on its own arguments (the exception the library raised). A rejected reference is quoted with the exact
+    signatures of the library symbols it called, resolved against the analysis, so a constructor misuse such as
+    GregorianDate("2024-09-02") comes back with GregorianDate(year, month, day). The harness never rewrites a
+    reference itself: that would stop it being an independent check of the library.
+
+    One re-ask, whatever the reason: a compile has a fixed upper bound of model calls. Without it a tool whose
+    references all fail has no differential check at all (a mutation test showed one losing every case to syntax
+    errors; a small model lost all 18 pyluach cases to constructor misuse).
+
+    Returns the cases (the Tester's, then the valid ones the re-ask added) and each one's problem (None = valid)."""
+    problems = check(diff_tests.cases)
+    rejected: dict[str, list] = {}
     usable = []
-    for c in diff_tests.cases:
-        why = reference_problem(c, package_roots)
+    for c, why in zip(diff_tests.cases, problems):
         if why is None:
             usable.append(c)
         else:
-            problems.setdefault(c.tool, []).append(why)
+            rejected.setdefault(c.tool, []).append((c, why))
     # Gaps are judged on the cases that can run: a case that set an optional parameter but has a syntax error covers
     # nothing (a mutation in sort_versions' optional branch survived exactly that way).
     gaps = coverage_gaps(spec, usable)
     lacking = [t for t in spec.tools if t.name in gaps]
     if not lacking:
-        return diff_tests
-    emit("tester.retry", detail=f"{len(lacking)} tool(s) need more runnable cases: {', '.join(t.name for t in lacking)}")
+        return diff_tests, problems
+    emit("tester.retry", detail=f"{len(lacking)} tool(s) need more valid cases: {', '.join(t.name for t in lacking)}")
+    resolver = RefResolver(a)
     lines = []
     for t in lacking:
-        why = "; ".join(sorted(set(problems.get(t.name, []))))[:400]
-        lines.append(f"- {t.name}: still needed: {'; '.join(gaps[t.name])}"
-                     + (f". Earlier cases were rejected: {why}" if why else ""))
-    feedback = ("WRITE NEW TEST CASES FOR THESE TOOLS. Earlier cases left these gaps or could not be used:\n"
-                + "\n".join(lines))
+        lines.append(f"- {t.name}: still needed: {'; '.join(gaps[t.name])}")
+        seen: set[str] = set()
+        for c, why in rejected.get(t.name, []):
+            if why in seen or len(seen) >= 3:  # a few distinct reasons say it; more only cost a small model context
+                continue
+            seen.add(why)
+            lines.append(f"  - this reference could not be used: {why[:400]}")
+            ids, unknown = reference_names(c, a, resolver)
+            sigs = describe_symbols(a, ids)
+            if sigs:
+                lines.append("    the library's exact signatures for what it calls:\n"
+                             + "\n".join(f"      {x}" for x in sigs[:8]))
+            if unknown:
+                lines.append(f"    not in the library: {', '.join(unknown[:4])}")
+    feedback = ("WRITE NEW TEST CASES FOR THESE TOOLS. Earlier cases left these gaps or could not be used. Call the "
+                "library exactly as its signatures below say:\n" + "\n".join(lines))
     try:
         extra = tester(provider, a, spec.model_copy(update={"tools": lacking}), feedback=feedback, followups=False)
     except ProviderError as e:
         emit("tester.error", detail=f"re-ask failed: {str(e)[:200]}")
-        return diff_tests
+        return diff_tests, problems
     names = {t.name for t in lacking}
-    added = [c for c in extra.cases if c.tool in names and reference_problem(c, package_roots) is None]
-    emit("tester.retry.done", detail=f"{len(added)} usable case(s) added for "
+    mine = [c for c in extra.cases if c.tool in names]
+    added = [c for c, why in zip(mine, check(mine)) if why is None]
+    emit("tester.retry.done", detail=f"{len(added)} valid case(s) added for "
          f"{len({c.tool for c in added})}/{len(lacking)} tool(s)")
-    return DiffTests(cases=list(diff_tests.cases) + added)
+    return DiffTests(cases=list(diff_tests.cases) + added), list(problems) + [None] * len(added)
 
 
 def _failed(emit, events, started, reason: str, name: str, skills_root: Path,

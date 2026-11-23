@@ -149,3 +149,111 @@ def test_reference_programs_are_run_against_the_library(tmp_path):
     assert problems[1] is None
     assert problems[2] is not None and "print" in problems[2]  # static check, never sent to the sandbox
     assert problems[3] is None
+
+
+def test_a_misused_constructor_is_sent_back_and_fixed_without_a_model(tmp_path, monkeypatch):
+    """#101 end to end: the Tester's first reference passes a date string where the constructor takes year, month and
+    day. Only running it shows that. The sandbox run catches it, the re-ask quotes the TypeError and the real
+    signature, and the scripted second answer gives the tool a valid case. No model is called."""
+    import zyven.compiler.pipeline as pl
+    from zyven.ai.schemas import CapabilitySpec, DiffCase, DiffTests, ReturnField, ToolParam, ToolSpec
+    from zyven.analysis.analyzer import analyze
+    from zyven.compiler.verify import reference_problems
+
+    lib = tmp_path / "lib"
+    (lib / "minical").mkdir(parents=True)
+    (lib / "minical" / "__init__.py").write_text("")
+    (lib / "minical" / "dates.py").write_text(
+        "class GregorianDate:\n    def __init__(self, year, month, day):\n"
+        "        self.year, self.month, self.day = year, month, day\n"
+        "    def weekday(self):\n        import datetime\n"
+        "        return datetime.date(self.year, self.month, self.day).isoweekday()\n")
+    for p in (tmp_path, lib, lib / "minical"):
+        p.chmod(0o755)
+    a = analyze(lib)
+    spec = CapabilitySpec(name="weekdays", title="", summary="", included_symbols=[], relevant_tests=[], tools=[
+        ToolSpec(name="weekday_of", description="", params=[ToolParam(name="date", type="string", description="")],
+                 returns=[ReturnField(name="weekday", type="integer", description="")],
+                 implementation_symbols=["minical.dates.GregorianDate.weekday"], implementation_notes="",
+                 example_args={"date": "2024-09-02"})])
+    first = DiffCase(tool="weekday_of", args={"date": "2024-09-02"}, field="weekday",
+                     reference_imports=["import minical.dates"],
+                     reference_expr="minical.dates.GregorianDate({date}).weekday()")
+    second = first.model_copy(update={"reference_expr":
+                                      "y, m, d = map(int, {date}.split('-'))\nminical.dates.GregorianDate(y, m, d).weekday()"})
+    asked = []
+
+    def scripted_tester(provider, analysis, sub, feedback="", followups=True):
+        asked.append(feedback)
+        return DiffTests(cases=[second])
+
+    monkeypatch.setattr(pl, "tester", scripted_tester)
+
+    def check(cases):
+        return reference_problems(cases, spec, lib, ".", {"minical"}, tmp_path / "work")
+
+    out, problems = pl._reask_unusable(None, a, spec, DiffTests(cases=[first]), check, lambda *x, **k: None)
+    assert len(asked) == 1
+    assert "TypeError" in asked[0] and "GregorianDate('2024-09-02')" in asked[0]
+    assert "minical.dates.GregorianDate(year, month, day)" in asked[0]
+    assert problems == [problems[0], None] and problems[0] is not None
+    assert out.cases[1].reference_expr == second.reference_expr
+
+
+def test_a_compile_recovers_from_a_misused_constructor(tmp_path):
+    """The whole pipeline with scripted roles (no model): the Tester's first answer misuses the constructor, the
+    compile runs it in the sandbox before any gate, re-asks once, and the skill is verified on the second answer."""
+    from types import SimpleNamespace
+
+    from zyven.ai.schemas import (AdapterCode, CapabilitySpec, DiffCase, DiffTests, ReturnField, ToolImpl, ToolParam,
+                                  ToolSpec)
+    from zyven.analysis.analyzer import analyze
+    from zyven.compiler.pipeline import compile_capability
+
+    lib = tmp_path / "lib"
+    (lib / "minical").mkdir(parents=True)
+    (lib / "minical" / "__init__.py").write_text("")
+    (lib / "minical" / "dates.py").write_text(
+        "import datetime\n\n\nclass GregorianDate:\n    def __init__(self, year, month, day):\n"
+        "        self.d = datetime.date(year, month, day)\n\n    def weekday(self):\n        return self.d.isoweekday()\n")
+    for p in (tmp_path, lib, lib / "minical"):
+        p.chmod(0o755)
+    spec = CapabilitySpec(name="weekdays", title="Weekdays", summary="s", included_symbols=[], relevant_tests=[], tools=[
+        ToolSpec(name="weekday_of", description="ISO weekday of a date",
+                 params=[ToolParam(name="date", type="string", description="YYYY-MM-DD")],
+                 returns=[ReturnField(name="weekday", type="integer", description="1 = Monday")],
+                 implementation_symbols=["minical.dates.GregorianDate.weekday"], implementation_notes="",
+                 example_args={"date": "2024-09-02"})])
+    adapter = AdapterCode(tools=[ToolImpl(tool="weekday_of", imports=["import minical.dates"], body=(
+        "y, m, d = (int(x) for x in date.strip().split('-'))\n"
+        "return {'weekday': minical.dates.GregorianDate(y, m, d).weekday()}"))])
+
+    def case(expr: str) -> DiffCase:
+        return DiffCase(tool="weekday_of", args={"date": "2024-09-02"}, field="weekday",
+                        reference_imports=["import minical.dates"], reference_expr=expr)
+
+    answers = [DiffTests(cases=[case("minical.dates.GregorianDate({date}).weekday()")]),  # the #101 misuse
+               DiffTests(cases=[case("y, m, d = map(int, {date}.split('-'))\n"
+                                     "minical.dates.GregorianDate(y, m, d).weekday()")])]
+    prompts = []
+
+    class Scripted:
+        label = "scripted@test"
+        stats = SimpleNamespace(calls=0)
+
+        def generate_structured(self, messages, schema, **kw):
+            self.stats.calls += 1
+            if schema is AdapterCode:
+                return adapter
+            prompts.append(messages[-1]["content"])
+            return answers.pop(0)
+
+    events = []
+    r = compile_capability(Scripted(), analyze(lib), spec=spec, skills_root=tmp_path / "skills", run_upstream=False,
+                           on_event=lambda kind, data: events.append((kind, data.get("detail", ""))))
+    kinds = [k for k, _ in events]
+    assert "tester.retry" in kinds and "tester.retry.done" in kinds
+    assert "1 valid case(s) added for 1/1" in dict(events)["tester.retry.done"]
+    assert prompts[0].startswith("CAPABILITY SPEC") and "HOW TO BUILD THE LIBRARY'S OBJECTS" in prompts[0]
+    assert "minical.dates.GregorianDate(year, month, day)" in prompts[1] and "TypeError" in prompts[1]
+    assert r.verified, events

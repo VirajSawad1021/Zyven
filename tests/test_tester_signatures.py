@@ -1,0 +1,171 @@
+"""The Tester is shown how to build the library's objects, and a reference that misuses the library comes back with
+the exact signatures it needed (#101). Offline: the sandbox run is replaced by a fixed check."""
+
+from __future__ import annotations
+
+import sys
+import textwrap
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from zyven.ai.schemas import CapabilitySpec, DiffCase, DiffTests, ReturnField, ToolParam, ToolSpec  # noqa: E402
+from zyven.analysis.analyzer import analyze  # noqa: E402
+from zyven.analysis.miner import construction_signatures, describe_symbols  # noqa: E402
+
+FILES = {
+    "minical/__init__.py": "from minical.dates import GregorianDate\n",
+    "minical/dates.py": '''
+        import abc
+
+
+        class DateError(ValueError):
+            """Raised for an impossible date."""
+
+
+        class BaseDate(abc.ABC):
+            """Any date."""
+
+            def holiday(self):
+                return None
+
+
+        class _Cache:
+            pass
+
+
+        class CalendarDate(BaseDate):
+            def __init__(self, year, month, day):
+                self.year, self.month, self.day = year, month, day
+
+
+        class GregorianDate(CalendarDate):
+            """A Gregorian date (year, month, day)."""
+
+            @classmethod
+            def from_iso(kls, text):
+                return kls(*map(int, text.split("-")))
+
+            @staticmethod
+            def today():
+                return GregorianDate(2024, 1, 1)
+
+            def _private_factory(self):
+                return self
+        ''',
+    "minical/cal.py": '''
+        def holiday(date, israel=False):
+            """Holiday on a date.
+
+            Parameters
+            ----------
+            date : minical.dates.BaseDate
+            """
+            return date.holiday()
+        ''',
+    "tests/test_dates.py": '''
+        from minical.dates import GregorianDate
+
+
+        def test_date():
+            d = GregorianDate(2024, 9, 2)
+            assert d.year == 2024
+        ''',
+}
+
+
+@pytest.fixture(scope="module")
+def analysis(tmp_path_factory):
+    root = tmp_path_factory.mktemp("minical")
+    for rel, text in FILES.items():
+        p = root / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(textwrap.dedent(text).lstrip("\n"), encoding="utf-8")
+    return analyze(root)
+
+
+def _spec() -> CapabilitySpec:
+    return CapabilitySpec(name="holidays", title="Holidays", summary="s", included_symbols=[], relevant_tests=[], tools=[
+        ToolSpec(name="holiday_on", description="d", params=[ToolParam(name="date", type="string", description="x")],
+                 returns=[ReturnField(name="holiday", type="string", description="v")],
+                 implementation_symbols=["minical.cal.holiday"], implementation_notes="",
+                 example_args={"date": "2024-09-02"})])
+
+
+def test_a_documented_base_class_brings_its_buildable_subclasses(analysis):
+    text = construction_signatures(analysis, ["minical.cal.holiday"])
+    # named only in the docstring, abstract, so its subclasses follow, with the inherited constructor
+    assert "minical.dates.BaseDate(...)" in text and "abstract: build one of its subclasses" in text
+    assert "minical.dates.GregorianDate(year, month, day)  (constructor inherited from minical.dates.CalendarDate)" in text
+    assert "minical.dates.GregorianDate.from_iso(text)  (classmethod)" in text  # `kls` dropped like `cls`
+    assert "minical.dates.GregorianDate.today()  (staticmethod)" in text
+    assert "_private_factory" not in text and "_Cache" not in text  # a caller never builds these
+    assert "DateError" not in text  # nor exceptions
+    assert "tests/test_dates.py:5: d = GregorianDate(2024, 9, 2)" in text  # a real call from the upstream tests
+
+
+def test_a_method_is_described_with_how_to_build_its_class(analysis):
+    lines = describe_symbols(analysis, ["minical.dates.BaseDate.holiday", "minical.dates.GregorianDate"])
+    assert lines[0] == "minical.dates.BaseDate.holiday()"
+    assert any(x.startswith("minical.dates.GregorianDate(year, month, day)") for x in lines)
+
+
+def test_the_signatures_lead_the_testers_evidence_and_are_never_cut(analysis, monkeypatch):
+    import zyven.ai.roles as roles
+    monkeypatch.setattr(roles, "evidence_packet", lambda a, ids, max_chars=0: "x" * 50000)  # huge source evidence
+    text = roles._tester_evidence(analysis, _spec())
+    assert text.startswith("HOW TO BUILD THE LIBRARY'S OBJECTS")
+    assert "minical.dates.GregorianDate(year, month, day)" in text.split("\n\n")[0]
+
+
+def test_reference_names_follow_its_imports_and_name_what_does_not_exist(analysis):
+    from zyven.analysis.refs import RefResolver
+    from zyven.compiler.pipeline import reference_names
+    c = DiffCase(tool="holiday_on", args={"date": "2024-09-02"}, field="holiday",
+                 reference_imports=["from minical.dates import GregorianDate as G", "import minical.cal"],
+                 reference_expr="d = G.fromisoformat({date})\nminical.cal.holiday(G({date}))")
+    found, unknown = reference_names(c, analysis, RefResolver(analysis))
+    assert set(found) == {"minical.dates.GregorianDate", "minical.cal.holiday"}
+    assert unknown == ["minical.dates.GregorianDate.fromisoformat"]
+
+
+def test_a_runtime_failure_is_sent_back_with_the_signature_it_needed(analysis, monkeypatch):
+    """#101: the reference misused the constructor, which only running it shows. The re-ask quotes the exception and
+    the constructor's real signature; the case the Tester then writes is kept only if it is valid."""
+    import zyven.compiler.pipeline as pl
+    wrong = DiffCase(tool="holiday_on", args={"date": "2024-09-02"}, field="holiday",
+                     reference_imports=["import minical.dates", "import minical.cal"],
+                     reference_expr="minical.cal.holiday(minical.dates.GregorianDate({date}))")
+    right = wrong.model_copy(update={"reference_expr": "minical.cal.holiday(minical.dates.GregorianDate.from_iso({date}))"})
+    asked = {}
+
+    def fake_tester(provider, a, sub, feedback="", followups=True):
+        asked.update(feedback=feedback)
+        return DiffTests(cases=[right])
+
+    def check(cases):  # stands in for the sandbox: the misuse raises, the factory call works
+        return [None if "from_iso" in c.reference_expr else
+                "TypeError(\"__init__() missing 2 required positional arguments: 'month' and 'day'\") running: "
+                "minical.cal.holiday(minical.dates.GregorianDate('2024-09-02'))" for c in cases]
+
+    monkeypatch.setattr(pl, "tester", fake_tester)
+    out, problems = pl._reask_unusable(None, analysis, _spec(), DiffTests(cases=[wrong]), check, lambda *a, **k: None)
+    fb = asked["feedback"]
+    assert "TypeError" in fb and "GregorianDate('2024-09-02')" in fb
+    assert "minical.dates.GregorianDate(year, month, day)" in fb
+    assert "minical.cal.holiday(date, israel = False)" in fb
+    assert [c.reference_expr for c in out.cases] == [wrong.reference_expr, right.reference_expr]
+    assert problems[0] is not None and problems[1] is None
+
+
+def test_an_added_case_that_still_fails_is_not_kept(analysis, monkeypatch):
+    import zyven.compiler.pipeline as pl
+    wrong = DiffCase(tool="holiday_on", args={"date": "2024-09-02"}, field="holiday", reference_imports=[],
+                     reference_expr="minical.cal.holiday(minical.dates.GregorianDate({date}))")
+    monkeypatch.setattr(pl, "tester", lambda *a, **k: DiffTests(cases=[wrong]))
+    out, problems = pl._reask_unusable(None, analysis, _spec(), DiffTests(cases=[wrong]),
+                                       lambda cases: ["TypeError()"] * len(cases), lambda *a, **k: None)
+    assert len(out.cases) == 1 and problems == ["TypeError()"]

@@ -6,6 +6,7 @@ and their proposals are compared against `baseline_candidates()`.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -199,6 +200,140 @@ def test_snippets(a: Analysis, sym: Symbol, max_snippets: int = 6) -> list[str]:
                 if len(out) >= max_snippets:
                     return out
     return out
+
+
+_FACTORY = ("classmethod", "staticmethod")
+
+
+def _lineage(sym: Symbol, syms: dict[str, Symbol]) -> list[Symbol]:
+    """The class, then its internal base classes, nearest first (each once)."""
+    out, todo = [], [sym]
+    while todo:
+        s = todo.pop(0)
+        if s in out:
+            continue
+        out.append(s)
+        todo += [syms[b] for b in s.bases if b in syms and syms[b].kind == "class"]
+    return out
+
+
+def _full(sym: Symbol) -> str:
+    """A symbol's signature under its full dotted path, e.g. pyluach.dates.GregorianDate.from_pydate(pydate)."""
+    return f"{sym.id.rsplit('.', 1)[0]}.{signature(sym)}" if "." in sym.id else signature(sym)
+
+
+def construction(a: Analysis, cls: Symbol) -> list[str]:
+    """How to build one class: its constructor (inherited if need be) and its public factory methods, with one line
+    from the upstream tests that calls the constructor."""
+    syms = {s.id: s for s in a.symbols}
+    line = [cls] + _lineage(cls, syms)[1:]
+    init = next((syms[f"{c.id}.__init__"] for c in line if f"{c.id}.__init__" in syms), None)
+    if init is not None:
+        params = signature(init).split("(", 1)[1].rsplit(")", 1)[0]
+        ctor = f"{cls.id}({params})" + ("" if init.id.startswith(cls.id + ".") else
+                                        f"  (constructor inherited from {init.id.rsplit('.', 1)[0]})")
+    else:
+        how = [b for b in cls.bases if b not in syms] + [d for d in cls.decorators if "dataclass" in d]
+        ctor = f"{cls.id}(...)  (no __init__ in its source" + (f"; built by {', '.join(how)}" if how else "") + ")"
+    out = [ctor]
+    seen: set[str] = set()
+    for c in line:
+        for m in a.symbols:
+            short = m.qualname.split(".")[-1]
+            if (m.kind == "method" and m.id.rsplit(".", 1)[0] == c.id and not short.startswith("_")
+                    and short not in seen and any(d.split(".")[-1] in _FACTORY for d in m.decorators)):
+                seen.add(short)
+                kind = "classmethod" if any(d.split(".")[-1] == "classmethod" for d in m.decorators) else "staticmethod"
+                sig = signature(m)
+                if kind == "classmethod" and m.params and m.params[0].name not in ("self", "cls"):  # e.g. `kls`
+                    sig = signature(Symbol(**{**m.__dict__, "params": m.params[1:]}))
+                out.append(f"{cls.id}.{sig}  ({kind})")
+    if any(b.split(".")[-1] in ("ABC", "ABCMeta") for b in cls.bases):
+        out[0] += "  (abstract: build one of its subclasses)"
+    short = cls.qualname.split(".")[-1]
+    calls = [s for s in test_snippets(a, cls, 20)
+             if f"{short}(" in s.split(": ", 1)[-1] and not s.split(": ", 1)[-1].startswith(("class ", "def "))]
+    if calls:
+        out.append(f"called in the library's tests or docs as: {calls[0]}")
+    return out
+
+
+def _is_exception(cls: Symbol, syms: dict[str, Symbol]) -> bool:
+    names = [c.qualname.split(".")[-1] for c in _lineage(cls, syms)] + [b.split(".")[-1] for c in _lineage(cls, syms)
+                                                                        for b in c.bases if b not in syms]
+    return any(n.endswith(("Error", "Exception", "Warning")) for n in names)
+
+
+def construction_signatures(a: Analysis, symbol_ids: list[str], max_classes: int = 12) -> str:
+    """How to build every library object the given symbols work with: the class each symbol is or belongs to, the
+    classes it calls one hop away, the classes named in its annotations or docstring, and the public subclasses of
+    each of those (a function documented as taking a BaseDate is called with a GregorianDate). Calling the library
+    correctly starts here: a small model wrote GregorianDate("2024-09-02") for GregorianDate(year, month, day).
+    Private and exception classes are left out: a caller never builds them."""
+    syms, mods = _index(a)
+    by_short: dict[str, list[str]] = {}
+    subclasses: dict[str, list[str]] = {}
+    for s in a.symbols:
+        if s.kind == "class" and not mods[s.module].is_test:
+            by_short.setdefault(s.qualname.split(".")[-1], []).append(s.id)
+            for b in s.bases:
+                subclasses.setdefault(b, []).append(s.id)
+    classes: list[str] = []
+
+    def add(cid: str | None) -> None:
+        s = syms.get(cid or "")
+        if (s is None or s.kind != "class" or cid in classes or mods[s.module].is_test or not s.is_public
+                or s.qualname.startswith("_") or _is_exception(s, syms)):
+            return
+        classes.append(cid)
+        for sub in subclasses.get(cid, []):
+            add(sub)
+
+    def owner(sid: str) -> str | None:
+        s = syms.get(sid)
+        return sid if s and s.kind == "class" else sid.rsplit(".", 1)[0] if s and s.kind == "method" else None
+
+    for sid in symbol_ids:
+        s = syms.get(sid)
+        if not s:
+            continue
+        add(owner(sid))
+        members = [s] + ([m for m in a.symbols if m.kind == "method" and m.id.startswith(sid + ".") and m.is_public]
+                         if s.kind == "class" else [])
+        for m in members:
+            for c in m.calls:
+                add(owner(c))
+            text = [p.annotation for p in m.params if p.annotation] + ([m.returns] if m.returns else []) \
+                + [m.docstring or ""]
+            for name in dict.fromkeys(w for t in text for w in re.findall(r"[A-Za-z_][A-Za-z0-9_]*", t)):
+                if len(by_short.get(name, [])) == 1:
+                    add(by_short[name][0])
+    lines = []
+    for cid in classes[:max_classes]:
+        first, *rest = construction(a, syms[cid])
+        lines += [f"- {first}"] + [f"    {x}" for x in rest]
+    if len(classes) > max_classes:
+        lines.append(f"- ... {len(classes) - max_classes} more classes (see the evidence below)")
+    return "\n".join(lines)
+
+
+def describe_symbols(a: Analysis, symbol_ids: list[str]) -> list[str]:
+    """Exact signatures for the given symbols: how to build a class, a function's or method's parameters (and how to
+    build the class a method belongs to)."""
+    syms = {s.id: s for s in a.symbols}
+    out: list[str] = []
+    for sid in dict.fromkeys(symbol_ids):
+        s = syms.get(sid)
+        if s is None:
+            continue
+        if s.kind == "class":
+            out += construction(a, s)
+        else:
+            out.append(_full(s))
+            cls = syms.get(sid.rsplit(".", 1)[0]) if s.kind == "method" else None
+            if cls is not None and cls.kind == "class":
+                out += construction(a, cls)[:1]
+    return list(dict.fromkeys(out))
 
 
 def evidence_packet(a: Analysis, entry_points: list[str], max_chars: int = 20000) -> str:

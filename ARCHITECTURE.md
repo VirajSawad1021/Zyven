@@ -316,8 +316,18 @@ The Tester's coverage is checked deterministically (`coverage_gaps`):
 - optional parameters never set, and never left out
 - return fields never checked
 
-Coverage is judged only on cases that pass the sandbox's own reference checks (`reference_problem`). Tools with gaps
-are asked about once more, with the rejection reasons quoted.
+Coverage is judged only on valid reference programs: the static checks (`reference_problem`), then a run of each
+program in the sandbox on its own arguments (`reference_problems`), right after the Tester answers and before any
+gate. Tools with gaps are asked about once more (one re-ask per compile, whatever the reasons). The re-ask quotes each
+rejected reference with the exception it raised, and the exact signatures of the library symbols it called, resolved
+against the analysis (`describe_symbols`). The harness never rewrites a reference itself: it would stop being an
+independent check of the library.
+
+The Tester's evidence starts with how to build every library object it may need (`construction_signatures`):
+constructor and factory signatures, with one real call from the library's tests. The classes are those the tool's
+implementation symbols are or belong to, the ones they call, the ones named in their annotations or docstrings, and the
+public subclasses of each (a function documented as taking an abstract `BaseDate` is called with a `GregorianDate`).
+This list is never cut to fit; the source evidence after it is.
 
 ### 4.15 Measuring the Tester (`eval/tester_validity.py`)
 A reference program is **valid** when it evaluates in the sandbox on its own case's arguments

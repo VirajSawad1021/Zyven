@@ -523,6 +523,12 @@ def test_a_reference_ending_in_print_is_rejected(tmp_path, monkeypatch):
     assert "not print" in gate.detail
 
 
+def _static_check(cases):
+    """The re-ask's check without the sandbox: only the static reference checks."""
+    from zyven.compiler.verify import reference_problem
+    return [reference_problem(c, {"calc"}) for c in cases]
+
+
 def test_tools_left_without_a_runnable_case_are_asked_about_again(analysis, monkeypatch):
     import zyven.compiler.pipeline as pl
     from zyven.ai.schemas import DiffCase, DiffTests
@@ -538,13 +544,14 @@ def test_tools_left_without_a_runnable_case_are_asked_about_again(analysis, monk
 
     monkeypatch.setattr(pl, "tester", fake_tester)
     events = []
-    out = pl._reask_unusable(None, analysis, spec, DiffTests(cases=[good, broken]), {"calc"},
-                             lambda kind, **d: events.append((kind, d)))
+    out, problems = pl._reask_unusable(None, analysis, spec, DiffTests(cases=[good, broken]), _static_check,
+                                       lambda kind, **d: events.append((kind, d)))
     assert seen["tools"] == ["second"] and seen["followups"] is False
     assert "second" in seen["feedback"] and "syntax error" in seen["feedback"]
     assert [c.tool for c in out.cases] == ["first", "second", "second"]
+    assert [p is None for p in problems] == [True, False, True]  # one problem per case, the added one valid
     assert [k for k, _ in events] == ["tester.retry", "tester.retry.done"]
-    assert "1 usable case(s) added for 1/1" in events[-1][1]["detail"]
+    assert "1 valid case(s) added for 1/1" in events[-1][1]["detail"]
 
 
 def test_no_reask_when_every_tool_has_a_runnable_case(analysis, monkeypatch):
@@ -552,7 +559,9 @@ def test_no_reask_when_every_tool_has_a_runnable_case(analysis, monkeypatch):
     from zyven.ai.schemas import DiffCase, DiffTests
     monkeypatch.setattr(pl, "tester", lambda *a, **k: (_ for _ in ()).throw(AssertionError("must not be called")))
     cases = DiffTests(cases=[DiffCase(**_case({"number": "12"}, "value"))])
-    assert pl._reask_unusable(None, analysis, _spec(_tool("first")), cases, {"calc"}, lambda *a, **k: None) is cases
+    out, problems = pl._reask_unusable(None, analysis, _spec(_tool("first")), cases, _static_check,
+                                       lambda *a, **k: None)
+    assert out is cases and problems == [None]
 
 
 def test_a_broken_case_does_not_count_as_coverage(analysis, monkeypatch):
@@ -565,7 +574,7 @@ def test_a_broken_case_does_not_count_as_coverage(analysis, monkeypatch):
     seen = {}
     monkeypatch.setattr(pl, "tester", lambda p, a, sub, feedback="", followups=True:
                         seen.update(feedback=feedback) or DiffTests(cases=[]))
-    pl._reask_unusable(None, analysis, spec, DiffTests(cases=ok + [sets_strict_but_broken]), {"calc"},
+    pl._reask_unusable(None, analysis, spec, DiffTests(cases=ok + [sets_strict_but_broken]), _static_check,
                        lambda *a, **k: None)
     assert "'strict'" in seen["feedback"] and "syntax error" in seen["feedback"]
 
