@@ -94,7 +94,8 @@ def _verify(skill_dir: Path, spec: CapabilitySpec, prov: dict):
     with warnings.catch_warnings():  # pydantic notes that the constructed cases hold lists; expected, see above
         warnings.filterwarnings("ignore", message=".*serializ", category=UserWarning)
         return verify(skill_dir, spec, repo, set(a.packages), diff_tests=diff, source_root=a.source_root,
-                      skip_tests=[t.file for t in a.tests if t.third_party]), None
+                      skip_tests=[t.file for t in a.tests if t.third_party],
+                      test_refs={t.file: t.test_refs for t in a.tests}), None
 
 
 def reassemble(dirs: list[Path], verify_gates: bool = True, dry_run: bool = False) -> list[Result]:

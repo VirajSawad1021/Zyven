@@ -110,10 +110,35 @@ def smoke_plan(spec: CapabilitySpec) -> dict:
     return {"tools": plan}
 
 
+def unrelated_failures(failed_nodes: list[str], test_refs: dict[str, dict[str, list[str]]],
+                       wrapped: set[str]) -> list[str] | None:
+    """The failing tests that never call a wrapped symbol, or None when any failure might concern the wrapped code.
+
+    A failure counts as related unless the analyzer knows the test function and none of the library symbols it calls
+    is a wrapped one (or a method of one): a file that did not load, a test it cannot map, or a test that calls a
+    wrapped function all keep the gate failing. In a big library (sympy) one unrelated failing test should not hide
+    that every test reaching the wrapped functions passed."""
+    def reaches(refs: list[str]) -> bool:
+        return any(r == w or r.startswith(w + ".") or w.startswith(r + ".") for r in refs for w in wrapped)
+
+    unrelated = []
+    for node in failed_nodes:
+        file, _, rest = node.partition("::")
+        if not rest:  # the whole file failed (did not import, or a doctest file)
+            return None
+        qual = re.sub(r"\[.*\]$", "", rest).replace("::", ".")
+        refs = (test_refs.get(file) or {}).get(qual)
+        if refs is None or reaches(refs):
+            return None
+        unrelated.append(node)
+    return unrelated
+
+
 def verify(skill_dir: Path, spec: CapabilitySpec, repo: Path, package_roots: set[str],
            run_upstream: bool = True, diff_tests: DiffTests | None = None,
            source_root: str = ".", skip_tests: list[str] | None = None, egress=None,
-           generated_per_tool: int | None = None) -> VerificationReport:
+           generated_per_tool: int | None = None,
+           test_refs: dict[str, dict[str, list[str]]] | None = None) -> VerificationReport:
     """generated_per_tool: extra differential cases per tool built from the Tester's references (None: the default,
     0: none). Only experiments change it, e.g. the mutation test measuring what generated cases add."""
     # only the upstream-test gate uses this; big repos (e.g. sympy) need minutes, not seconds
@@ -146,10 +171,24 @@ def verify(skill_dir: Path, spec: CapabilitySpec, repo: Path, package_roots: set
         examples = sum(_doctest_examples(repo / p) for p in paths if p.endswith(".doctest")
                        or not Path(p).name.startswith("test"))
         ex_note = f"; includes {examples} doctest examples" if examples else ""
-        gates.append(Gate("upstream_tests", rep.passed,
+        passed, unrelated = rep.passed, None
+        if not rep.passed and rep.ran > 0 and test_refs and rep.failed_nodes \
+                and len(rep.failed_nodes) >= rep.failures + rep.errors:
+            wrapped = set(spec.included_symbols) | {s for t in spec.tools for s in t.implementation_symbols}
+            unrelated = unrelated_failures(rep.failed_nodes, test_refs, wrapped)
+            reaching = sum(1 for f in paths for refs in (test_refs.get(f) or {}).values()
+                           if any(r == w or r.startswith(w + ".") for r in refs for w in wrapped))
+            if unrelated and reaching > 0:
+                passed = True
+                ex_note += (f"; {len(unrelated)} failing tests do not call the wrapped functions and are not counted:"
+                            f" {', '.join(unrelated[:4])}{' ...' if len(unrelated) > 4 else ''}")
+            else:
+                unrelated = None
+        gates.append(Gate("upstream_tests", passed,
                           f"{rep.ran} tests ran, {rep.failures} failures, {rep.errors} errors{ex_note} "
                           f"({', '.join(paths) or 'all'})",
-                          {"ran": rep.ran, "failures": rep.failures, "errors": rep.errors}))
+                          {"ran": rep.ran, "failures": rep.failures, "errors": rep.errors,
+                           **({"unrelated_failures": unrelated} if unrelated else {})}))
 
     (skill_dir / "smoke.json").write_text(json.dumps(smoke_plan(spec), indent=1), encoding="utf-8")
     sm = run(["python", "/opt/zyven/mcp_smoke.py", "/skill/server.py", "/skill/smoke.json"], mounts, env_policy,

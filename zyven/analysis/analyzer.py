@@ -87,6 +87,8 @@ class TestFile:
     references: list[str]  # internal symbol ids the tests import or call
     kind: str = "python"  # python | doctest-file | module-doctest
     third_party: list[str] = field(default_factory=list)  # non-stdlib, non-repo imports the tests need
+    # each test function ("test_x", "TestCase.test_x") -> the library symbols it calls; empty for doctests
+    test_refs: dict[str, list[str]] = field(default_factory=dict)
 
 
 @dataclass
@@ -433,8 +435,10 @@ def analyze(repo_path: str | Path, source_root: str | None = None) -> Analysis:
         # A reference to a class covers its methods that the tests call through instances.
         test_count = sum(1 for s in collectors[mod].symbols if s.qualname.split(".")[-1].startswith("test"))
         needs = sorted({e for e in info.external_imports if e not in _STDLIB and e not in _TEST_TOOLS})
+        per_test = {s.qualname: sorted(c for c in symbols[s.id].calls if not modules[symbols[c].module].is_test)
+                    for s in collectors[mod].symbols if s.qualname.split(".")[-1].startswith("test")}
         tests.append(TestFile(file=info.file, module=mod, test_count=test_count, references=sorted(refs),
-                              third_party=needs))
+                              third_party=needs, test_refs=per_test))
         for r in refs:
             symbols[r].tested_by.append(info.file)
 

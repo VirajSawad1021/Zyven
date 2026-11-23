@@ -150,6 +150,7 @@ class TestReport:
     passed: bool
     seconds: float
     tail: str  # last lines of output, for reports and for the repair model
+    failed_nodes: list[str] = field(default_factory=list)  # "tests/test_x.py::TestA::test_b", from pytest's -rfE
 
 
 _RAN_RE = re.compile(r"Ran (\d+) tests? in")
@@ -182,8 +183,10 @@ def parse_pytest(result: SandboxResult) -> TestReport:
         counts["error" if kind.startswith("error") else kind] = int(n)
     ran = counts["passed"] + counts["failed"] + counts["error"]
     tail = "\n".join(out.strip().splitlines()[-40:])
+    failed = [m.group(2) for m in re.finditer(r"^(FAILED|ERROR) (\S+)", out, re.M)]
     return TestReport(ran=ran, failures=counts["failed"], errors=counts["error"], skipped=counts["skipped"],
-                      passed=result.ok and ran > 0, seconds=round(result.seconds, 2), tail=tail)
+                      passed=result.ok and ran > 0, seconds=round(result.seconds, 2), tail=tail,
+                      failed_nodes=list(dict.fromkeys(failed)))
 
 
 def run_upstream_tests(repo: Path, test_paths: list[str] | None = None,
@@ -195,7 +198,7 @@ def run_upstream_tests(repo: Path, test_paths: list[str] | None = None,
     docstrings are doctests). Default: the `tests` directory. Project `addopts` (e.g. coverage plugins that are
     not installed) are overridden; doctest option flags from the project config still apply.
     """
-    cmd = ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "-o", "addopts=",
+    cmd = ["python", "-m", "pytest", "-q", "-rfE", "-p", "no:cacheprovider", "-o", "addopts=",
            "--doctest-glob=*.doctest", "--rootdir=/src"]
     skip = {Path(p).as_posix() for p in ignore or []}
     # pytest's --ignore applies only while it searches folders; a file named on the command line is always collected,
