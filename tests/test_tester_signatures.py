@@ -203,3 +203,28 @@ def test_the_reask_carries_the_import_hint(analysis, monkeypatch):
     fb = asked["feedback"]
     assert "`GregorianDate` is not defined in that reference: add `from minical.dates import GregorianDate`" in fb
     assert "minical.dates.GregorianDate(year, month, day)" in fb
+
+
+def test_every_library_module_a_reference_reaches_is_imported():
+    """`import pyluach` does not load pyluach.hebrewcal; E4B lost pyluach references to that AttributeError."""
+    from zyven.ai.roles import used_modules
+    mods = {"pyluach", "pyluach.dates", "pyluach.hebrewcal"}
+    program = "pyluach.hebrewcal.holiday(pyluach.dates.GregorianDate(2023, 4, 5), israel=False)"
+    assert set(used_modules(program, {"pyluach"}, mods)) == {"pyluach.hebrewcal", "pyluach.dates", "pyluach"}
+    assert used_modules("pyluach = 1\npyluach.real", {"pyluach"}, mods) == []  # a name the program binds itself
+    assert used_modules("broken(", {"pyluach"}, mods) == []
+
+
+def test_the_tester_adds_the_submodule_imports(analysis, monkeypatch):
+    import zyven.ai.roles as roles
+    case = DiffCase(tool="holiday_on", args={"date": "2024-09-02"}, field="holiday", reference_imports=["import minical"],
+                    reference_expr="minical.cal.holiday(minical.dates.GregorianDate.from_iso({date}))")
+
+    class One:
+        label = "one"
+
+        def generate_structured(self, messages, schema, **kw):
+            return DiffTests(cases=[case.model_copy()])
+
+    out = roles.tester(One(), analysis, _spec(), followups=False)
+    assert out.cases[0].reference_imports == ["import minical", "import minical.cal", "import minical.dates"]

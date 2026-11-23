@@ -10,6 +10,7 @@ that still cannot be resolved is removed and recorded, never passed downstream.
 
 from __future__ import annotations
 
+import ast
 import keyword
 import logging
 import re
@@ -17,7 +18,7 @@ from dataclasses import dataclass, field
 
 from zyven.ai.provider import ModelProvider, ProviderError
 from zyven.ai.schemas import AdapterCode, CandidateCapability, CapabilitySpec, DiffTests, ScoutResult, ToolImpl
-from zyven.analysis.analyzer import Analysis
+from zyven.analysis.analyzer import Analysis, _dotted
 from zyven.analysis.miner import construction_signatures, evidence_packet, repo_digest
 from zyven.analysis.refs import RefResolver
 
@@ -554,10 +555,36 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
         except Exception as e:  # best effort: the gaps are reported in the compile log either way
             log.warning("tester coverage re-query for %s failed: %s", sorted(gaps), str(e)[:200])
 
+    roots = {p.split(".")[0] for p in a.packages}
     for c in tests.cases:
         c.reference_imports = list(dict.fromkeys(x for ln in c.reference_imports if ln.strip() for x in fix_import(ln)))
-        root = c.reference_expr.strip().split(".")[0].split("(")[0]
-        if root in {p.split(".")[0] for p in a.packages} and not any(
-                ln.startswith(f"import {root}") for ln in c.reference_imports):
-            c.reference_imports.append(f"import {root}")
+        for mod in used_modules(c.reference_expr, roots, modules):
+            have = [ln[len("import "):].split(" as ")[0].strip() for ln in c.reference_imports if ln.startswith("import ")]
+            if not any(h == mod or h.startswith(mod + ".") for h in have):  # `import a.b` already binds `a`
+                c.reference_imports.append(f"import {mod}")
     return tests
+
+
+def used_modules(program: str, roots: set[str], modules: set[str]) -> list[str]:
+    """The library modules a reference program reaches by dotted path, e.g. `pyluach.hebrewcal` for
+    `pyluach.hebrewcal.holiday(...)`. Each needs its own import line: `import pyluach` alone does not load
+    `pyluach.hebrewcal`, and Gemma 4 E4B lost pyluach references to that AttributeError. Adding the import changes
+    nothing the program computes. A name the program binds itself (`pyluach = ...`) is left alone."""
+    try:
+        tree = ast.parse(program)
+    except SyntaxError:
+        return []
+    bound = {t.id for n in ast.walk(tree) if isinstance(n, ast.Assign) for t in n.targets if isinstance(t, ast.Name)}
+    out: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Attribute, ast.Name)):
+            continue
+        name = _dotted(node)
+        if not name or name.split(".")[0] not in roots or name.split(".")[0] in bound:
+            continue
+        parts = name.split(".")
+        best = next((".".join(parts[:i]) for i in range(len(parts), 0, -1) if ".".join(parts[:i]) in modules),
+                    parts[0])
+        if best not in out:
+            out.append(best)
+    return out
