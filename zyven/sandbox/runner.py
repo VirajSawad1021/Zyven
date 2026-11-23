@@ -197,7 +197,11 @@ def run_upstream_tests(repo: Path, test_paths: list[str] | None = None,
     """
     cmd = ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider", "-o", "addopts=",
            "--doctest-glob=*.doctest", "--rootdir=/src"]
-    paths = test_paths or ["tests"]
+    skip = {Path(p).as_posix() for p in ignore or []}
+    # pytest's --ignore applies only while it searches folders; a file named on the command line is always collected,
+    # and one that cannot import (it needs bs4, say) stops the whole run. So a named file that must be skipped is
+    # left out here, and the search falls back to the tests folder only when every named file was left out.
+    paths = [p for p in test_paths or [] if Path(p).as_posix() not in skip] or ["tests"]
     cmd += [f"--ignore={p}" for p in (ignore or [])]  # e.g. tests needing packages the sandbox lacks
     if any(p.endswith(".py") and not ({"tests", "test"} & set(Path(p).parts)) and not Path(p).name.startswith("test")
            for p in paths):

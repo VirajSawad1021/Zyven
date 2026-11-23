@@ -42,7 +42,11 @@ class Finding:
 
 def _add(findings: list[Finding], root: Path, path: Path, field: str, model: str) -> None:
     model = model.strip()
-    markers = ("[PROPRIETARY", "[CLOSED MODEL", "[CODING AGENT")  # a coding agent's model cannot be checked from here
+    # A coding agent's model cannot be checked from here, unless the agent's own catalogue named an open-weight model
+    # when the skill was compiled (zyven.ai.agent_provider.open_weight_model).
+    markers = ("[PROPRIETARY", "[CLOSED MODEL", "[CODING AGENT")
+    if "[CODING AGENT, OPEN-WEIGHT MODEL]" in model.upper():
+        return
     if model and (is_proprietary(model) or any(m in model.upper() for m in markers)):
         findings.append(Finding(path.relative_to(root).as_posix(), field, model))
 

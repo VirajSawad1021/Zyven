@@ -34,6 +34,29 @@ from typing import Any
 from zyven.ai.provider import ChatResult, ModelProvider, ProviderError, ProviderStats
 
 AGENT_NAMES = ("codex", "claude", "agy", "opencode", "qoder")
+OPEN_WEIGHT_TAG = "[coding agent, open-weight model]"
+OPENCODE_CATALOGUE = "https://opencode.ai/zen/v1/models"
+_catalogue: dict[str, dict] | None = None
+
+
+def open_weight_model(agent: str, model: str | None) -> str | None:
+    """The open-weight model behind an agent run, when the agent's own catalogue says so: OpenCode lists each model it
+    serves with `open_weights` and the model it is (`canonical_id`). Returns that canonical name, or None when the
+    model is closed, unknown, or the catalogue cannot be read (the run is then labelled a plain coding agent)."""
+    global _catalogue
+    if agent != "opencode" or not model or not model.startswith("opencode/"):
+        return None
+    if _catalogue is None:
+        try:
+            import httpx
+            data = httpx.get(OPENCODE_CATALOGUE, timeout=15).json().get("data") or []
+            _catalogue = {m["id"]: m for m in data if isinstance(m, dict) and m.get("id")}
+        except Exception:  # noqa: BLE001  offline or changed: say nothing rather than guess
+            _catalogue = {}
+    entry = _catalogue.get(model.split("/", 1)[1])
+    if entry and entry.get("open_weights") is True:
+        return entry.get("canonical_id") or model
+    return None
 DEFAULT_TIMEOUT_S = 900.0
 _MODEL_RE = re.compile(r"[\w./:#\-\[\]]{1,100}")
 _FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$")
@@ -131,6 +154,9 @@ class AgentProvider(ModelProvider):
 
     @property
     def label(self) -> str:
+        weights = open_weight_model(self.agent, self.model)
+        if weights:  # the catalogue names the open-weight model, so the open-model check can count it as open
+            return f"{self.adapter.label} ({self.model} = {weights}) {OPEN_WEIGHT_TAG}"
         return f"{self.adapter.label} ({self.model or 'its default model'}) [coding agent]"
 
     def available(self) -> tuple[bool, str]:

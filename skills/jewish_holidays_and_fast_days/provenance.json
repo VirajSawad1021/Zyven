@@ -1,0 +1,57 @@
+{
+ "repository": "https://github.com/simlist/pyluach",
+ "commit": "c1ffe4265f25ab7f5d850f4720111470f27e7ce5",
+ "license": "MIT",
+ "generator": "zyven 0.1.0",
+ "model": "OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model]",
+ "roles": {
+  "architect": "OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model]",
+  "compiler": "OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model]",
+  "repair": "OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model]",
+  "tester": "OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model]"
+ },
+ "role_families": {
+  "architect": "unknown",
+  "compiler": "unknown",
+  "repair": "unknown",
+  "tester": "unknown"
+ },
+ "tester_independence": "same model",
+ "capability": "jewish_holidays_and_fast_days",
+ "mode": "wrap",
+ "included_symbols": [
+  "pyluach.dates.BaseDate.fast_day",
+  "pyluach.dates.BaseDate.festival",
+  "pyluach.dates.BaseDate.holiday",
+  "pyluach.dates.BaseDate.shabbos",
+  "pyluach.hebrewcal.fast_day",
+  "pyluach.hebrewcal.festival",
+  "pyluach.hebrewcal.holiday"
+ ],
+ "source_checkout": "C:\\Users\\Viraj\\Downloads\\ZYVEN\\workspace\\repos\\pyluach\\src",
+ "source_root": "src",
+ "network_hosts": [],
+ "generated_files": [
+  "server.py"
+ ],
+ "compile_seconds": 313.6,
+ "attempts": 3,
+ "dropped_tools": {},
+ "model_calls": 6,
+ "lint_warnings": 0,
+ "reassembled": [
+  {
+   "generator": "zyven 0.1.0",
+   "at": "2026-11-24",
+   "gates_rerun": true
+  }
+ ],
+ "edits": [
+  {
+   "at": "2026-11-24",
+   "what": "provenance labels name the open-weight model behind the OpenCode agent (reflection/beam-1.0-501b-a23b, from OpenCode's model catalogue); tool code unchanged",
+   "why": "the compile's own run of the upstream-test gate stopped on tests/test_hebrewcal.py, which imports bs4 (not in the sandbox): a harness bug, since a test file named explicitly was collected despite --ignore. Fixed in zyven/sandbox/runner.py",
+   "verified": "zyven reassemble: all six gates passed (45 upstream tests, differential 41/41 plus 4 generated)"
+  }
+ ]
+}

@@ -1,0 +1,104 @@
+{
+ "tools": {
+  "get_jewish_holiday": {
+   "args": {
+    "date": "2023-04-06",
+    "israel": false,
+    "hebrew": false,
+    "prefix_day": true
+   },
+   "returns": [
+    "date",
+    "holiday",
+    "is_holiday",
+    "kind",
+    "fast_day",
+    "is_fast_day",
+    "festival",
+    "is_festival"
+   ],
+   "required": [
+    "date"
+   ],
+   "variants": [
+    {
+     "date": "  2023-04-06 ",
+     "israel": false,
+     "hebrew": false,
+     "prefix_day": true
+    }
+   ]
+  },
+  "get_jewish_festival": {
+   "args": {
+    "date": "2023-04-06",
+    "israel": true,
+    "include_working_days": false,
+    "prefix_day": true
+   },
+   "returns": [
+    "date",
+    "festival",
+    "is_festival",
+    "holiday",
+    "is_holiday",
+    "fast_day",
+    "is_fast_day"
+   ],
+   "required": [
+    "date"
+   ],
+   "variants": [
+    {
+     "date": "  2023-04-06 ",
+     "israel": true,
+     "include_working_days": false,
+     "prefix_day": true
+    }
+   ]
+  },
+  "get_fast_day": {
+   "args": {
+    "date": "2023-12-21",
+    "hebrew": true
+   },
+   "returns": [
+    "date",
+    "fast_day",
+    "is_fast_day",
+    "holiday",
+    "is_holiday",
+    "festival",
+    "is_festival"
+   ],
+   "required": [
+    "date"
+   ],
+   "variants": [
+    {
+     "date": "  2023-12-21 ",
+     "hebrew": true
+    }
+   ]
+  },
+  "get_shabbat_for_date": {
+   "args": {
+    "date": "2024-01-01"
+   },
+   "returns": [
+    "date",
+    "shabbat_date",
+    "is_shabbat",
+    "days_until_shabbat"
+   ],
+   "required": [
+    "date"
+   ],
+   "variants": [
+    {
+     "date": "  2024-01-01 "
+    }
+   ]
+  }
+ }
+}

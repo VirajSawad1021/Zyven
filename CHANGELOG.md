@@ -6,6 +6,12 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **Verified Jewish holidays and fast days skill (pyluach).** Four tools (holiday, festival, fast day, Shabbat for a
+  date), compiled through OpenCode by Reflection Beam 1.0, a 501B open-weight model, and verified by all six gates:
+  45 upstream tests, differential 41/41 Tester cases plus generated ones. Closes #99.
+- **Coding-agent compiles can count as open-weight.** When OpenCode's model catalogue marks the chosen model as open
+  weights, provenance names it (`opencode/beam-free = reflection/beam-1.0-501b-a23b`) and the open-model check accepts
+  it; any other agent run is still labelled a plain coding agent.
 - **Checked on 23 popular community MCP servers.** 22 started in the sandbox, 21 passed (348 tools, 119 called);
   the archived Slack reference server accepts invalid input (`eval/results/verify-community-20261124.md`).
 - **`zyven verify --call read-only|all`: check what tools do, not only what they say.** Each tool is called four times
@@ -160,6 +166,9 @@ build, and installs without a clone.
 - Every sandbox container gets the host name `zyven-sandbox`.
 
 ### Fixed
+- **Upstream tests that need a missing package no longer stop the gate when named explicitly.** pytest's `--ignore`
+  does not apply to a file passed on the command line, so a chosen test file importing `bs4` stopped the whole run.
+  Such files are now left out of the named list.
 - **No false alarm for read-only query tools with a `command` parameter.** "Marked read-only but runs commands" now
   needs the tool's name to say it runs or writes something (`run_command`, `write_file`). Firecrawl's library search,
   which takes shell-style commands over a read-only file system, keeps the capability listed but no longer fails.

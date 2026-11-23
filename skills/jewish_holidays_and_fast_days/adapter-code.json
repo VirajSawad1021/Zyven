@@ -1,0 +1,35 @@
+{
+ "tools": [
+  {
+   "tool": "get_jewish_holiday",
+   "imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import fast_day, festival, holiday"
+   ],
+   "body": "try:\n    date\nexcept NameError:\n    date = None\ntry:\n    israel\nexcept NameError:\n    israel = None\ntry:\n    hebrew\nexcept NameError:\n    hebrew = None\ntry:\n    prefix_day\nexcept NameError:\n    prefix_day = None\n\nif not isinstance(date, str):\n    raise ValueError(\"date must be a string in YYYY-MM-DD format\")\ndate = date.strip()\nparts = date.split(\"-\")\nif len(parts) != 3 or not (len(parts[0]) == 4 and len(parts[1]) == 2 and len(parts[2]) == 2):\n    raise ValueError(\"date must be in YYYY-MM-DD format\")\ntry:\n    year, month, day = (int(part) for part in parts)\nexcept ValueError as exc:\n    raise ValueError(\"date must contain integer year, month, and day\") from exc\n\nif israel is None:\n    israel = False\nif hebrew is None:\n    hebrew = False\nif prefix_day is None:\n    prefix_day = False\nif not isinstance(israel, bool):\n    raise ValueError(\"israel must be a boolean\")\nif not isinstance(hebrew, bool):\n    raise ValueError(\"hebrew must be a boolean\")\nif not isinstance(prefix_day, bool):\n    raise ValueError(\"prefix_day must be a boolean\")\n\ntry:\n    date_obj = GregorianDate(year, month, day)\nexcept Exception as exc:\n    raise ValueError(f\"invalid Gregorian date: {date}\") from exc\n\nfast_name = fast_day(date_obj, hebrew=hebrew)\nfestival_name = festival(date_obj, israel=israel, hebrew=hebrew, include_working_days=True, prefix_day=prefix_day)\nholiday_name = holiday(date_obj, israel=israel, hebrew=hebrew, prefix_day=prefix_day)\n\nif fast_name is not None:\n    kind = \"fast_day\"\nelif festival_name is not None:\n    kind = \"festival\"\nelse:\n    kind = None\n\nreturn {\n    \"date\": date,\n    \"holiday\": holiday_name,\n    \"is_holiday\": holiday_name is not None,\n    \"kind\": kind,\n    \"fast_day\": fast_name,\n    \"is_fast_day\": fast_name is not None,\n    \"festival\": festival_name,\n    \"is_festival\": festival_name is not None,\n}"
+  },
+  {
+   "tool": "get_jewish_festival",
+   "imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import fast_day, festival, holiday"
+   ],
+   "body": "try:\n    date\nexcept NameError:\n    date = None\ntry:\n    israel\nexcept NameError:\n    israel = None\ntry:\n    hebrew\nexcept NameError:\n    hebrew = None\ntry:\n    include_working_days\nexcept NameError:\n    include_working_days = None\ntry:\n    prefix_day\nexcept NameError:\n    prefix_day = None\n\nif not isinstance(date, str):\n    raise ValueError(\"date must be a string in YYYY-MM-DD format\")\ndate = date.strip()\nparts = date.split(\"-\")\nif len(parts) != 3 or not (len(parts[0]) == 4 and len(parts[1]) == 2 and len(parts[2]) == 2):\n    raise ValueError(\"date must be in YYYY-MM-DD format\")\ntry:\n    year, month, day = (int(part) for part in parts)\nexcept ValueError as exc:\n    raise ValueError(\"date must contain integer year, month, and day\") from exc\n\nif israel is None:\n    israel = False\nif hebrew is None:\n    hebrew = False\nif include_working_days is None:\n    include_working_days = True\nif prefix_day is None:\n    prefix_day = False\nif not isinstance(israel, bool):\n    raise ValueError(\"israel must be a boolean\")\nif not isinstance(hebrew, bool):\n    raise ValueError(\"hebrew must be a boolean\")\nif not isinstance(include_working_days, bool):\n    raise ValueError(\"include_working_days must be a boolean\")\nif not isinstance(prefix_day, bool):\n    raise ValueError(\"prefix_day must be a boolean\")\n\ntry:\n    date_obj = GregorianDate(year, month, day)\nexcept Exception as exc:\n    raise ValueError(f\"invalid Gregorian date: {date}\") from exc\n\nfestival_name = festival(date_obj, israel=israel, hebrew=hebrew, include_working_days=include_working_days, prefix_day=prefix_day)\nholiday_name = holiday(date_obj, israel=israel, hebrew=hebrew, prefix_day=prefix_day)\nfast_name = fast_day(date_obj, hebrew=hebrew)\n\nreturn {\n    \"date\": date,\n    \"festival\": festival_name,\n    \"is_festival\": festival_name is not None,\n    \"holiday\": holiday_name,\n    \"is_holiday\": holiday_name is not None,\n    \"fast_day\": fast_name,\n    \"is_fast_day\": fast_name is not None,\n}"
+  },
+  {
+   "tool": "get_fast_day",
+   "imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import fast_day, festival, holiday"
+   ],
+   "body": "try:\n    date\nexcept NameError:\n    date = None\ntry:\n    hebrew\nexcept NameError:\n    hebrew = None\n\nif not isinstance(date, str):\n    raise ValueError(\"date must be a string in YYYY-MM-DD format\")\ndate = date.strip()\nparts = date.split(\"-\")\nif len(parts) != 3 or not (len(parts[0]) == 4 and len(parts[1]) == 2 and len(parts[2]) == 2):\n    raise ValueError(\"date must be in YYYY-MM-DD format\")\ntry:\n    year, month, day = (int(part) for part in parts)\nexcept ValueError as exc:\n    raise ValueError(\"date must contain integer year, month, and day\") from exc\n\nif hebrew is None:\n    hebrew = False\nif not isinstance(hebrew, bool):\n    raise ValueError(\"hebrew must be a boolean\")\n\ntry:\n    date_obj = GregorianDate(year, month, day)\nexcept Exception as exc:\n    raise ValueError(f\"invalid Gregorian date: {date}\") from exc\n\nfast_name = fast_day(date_obj, hebrew=hebrew)\nholiday_name = holiday(date_obj, israel=False, hebrew=hebrew, prefix_day=False)\nfestival_name = festival(date_obj, israel=False, hebrew=hebrew, include_working_days=True, prefix_day=False)\n\nreturn {\n    \"date\": date,\n    \"fast_day\": fast_name,\n    \"is_fast_day\": fast_name is not None,\n    \"holiday\": holiday_name,\n    \"is_holiday\": holiday_name is not None,\n    \"festival\": festival_name,\n    \"is_festival\": festival_name is not None,\n}"
+  },
+  {
+   "tool": "get_shabbat_for_date",
+   "imports": [
+    "from pyluach.dates import GregorianDate"
+   ],
+   "body": "try:\n    date\nexcept NameError:\n    date = None\n\nif not isinstance(date, str):\n    raise ValueError(\"date must be a string in YYYY-MM-DD format\")\ndate = date.strip()\nparts = date.split(\"-\")\nif len(parts) != 3 or not (len(parts[0]) == 4 and len(parts[1]) == 2 and len(parts[2]) == 2):\n    raise ValueError(\"date must be in YYYY-MM-DD format\")\ntry:\n    year, month, day = (int(part) for part in parts)\nexcept ValueError as exc:\n    raise ValueError(\"date must contain integer year, month, and day\") from exc\n\ntry:\n    date_obj = GregorianDate(year, month, day)\nexcept Exception as exc:\n    raise ValueError(f\"invalid Gregorian date: {date}\") from exc\n\nshabbat_obj = date_obj.shabbos()\nshabbat_date = f\"{shabbat_obj.year:04d}-{shabbat_obj.month:02d}-{shabbat_obj.day:02d}\"\ndays_until_shabbat = int(shabbat_obj - date_obj)\n\nreturn {\n    \"date\": date,\n    \"shabbat_date\": shabbat_date,\n    \"is_shabbat\": days_until_shabbat == 0,\n    \"days_until_shabbat\": days_until_shabbat,\n}"
+  }
+ ]
+}
