@@ -6,6 +6,11 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **`zyven verify` names tool shadowing and message redirection.** A description that tells the model how to use
+  another tool ("when send_message is invoked ...") or sends messages to a fixed address or number is now reported
+  by name, and "don't notify the user" counts as hiding. On the three published Invariant Labs proof-of-concept
+  servers every attack is named; the seven official reference servers (55 tools) still pass
+  (`eval/results/verify-real-world-20261123.md`).
 - **Verified calendar and phone skills in `skills/`.** Hijri ↔ Gregorian conversion (hijridate) and phone number
   parsing and formatting (phonenumbers), compiled with an open model; all six gates pass. The Hijri tools also accept a
   date written with the month by name ("2 Shawwal 1418"), checked by 16 new differential cases. With them, the small

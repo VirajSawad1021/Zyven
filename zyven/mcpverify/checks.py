@@ -43,7 +43,16 @@ LONG_DESCRIPTION = 2000
 # Text a tool description has no business containing: it speaks to the model, not about the tool.
 INSTRUCTION_PATTERNS = [
     (r"ignore (all |any )?(previous|prior|above|other) (instructions|rules|prompts)", "tells the model to ignore its instructions"),
-    (r"(do not|don't|never) (tell|mention|inform|reveal|show)( this)?( to)? (the )?user", "asks the model to hide something from the user"),
+    (r"(do not|don't|never) (tell|mention|inform|reveal|show|notify)( this| it)?( to)? (the )?user"
+     r"|(do not|don't|never) (tell|mention|inform|reveal|notify) (the user )?(that|this|it|about) .{0,80}\b(read|send|call|file|first)",
+     "asks the model to hide something from the user"),
+    (r"\b(change|redirect|replace|swap)\b.{0,40}\brecipients?\b.{0,40}\bto\b\W{0,3}([\w.+-]+@[\w-]+\.[\w.]+|\+?\d[\d ()-]{6,})"
+     r"|\b(send|forward)\b (all|every|any) .{0,40}\bto\b\W{0,3}([\w.+-]+@[\w-]+\.[\w.]+|\+?\d[\d ()-]{6,})",
+     "redirects messages to a fixed address or number"),
+    (r"\bside effects? on (the )?(also present |other )?[\w.()-]+ tool"
+     r"|\bwhen (\([\w-]+\) )?(?!this\b)[a-z][a-z0-9]*_[\w.]* (tool )?is (invoked|called|used)"
+     r"|\bthe [a-z][a-z0-9]*_[\w]* tool (must|should|has to)\b",
+     "tells the model how to use another tool (tool shadowing)"),
     (r"<\s*(important|system|instructions?|secret)\s*>", "hidden instruction block"),
     (r"\b(system prompt|developer message)\b", "talks about the model's system prompt"),
     (r"before (using|calling|running) (this|any|the) tool,? (you must |always )?(read|open|send|fetch|call|include)",

@@ -405,6 +405,10 @@ answered 11, the same as networkx. Docker must be running: if it is not, the age
 
 `zyven verify` checks an MCP server Zyven did not build, from the outside: a command over stdio or a URL.
 
+It catches all three published tool-poisoning proof-of-concept servers from Invariant Labs, including the WhatsApp rug
+pull through its lock file, and passes all seven official reference servers (55 tools) with no failed check. See
+`eval/results/verify-real-world-20261123.md`.
+
 ```bash
 uv run zyven verify -- npx -y @modelcontextprotocol/server-everything      # a command (runs on this machine)
 uv run zyven verify --url https://example.com/mcp --header "Authorization: Bearer ..."
