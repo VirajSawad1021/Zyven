@@ -17,8 +17,12 @@ __all__ = ["verify_server", "verify_connection", "format_report", "Report"]
 def verify_server(command: list[str] | None = None, url: str | None = None, headers: dict[str, str] | None = None,
                   env: dict[str, str] | None = None, docker_image: str | None = None,
                   mounts: dict[Path, str] | None = None, probe: bool = False, lock_file: Path | None = None,
-                  timeout: float = 60.0, network: bool = False, allow_hosts: list[str] | None = None) -> Report:
+                  timeout: float = 60.0, network: bool = False, allow_hosts: list[str] | None = None,
+                  call: str | None = None) -> Report:
     _, sandboxed, label = server_from(command, url, headers, env, docker_image, mounts, network=network)
+    if call == "all" and not (docker_image and command):
+        raise ValueError("--call all needs --docker and a server command: calling every tool can change things, so "
+                         "it runs only in the sandbox (use --call read-only for tools that declare readOnlyHint)")
     if allow_hosts and not (docker_image and command):
         raise ValueError("--allow-host needs --docker and a server command: the allowlist is enforced by the sandbox")
     egress = None
@@ -35,7 +39,7 @@ def verify_server(command: list[str] | None = None, url: str | None = None, head
         if allow_hosts:
             from zyven.sandbox.egress import Egress
             egress = Egress(allow_hosts).__enter__()
-        obs = asyncio.run(observe(make, label, sandboxed, probe=probe, timeout=timeout))
+        obs = asyncio.run(observe(make, label, sandboxed, probe=probe, timeout=timeout, call=call))
         obs["network"] = bool(network and docker_image)
         obs["launch"] = {"command": list(command)} if command else {"url": url}
         if docker_image:
@@ -61,7 +65,7 @@ def _checked(obs: dict[str, Any], lock_file: Path | None) -> Report:
 
 
 def verify_connection(board_dir: Path, name: str, probe: bool = False, lock_file: Path | None = None,
-                      timeout: float = 60.0) -> Report:
+                      timeout: float = 60.0, call: str | None = None) -> Report:
     """Check a server connected on the board, signed in: with its stored key, or its OAuth sign-in. The tokens are
     used through the board's own store and refreshed there, never copied: a copied Notion refresh token would sign the
     board out (Notion rotates refresh tokens on use)."""
@@ -80,11 +84,14 @@ def verify_connection(board_dir: Path, name: str, probe: bool = False, lock_file
     if conn is None:
         known = ", ".join(sorted(c.get("name", c["id"]) for c in conns)) or "none"
         raise ValueError(f"no connection {name!r} on the board in {board_dir} (connected: {known})")
+    if call == "all":
+        raise ValueError("--call all is only for servers run in the sandbox; a connected server acts on your real "
+                         "account, so use --call read-only")
     if conn.get("oauth") and not conn.get("signed_in"):
         raise ValueError(f"{conn['name']} is not signed in: open the board's Connections page and sign in first")
     where = conn.get("url") or " ".join([conn.get("command", ""), *conn.get("args", [])])
     obs = asyncio.run(observe(lambda: server_for(store, conn["id"], conn), f"{conn['name']} ({where})", False,
-                              probe=probe, timeout=timeout))
+                              probe=probe, timeout=timeout, call=call))
     obs["launch"] = ({"url": conn["url"]} if conn.get("kind") == "http"
                      else {"command": [conn.get("command", ""), *conn.get("args", [])]})
     return _checked(obs, lock_file)

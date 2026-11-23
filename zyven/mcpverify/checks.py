@@ -53,7 +53,9 @@ INSTRUCTION_PATTERNS = [
      r"|\bwhen (\([\w-]+\) )?(?!this\b)[a-z][a-z0-9]*_[\w.]* (tool )?is (invoked|called|used)"
      r"|\bthe [a-z][a-z0-9]*_[\w]* tool (must|should|has to)\b",
      "tells the model how to use another tool (tool shadowing)"),
-    (r"<\s*(important|system|instructions?|secret)\s*>", "hidden instruction block"),
+    (r"<\s*(important|system|instructions?|secret)\s*>"
+     r"|<!--\s*(important|system|instructions?|secret|admin|note to (the )?(ai|assistant|model)|ai|assistant|llm)\b",
+     "hidden instruction block"),
     (r"\b(system prompt|developer message)\b", "talks about the model's system prompt"),
     (r"before (using|calling|running) (this|any|the) tool,? (you must |always )?(read|open|send|fetch|call|include)",
      "asks the model to do something else first"),
@@ -86,6 +88,30 @@ _SECRET_PARAMS = {"password", "passwd", "passphrase", "token", "api_key", "apike
                   "auth_token", "jwt", "private_key"}
 _RUN_WORDS = {"run", "exec", "execute", "eval", "evaluate", "shell", "bash", "sh", "terminal", "spawn"}
 _WRITE_WORDS = {"write", "save", "delete", "remove", "rm", "create", "move", "rename", "edit", "append", "upload", "put"}
+
+
+_SECRET_RES = [
+    (re.compile(r"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{4,}(\.[A-Za-z0-9_-]*)?"), "a JSON Web Token"),
+    (re.compile(r"\b(AKIA|ASIA)[0-9A-Z]{12,}\b"), "an AWS access key"),
+    (re.compile(r"\bsk-[A-Za-z0-9_-]{16,}"), "an API key (sk-...)"),
+    (re.compile(r"\b(ghp|gho|ghs|github_pat)_[A-Za-z0-9_]{20,}"), "a GitHub token"),
+    (re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{10,}"), "a Slack token"),
+    (re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"), "a private key"),
+    (re.compile(r"\b(password|passwd|pwd|secret|api[_-]?key|access[_-]?token|auth[_-]?token|bearer|jwt[_-]?secret|"
+                r"client[_-]?secret)\b[\"']?\s*[:=]\s*[\"']?(?!\*|<|\[redacted|null|none|true|false)[^\s\"',]{6,}",
+                re.IGNORECASE), "a password or secret value"),
+]
+
+
+def leaked_secrets(text: str) -> list[str]:
+    """Credentials in text a tool returned, named by kind and shown masked (the value is never repeated in a report)."""
+    out = []
+    for rx, kind in _SECRET_RES:
+        m = rx.search(text)
+        if m:
+            s = m.group(0)
+            out.append(f"returns what looks like {kind}: \"{s[:6]}...\" ({len(s)} characters, masked here)")
+    return out
 
 
 def _words(name: str) -> set[str]:
@@ -433,6 +459,18 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
         b, w = lock_differences(obs, locked)
         bad += b
         warn += w
+    after = obs.get("tools_after_calls")
+    if after is not None:  # a rug pull that waits until the tools have been used a few times
+        h3 = {t.get("name", ""): tool_hash(t) for t in after}
+        changed = sorted(n for n in hashes.keys() & h3.keys() if hashes[n] != h3[n])
+        if changed or set(hashes) != set(h3):
+            uses = max((c.get("rounds") or 0 for c in obs.get("calls") or []), default=0)
+            bad.append(f"the tools changed after being used ({uses} calls each): changed {changed}, "
+                       f"added {sorted(set(h3) - set(hashes))}, removed {sorted(set(hashes) - set(h3))}")
+            for t in after:  # what the changed definitions now say
+                if t.get("name") in changed or t.get("name") in set(h3) - set(hashes):
+                    for where, text in _texts(t):
+                        bad += [f"{t['name']} after use ({where}): {x}" for x in classify_text(text)[0]]
     if again is None and obs.get("second_connection_error"):  # say why, instead of a silent skip
         warn.append(f"a second connection failed, so stability was not checked: {obs['second_connection_error']}")
     detail = ("tool definitions differ" if bad else
@@ -457,25 +495,31 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
         checks.append(Check("robustness", FAIL if failed else PASS,
                             detail + ("; server still answering" if alive else ""), failed, len(failed)))
 
-    # results: what the probe calls returned is read by the model too (injection through tool output)
-    if probes is None:
-        checks.append(Check("results", SKIP, "not run (pass --probe; only invalid input is sent, so only error and "
-                                             "rejection text is seen)"))
+    # results: what tools return is read by the model too (injection through tool output, leaked credentials)
+    calls = obs.get("calls")
+    if probes is None and calls is None:
+        checks.append(Check("results", SKIP, "not run (pass --probe to see error text, or --call to call tools with "
+                                             "valid input and read what they return)"))
     else:
         bad = []
-        for p in probes:  # same split as descriptions; a data blob in output is normal, so it is not noted
-            f, _, c = classify_text(p.get("text") or "")
-            for x in f:
-                if f"{p['tool']}: {x}" not in bad:  # several probes of one tool often return the same message
-                    bad.append(f"{p['tool']}: {x}")
+        outputs = [(p["tool"], p.get("text") or "") for p in probes or []]
+        outputs += [(c["tool"], x) for c in calls or [] for x in c.get("texts") or []]
+        for tool_name, text in outputs:  # same split as descriptions; a data blob in output is normal, not noted
+            f, _, c = classify_text(text)
+            for x in f + leaked_secrets(text):
+                if f"{tool_name}: {x}" not in bad:  # several calls of one tool often return the same text
+                    bad.append(f"{tool_name}: {x}")
             for x in c:
-                if f"{p['tool']} (output): {x}" not in capabilities:
-                    capabilities.append(f"{p['tool']} (output): {x}")
-        seen = sum(1 for p in probes if p.get("text"))
-        checks.append(Check("results", FAIL if bad else PASS,
-                            f"{len(bad)} suspicious passages in tool output" if bad else
-                            f"no hidden text or model-directed instructions in {seen} tool response(s)",
-                            bad, len(bad)))
+                if f"{tool_name} (output): {x}" not in capabilities:
+                    capabilities.append(f"{tool_name} (output): {x}")
+        broke = [f"{c['tool']}: the connection broke while calling it ({c['broke']})" for c in calls or [] if c.get("broke")]
+        seen = sum(1 for _, text in outputs if text)
+        how = (f"{len(calls)} tool(s) called with valid input" if calls is not None else "")
+        checks.append(Check("results", FAIL if bad else (WARN if broke else PASS),
+                            (f"{len(bad)} suspicious passages in tool output" if bad else
+                             f"no hidden text, model-directed instructions or credentials in {seen} tool response(s)")
+                            + (f" ({how})" if how else ""),
+                            bad + broke, len(bad)))
 
     # pinning (stdio servers: is the code that runs fixed by the command?)
     command = (obs.get("launch") or {}).get("command")

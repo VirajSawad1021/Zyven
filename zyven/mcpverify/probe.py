@@ -1,8 +1,10 @@
 """Connect to an MCP server (a command over stdio, or a URL) and record what it says and does.
 
-No tool is called unless probes are asked for. Probes only send input that the tool's own schema rejects (missing
-required parameters, or a wrong type), so a correct server answers with an error and does nothing; a careless one
-might still act on it, which is why probes are opt-in.
+No tool is called unless probes or calls are asked for. Probes only send input that the tool's own schema rejects
+(missing required parameters, or a wrong type), so a correct server answers with an error and does nothing; a careless
+one might still act on it, which is why probes are opt-in. Calls (`--call`) send valid sample input several times, so
+what a tool returns in normal use, and whether the server changes its tools after being used, can be checked; they can
+have side effects, so calling every tool is allowed only in the sandbox.
 """
 
 from __future__ import annotations
@@ -45,6 +47,78 @@ def invalid_inputs(tool: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
     return out
 
 
+CALL_ROUNDS = 4  # a rug pull that waits for a few uses (a counter in the server) shows up within these
+
+
+def _sample(name: str, schema: Any) -> Any:
+    """A plausible, harmless value for one parameter: the schema's own example, default or first allowed value, else a
+    neutral value of the right type. Search-like text parameters get one common letter, so a search matches stored
+    data (which is where injected instructions hide) instead of nothing."""
+    if not isinstance(schema, dict):
+        return "test"
+    for key in ("examples", "enum"):
+        v = schema.get(key)
+        if isinstance(v, list) and v:
+            return v[0]
+    for key in ("default", "const"):
+        if schema.get(key) is not None:
+            return schema[key]
+    t = schema.get("type")
+    if isinstance(t, list):
+        t = next((x for x in t if x != "null"), None)
+    if t is None and isinstance(schema.get("anyOf"), list):
+        return _sample(name, next((s for s in schema["anyOf"] if isinstance(s, dict) and s.get("type") != "null"), {}))
+    if t == "integer":
+        return max(1, int(schema.get("minimum", 1)))
+    if t == "number":
+        return 1.0
+    if t == "boolean":
+        return False
+    if t == "array":
+        return []
+    if t == "object":
+        return {}
+    if name.lower() in ("query", "q", "search", "keyword", "term", "text", "pattern", "filter"):
+        return "a"
+    return "test"
+
+
+def valid_input(tool: dict[str, Any]) -> dict[str, Any]:
+    """Arguments the tool's schema accepts: every required parameter with a sample value."""
+    schema = tool.get("inputSchema") or {}
+    props = schema.get("properties") or {}
+    return {r: _sample(r, props.get(r)) for r in schema.get("required") or [] if r in props}
+
+
+def tools_to_call(tools: list[dict[str, Any]], which: str) -> list[dict[str, Any]]:
+    """'read-only': only tools that declare readOnlyHint; 'all': every tool (the CLI allows this only in the sandbox)."""
+    if which == "all":
+        return list(tools)
+    return [t for t in tools if (t.get("annotations") or {}).get("readOnlyHint") is True]
+
+
+async def _call_tools(client: Any, obs: dict[str, Any], which: str, rounds: int) -> None:
+    obs["calls"] = []
+    for t in tools_to_call(obs["tools"], which):
+        args, texts, errors = valid_input(t), [], 0
+        for _ in range(rounds):
+            try:
+                res = await client.call_tool(t["name"], args)
+                errors += bool(res.is_error)
+                text = result_text(res)
+            except Exception as e:  # noqa: BLE001
+                if not _is_protocol_error(e):
+                    obs["calls"].append({"tool": t["name"], "args": args, "texts": texts, "errors": errors,
+                                         "broke": _why(e)})
+                    return
+                errors += 1
+                text = _clip(str(getattr(e, "message", "") or e))
+            if text and text not in texts:
+                texts.append(text)
+        obs["calls"].append({"tool": t["name"], "args": args, "texts": texts, "errors": errors, "rounds": rounds})
+    obs["tools_after_calls"] = [_tool_dict(x) for x in (await client.list_tools()).tools]
+
+
 def server_from(command: list[str] | None, url: str | None, headers: dict[str, str] | None = None,
                 env: dict[str, str] | None = None, docker_image: str | None = None,
                 mounts: dict[Path, str] | None = None, container: str | None = None,
@@ -75,7 +149,7 @@ def server_from(command: list[str] | None, url: str | None, headers: dict[str, s
 
 
 async def observe(make_server, label: str, sandboxed: bool, probe: bool = False, twice: bool = True,
-                  timeout: float = TIMEOUT_S) -> dict[str, Any]:
+                  timeout: float = TIMEOUT_S, call: str | None = None, call_rounds: int = CALL_ROUNDS) -> dict[str, Any]:
     """make_server() returns a fresh transport/params each call (a second connection needs a new one)."""
     obs: dict[str, Any] = {"target": label, "sandboxed": sandboxed, "started": False}
     started = time.monotonic()
@@ -115,6 +189,8 @@ async def observe(make_server, label: str, sandboxed: bool, probe: bool = False,
                             obs["alive_after_probes"] = True
                         except Exception as e:  # noqa: BLE001
                             obs["alive_after_probes"] = _is_protocol_error(e)
+                if call:
+                    await _call_tools(client, obs, call, call_rounds)
     except Exception as e:  # noqa: BLE001
         if not obs["started"]:
             obs["error"] = _why(e)

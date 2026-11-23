@@ -50,6 +50,10 @@ RULES: list[tuple[str, str, str]] = [
     ("descriptions/base64-blob", "long base64-like blob", "A long encoded blob in text the model reads."),
     ("descriptions/missing-description", "no description", "A tool has no description."),
     ("descriptions/long-description", "unusually long", "A description is unusually long; read it."),
+    ("descriptions/leaked-credential", "returns what looks like", "A tool returned what looks like a credential "
+     "(token, key or password), which the model then reads."),
+    ("descriptions/connection-broke", "connection broke while calling", "The connection broke while a tool was "
+     "called with valid input."),
     ("annotations/contradictory", "both read-only and destructive", "A tool is marked both read-only and destructive."),
     ("annotations/read-only-but-changes", "marked read-only, but its name and parameters say",
      "A tool is marked read-only, but its name and parameters say it runs commands or code, or writes files."),
@@ -57,6 +61,10 @@ RULES: list[tuple[str, str, str]] = [
      "A tool does not say whether it is read-only, so clients must assume it changes things."),
     ("stability/changed-between-connections", "changed between two connections",
      "The tool definitions differed between two connections a few seconds apart."),
+    ("stability/changed-after-use", "changed after being used", "The tool definitions changed after the tools were used (a rug "
+     "pull that waits for a few calls)."),
+    ("stability/changed-after-use", "after use (", "The tool definitions changed after the tools were used (a rug "
+     "pull that waits for a few calls)."),
     ("stability/lock-mismatch", "differ from the lock file", "Tool definitions differ from the committed lock file."),
     ("stability/tool-removed", "no longer offered", "A tool in the lock file is no longer offered."),
     ("stability/tool-added", "new tools since the lock file", "The server offers tools the lock file does not list."),
