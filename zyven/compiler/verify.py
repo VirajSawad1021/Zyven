@@ -218,8 +218,8 @@ def reference_problem(c, package_roots: set[str]) -> str | None:
     return None if res.ok else "; ".join(res.violations)[:110]
 
 
-def reference_problems(cases: list, repo: Path, source_root: str, package_roots: set[str], workdir: Path,
-                       egress=None) -> list[str | None]:
+def reference_problems(cases: list, spec: CapabilitySpec, repo: Path, source_root: str, package_roots: set[str],
+                       workdir: Path, egress=None) -> list[str | None]:
     """Why each case's reference program cannot be used, or None for a valid reference program: one that passes the
     static checks (`reference_problem`) and then evaluates, in the sandbox, on its own case's arguments. Whether it
     matches any tool is not looked at; no tool is involved. A runtime problem is the exception the library raised and
@@ -231,8 +231,10 @@ def reference_problems(cases: list, repo: Path, source_root: str, package_roots:
     if not runnable:
         return out
     workdir.mkdir(parents=True, exist_ok=True)
-    (workdir / "references.json").write_text(json.dumps({"cases": [cases[i].model_dump() for i in runnable]},
-                                                        ensure_ascii=False), encoding="utf-8")
+    tools = {t.name: t for t in spec.tools}
+    payload = [{**cases[i].model_dump(), "args": typed_args(tools[cases[i].tool].params, cases[i].args)
+                if cases[i].tool in tools else cases[i].args} for i in runnable]  # typed as the gate types them
+    (workdir / "references.json").write_text(json.dumps({"cases": payload}, ensure_ascii=False), encoding="utf-8")
     net = {"network_name": egress.network} if egress is not None else {}
     pythonpath = "/src" if source_root in ("", ".") else f"/src/{source_root}"
     policy = SandboxPolicy(image=SANDBOX_IMAGE, timeout_s=120,

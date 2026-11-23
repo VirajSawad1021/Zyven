@@ -83,14 +83,14 @@ def measure(provider: ModelProvider, lib: str, spec: CapabilitySpec, repo: Path,
         first = tester(provider, a, spec)
     except ProviderError as e:
         return {**row, "error": f"tester: {str(e)[:300]}"}
-    problems = reference_problems(first.cases, repo, a.source_root, roots, work)
+    problems = reference_problems(first.cases, spec, repo, a.source_root, roots, work)
     row.update(cases_first=len(first.cases), valid_first=sum(p is None for p in problems))
 
     def quiet(kind: str, **data) -> None:
         print(f"    [{kind}] {data.get('detail', '')}"[:200], flush=True)
 
     after = _reask_unusable(provider, a, spec, first, roots, quiet)
-    problems = reference_problems(after.cases, repo, a.source_root, roots, work)
+    problems = reference_problems(after.cases, spec, repo, a.source_root, roots, work)
     valid_tools = {c.tool for c, p in zip(after.cases, problems) if p is None}
     row.update(cases_after=len(after.cases), valid_after=sum(p is None for p in problems),
                tools_with_valid=len(valid_tools & {t.name for t in spec.tools}),

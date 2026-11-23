@@ -116,7 +116,7 @@ async def test_skills_run_isolated_at_runtime(tmp_path):
 def test_reference_programs_are_run_against_the_library(tmp_path):
     """A reference that misuses the library (#101: a date string where the constructor takes year, month and day) is
     reported with the exception and the program as it ran; a valid one passes; a static problem is caught first."""
-    from zyven.ai.schemas import DiffCase
+    from zyven.ai.schemas import CapabilitySpec, DiffCase, ReturnField, ToolParam, ToolSpec
     from zyven.compiler.verify import reference_problems
 
     lib = tmp_path / "lib"
@@ -132,12 +132,20 @@ def test_reference_programs_are_run_against_the_library(tmp_path):
         return DiffCase(tool="to_iso", args=args, field="iso", reference_imports=["import minical.dates"],
                         reference_expr=expr)
 
+    params = [ToolParam(name="date", type="string", description="", required=False)] + [
+        ToolParam(name=n, type="integer", description="", required=False) for n in ("y", "m", "d")]
+    spec = CapabilitySpec(name="minical", title="", summary="", included_symbols=[], relevant_tests=[], tools=[
+        ToolSpec(name="to_iso", description="", params=params, returns=[ReturnField(name="iso", type="string",
+                 description="")], implementation_symbols=[], implementation_notes="", example_args={})])
     cases = [case("minical.dates.Day({date})", {"date": "2024-09-02"}),
              case("minical.dates.Day({y}, {m}, {d}).iso()", {"y": 2024, "m": 9, "d": 2}),
-             case("print(minical.dates.Day({y}, 1, 1))", {"y": 2024})]
+             case("print(minical.dates.Day({y}, 1, 1))", {"y": 2024}),
+             # an integer parameter written as text is typed first, as the differential gate does: "{m:02d}" works
+             case("minical.dates.Day({y}, {m}, {d}).iso()", {"y": 2024, "m": "9", "d": 2})]
     work = tmp_path / "work"
-    problems = reference_problems(cases, lib, ".", {"minical"}, work)
+    problems = reference_problems(cases, spec, lib, ".", {"minical"}, work)
     assert problems[0] is not None and "TypeError" in problems[0]
     assert "minical.dates.Day('2024-09-02')" in problems[0]  # the program as it ran, placeholders filled in
     assert problems[1] is None
     assert problems[2] is not None and "print" in problems[2]  # static check, never sent to the sandbox
+    assert problems[3] is None
