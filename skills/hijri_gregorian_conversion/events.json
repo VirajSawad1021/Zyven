@@ -1,0 +1,118 @@
+[
+ {
+  "t": 0.0,
+  "event": "architect.start",
+  "detail": "Hijri and Gregorian Calendar Conversion"
+ },
+ {
+  "t": 64.75,
+  "event": "architect.done",
+  "detail": "3 tools: convert_hijri_to_gregorian, convert_gregorian_to_hijri, get_hijri_date_properties",
+  "resolved": {},
+  "dropped": [],
+  "fixes": [
+   "interface lint: get_hijri_date_properties: return field 'properties' is an untyped object; return named fields instead",
+   "interface lint: revised: 1 -> 0 interface warnings"
+  ]
+ },
+ {
+  "t": 64.77,
+  "event": "compiler.start",
+  "detail": "writing 3 tool bodies"
+ },
+ {
+  "t": 260.17,
+  "event": "compiler.done",
+  "detail": "all tools implemented"
+ },
+ {
+  "t": 260.17,
+  "event": "tester.start",
+  "detail": "writing differential tests from the spec and library (adapter code not shown)"
+ },
+ {
+  "t": 621.36,
+  "event": "tester.error",
+  "detail": "no differential tests: model call failed after retries: timeout after 180s: ReadTimeout('The read operation timed out')"
+ },
+ {
+  "t": 621.38,
+  "event": "verify.start",
+  "detail": "attempt 1"
+ },
+ {
+  "t": 641.39,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 641.39,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 641.39,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 5903 tests ran, 0 failures, 0 errors (tests/integration/test_lengths.py, tests/integration/test_references.py, tests/unit/test_convert.py, tests/unit/test_helpers.py, tests/unit/test_locales.py)",
+  "passed": true
+ },
+ {
+  "t": 641.39,
+  "event": "gate.input_robustness",
+  "detail": "FAIL 3/4 equivalent-input probes gave identical results: get_hijri_date_properties {\"hijri_date_iso\": \"1410-08-13\", \"language_code\": \"  en \"}",
+  "passed": false
+ },
+ {
+  "t": 641.39,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 3 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 641.39,
+  "event": "repair.start",
+  "detail": "1 failing tool(s): get_hijri_date_properties"
+ },
+ {
+  "t": 647.55,
+  "event": "repair.done",
+  "detail": "patched get_hijri_date_properties"
+ },
+ {
+  "t": 647.55,
+  "event": "verify.start",
+  "detail": "attempt 2"
+ },
+ {
+  "t": 668.2,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 668.2,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 668.2,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 5903 tests ran, 0 failures, 0 errors (tests/integration/test_lengths.py, tests/integration/test_references.py, tests/unit/test_convert.py, tests/unit/test_helpers.py, tests/unit/test_locales.py)",
+  "passed": true
+ },
+ {
+  "t": 668.2,
+  "event": "gate.input_robustness",
+  "detail": "PASS 4/4 equivalent-input probes gave identical results",
+  "passed": true
+ },
+ {
+  "t": 668.2,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 3 tools called with example args; invalid input rejected",
+  "passed": true
+ }
+]

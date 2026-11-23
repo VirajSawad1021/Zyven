@@ -57,6 +57,16 @@ truth is computed by the source library itself, and the raw records are in `eval
 | Hijri ↔ Gregorian, Jewish holidays, phone validity and E.164 | [hijridate](https://github.com/dralshehri/hijridate), [pyluach](https://github.com/simlist/pyluach), [phonenumbers](https://github.com/daviddrysdale/python-phonenumbers) | **18 / 30** | **27 / 30*** |
 | Bikram Sambat dates, weekdays, phone operators | [py-nepali](https://github.com/opensource-nepal/py-nepali) | **9 / 40** | **40 / 40** |
 
+**With a small model.** Gemma 4 E4B is a 4-billion-parameter model that runs on one free Kaggle GPU. It gains the most from
+verified skills:
+
+| Suite (Gemma 4 E4B) | Model alone | Model + Zyven-compiled skills |
+|---|---|---|
+| Hijri ↔ Gregorian, phone validity and E.164 | **8 / 24** | **24 / 24** |
+| Graph algorithms (networkx) | **22 / 24** at 77.8 s per question | **24 / 24** at 12.9 s per question |
+
+Details: `eval/results/e4b-global-20261122.md` and `eval/results/e4b-networkx-20261122.md`.
+
 <details>
 <summary>Per-category breakdown</summary>
 
@@ -100,6 +110,16 @@ truth is computed by the source library itself, and the raw records are in `eval
 
 The small model answers most of these questions on its own, but slowly; with the verified skill it gets every one right
 and is about six times faster. Details in `eval/results/e4b-networkx-20261122.md`.
+
+**Calendars and phone numbers with a small model** (`gemma-4-e4b-it`, same 30 tasks, 4096-token cap)
+
+| Condition | Hijri → Greg | Greg → Hijri | Jewish holiday | Phone valid? | Phone → E.164 | Total |
+|---|---|---|---|---|---|---|
+| Model alone | 0/6 | 0/6 | 1/6 | 4/6 | 4/6 | **9/30** |
+| Model + compiled skills | 6/6 | 6/6 | 0/6 (no skill) | 6/6 | 6/6 | **24/30** |
+
+Every category with a skill was answered correctly; the Jewish-holiday category had no skill in either condition.
+Details in `eval/results/e4b-global-20261122.md`.
 
 At the 4096-token cap, 23 of 24 runs without the skill used up the budget working the answer out by hand and gave none,
 and all 5 misses with the skill were the same cap, not wrong tool results. Doubling the cap helps both conditions; the

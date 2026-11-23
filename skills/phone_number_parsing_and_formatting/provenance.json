@@ -1,0 +1,43 @@
+{
+ "repository": "https://github.com/daviddrysdale/python-phonenumbers",
+ "commit": "e92147091eca7db103f35cb4daed85376ab79328",
+ "license": "Apache-2.0",
+ "generator": "zyven 0.1.0",
+ "model": "gemma-4-26b-a4b-it@generativelanguage.googleapis.com",
+ "capability": "phone_number_parsing_and_formatting",
+ "mode": "wrap",
+ "included_symbols": [
+  "phonenumbers.phonenumberutil.parse",
+  "phonenumbers.phonenumberutil.format_number",
+  "phonenumbers.phonenumberutil.is_valid_number",
+  "phonenumbers.phonenumberutil.is_possible_number",
+  "phonenumbers.phonenumberutil.number_type",
+  "phonenumbers.phonenumberutil.region_code_for_number"
+ ],
+ "source_checkout": "C:\\Users\\Viraj\\Downloads\\ZYVEN\\workspace\\repos\\phonenumbers\\python",
+ "source_root": "python",
+ "generated_files": [
+  "server.py"
+ ],
+ "compile_seconds": 306.7,
+ "attempts": 2,
+ "dropped_tools": {},
+ "model_calls": 8,
+ "reassembled": [
+  {
+   "generator": "zyven 0.1.0",
+   "at": "2026-11-22",
+   "gates_rerun": true
+  },
+  {
+   "generator": "zyven 0.1.0",
+   "at": "2026-11-22",
+   "gates_rerun": true
+  },
+  {
+   "generator": "zyven 0.1.0",
+   "at": "2026-11-22",
+   "gates_rerun": true
+  }
+ ]
+}

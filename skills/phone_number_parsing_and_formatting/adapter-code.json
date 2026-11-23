@@ -1,0 +1,27 @@
+{
+ "tools": [
+  {
+   "tool": "parse_and_analyze_phone_number",
+   "imports": [
+    "import phonenumbers",
+    "from phonenumbers import PhoneNumberFormat"
+   ],
+   "body": "try:\n    numobj = phonenumbers.parse(phone_number_string, default_region)\n    is_valid = phonenumbers.is_valid_number(numobj)\n    is_possible = phonenumbers.is_possible_number(numobj)\n    number_type_enum = phonenumbers.number_type(numobj)\n    region_code = phonenumbers.region_code_for_number(numobj)\n    e164_format = phonenumbers.format_number(numobj, PhoneNumberFormat.E164)\n    international_format = phonenumbers.format_number(numobj, PhoneNumberFormat.INTERNATIONAL)\n    \n    # Convert enum to string\n    number_type_str = str(number_type_enum.name) if hasattr(number_type_enum, 'name') else str(number_type_enum)\n    \n    return {\n        \"is_valid\": is_valid,\n        \"is_possible\": is_possible,\n        \"number_type\": number_type_str,\n        \"region_code\": region_code,\n        \"e164_format\": e164_format,\n        \"international_format\": international_format,\n        \"boolean_display\": f\"Valid: {is_valid}, Type: {number_type_str}, Region: {region_code}\",\n        \"error\": None,\n        \"error_type\": None\n    }\nexcept phonenumbers.NumberParseException as e:\n    return {\n        \"is_valid\": False,\n        \"is_possible\": False,\n        \"number_type\": \"UNKNOWN\",\n        \"region_code\": None,\n        \"e164_format\": None,\n        \"international_format\": None,\n        \"boolean_display\": None,\n        \"error\": str(e),\n        \"error_type\": e.type if hasattr(e, 'type') else \"PARSE_ERROR\"\n    }"
+  },
+  {
+   "tool": "format_phone_number",
+   "imports": [
+    "import phonenumbers",
+    "from phonenumbers import PhoneNumberFormat"
+   ],
+   "body": "try:\n    stripped_format_type = format_type.strip().upper()\n    numobj = phonenumbers.parse(e164_number, None)\n    format_map = {\n        \"E164\": PhoneNumberFormat.E164,\n        \"INTERNATIONAL\": PhoneNumberFormat.INTERNATIONAL,\n        \"NATIONAL\": PhoneNumberFormat.NATIONAL\n    }\n    if stripped_format_type not in format_map:\n        raise ValueError(f\"Invalid format type: {format_type}\")\n    \n    target_format = format_map[stripped_format_type]\n    formatted_string = phonenumbers.format_number(numobj, target_format)\n    \n    return {\n        \"format_number_string\": formatted_string,\n        \"success\": True,\n        \"error\": None\n    }\nexcept Exception as e:\n    return {\n        \"format_number_string\": None,\n        \"success\": False,\n        \"error\": str(e)\n    }"
+  },
+  {
+   "tool": "get_carrier_info",
+   "imports": [
+    "import phonenumbers"
+   ],
+   "body": "try:\n    numobj = phonenumbers.parse(e164_number, None)\n    carrier = phonenumbers.carrier(numobj)\n    \n    return {\n        \"carrier_name\": carrier if carrier else \"UNKNOWN\",\n        \"success\": True,\n        \"error\": None\n    }\nexcept Exception as e:\n    return {\n        \"carrier_name\": None,\n        \"success\": False,\n        \"error\": str(e)\n    }"
+  }
+ ]
+}

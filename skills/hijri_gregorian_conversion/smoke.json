@@ -1,0 +1,72 @@
+{
+ "tools": {
+  "convert_hijri_to_gregorian": {
+   "args": {
+    "hijri_date_iso": "1410-08-13"
+   },
+   "returns": [
+    "gregorian_date_iso",
+    "gregorian_year",
+    "gregorian_month",
+    "gregorian_day",
+    "display_date"
+   ],
+   "required": [
+    "hijri_date_iso"
+   ],
+   "variants": [
+    {
+     "hijri_date_iso": "  1410-08-13 "
+    }
+   ]
+  },
+  "convert_gregorian_to_hijri": {
+   "args": {
+    "gregorian_date_iso": "1990-03-10"
+   },
+   "returns": [
+    "hijri_date_iso",
+    "hijri_year",
+    "hijri_month",
+    "hijri_day",
+    "display_date"
+   ],
+   "required": [
+    "gregorian_date_iso"
+   ],
+   "variants": [
+    {
+     "gregorian_date_iso": "  1990-03-10 "
+    }
+   ]
+  },
+  "get_hijri_date_properties": {
+   "args": {
+    "hijri_date_iso": "1410-08-13",
+    "language_code": "en"
+   },
+   "returns": [
+    "month_name",
+    "day_name",
+    "weekday_index",
+    "isoweekday_index",
+    "year_length_days",
+    "year_notation",
+    "month_length_days"
+   ],
+   "required": [
+    "hijri_date_iso"
+   ],
+   "variants": [
+    {
+     "hijri_date_iso": "  1410-08-13 ",
+     "language_code": "en"
+    },
+    {
+     "hijri_date_iso": "1410-08-13",
+     "language_code": "  en "
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,191 @@
+{
+ "name": "phone_number_parsing_and_formatting",
+ "title": "Phone Number Parsing, Validation, and Formatting",
+ "summary": "A capability to parse, validate, and format phone numbers globally. It can identify number types (mobile, landline, etc.) and determine the region of origin.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "parse_and_analyze_phone_number",
+   "description": "Parses a raw phone number string and provides a comprehensive analysis including validation, type, and region.",
+   "params": [
+    {
+     "name": "phone_number_string",
+     "type": "string",
+     "description": "The raw phone number string to parse (e.g., '+1 415 555 2671' or '020 7946 0000').",
+     "required": true,
+     "example": "+1 415 555 2671"
+    },
+    {
+     "name": "default_region",
+     "type": "string",
+     "description": "The ISO 3166-1 alpha-2 country code to use if the number is not in international format (e.g., 'US', 'GB'). Defaults to None.",
+     "required": false,
+     "example": "US"
+    }
+   ],
+   "returns": [
+    {
+     "name": "is_valid",
+     "type": "boolean",
+     "description": "Whether the number matches a valid pattern for its region."
+    },
+    {
+     "name": "is_possible",
+     "type": "boolean",
+     "description": "Whether the number is a possible phone number (less strict than is_valid)."
+    },
+    {
+     "name": "number_type",
+     "type": "string",
+     "description": "The type of the phone number (e.g., 'MOBILE', 'FIXED_LINE', 'PREMIUM_RATE', 'UNKNOWN')."
+    },
+    {
+     "name": "region_code",
+     "type": "string",
+     "description": "The ISO 3166-1 alpha-2 region code the number belongs to."
+    },
+    {
+     "name": "e164_format",
+     "type": "string",
+     "description": "The phone number in E.164 format (e.g., '+14155552671')."
+    },
+    {
+     "name": "international_format",
+     "type": "string",
+     "description": "The phone number in international format (e.g., '+1 415 555 2671')."
+    },
+    {
+     "name": "boolean_display",
+     "type": "string",
+     "description": "A human-readable summary of the number's status (e.g., 'Valid: True, Type: MOBILE, Region: US')."
+    },
+    {
+     "name": "error",
+     "type": "string",
+     "description": "If parsing failed, this field contains the error message. Otherwise, null."
+    },
+    {
+     "name": "error_type",
+     "type": "string",
+     "description": "If parsing failed, this field contains the error-type code. Otherwise, null."
+    }
+   ],
+   "implementation_symbols": [
+    "phonenumbers.phonenumberutil.parse",
+    "phonenumbers.phonenumberutil.is_valid_number",
+    "phonenumbers.phonenumberutil.is_possible_number",
+    "phonenumbers.phonenumberutil.number_type",
+    "phonenumbers.phonenumberutil.region_code_for_number",
+    "phonenumbers.phonenumberutil.format_number"
+   ],
+   "implementation_notes": "1. Call 'phonenumbers.parse(number, region)' to get a PhoneNumber object. Handle 'phonenumbers.phonenumberutil.NumberParseException' to catch errors. 2. If parsing succeeds, use the PhoneNumber object with: 'phonenumbers.is_valid_number(numobj)', 'phonenumbers.is_possible_number(numobj)', 'phonbers.number_type(numobj)', 'phonenumbers.region_code_for_number(numobj)', 'phonenumbers.format_number(numobj, PhoneNumberFormat.E164)', and 'phonenumbers.format_number(numobj, PhoneNumberFormat.INTERNATIONAL)' to gather all data. 3. Convert the PhoneNumberType enum to a string. 4. Return the structured JSON object.",
+   "example_args": {
+    "phone_number_string": "+1 415 555 2671",
+    "default_region": "US"
+   }
+  },
+  {
+   "name": "format_phone_number",
+   "description": "Formats an existing valid phone number into a specific format.",
+   "params": [
+    {
+     "name": "e164_number",
+     "type": "string",
+     "description": "The phone number in E.164 format (e.g., '+14155552671').",
+     "required": true,
+     "example": "+14155552671"
+    },
+    {
+     "name": "format_type",
+     "type": "string",
+     "description": "description: The format to use: 'E164', 'INTERNATIONAL', or 'NATIONAL'.",
+     "required": true,
+     "example": "INTERNATIONAL"
+    }
+   ],
+   "returns": [
+    {
+     "name": "format_number_string",
+     "type": "string",
+     "description": "The formatted phone number string."
+    },
+    {
+     "name": "success",
+     "type": "boolean",
+     "description": "Whether the formatting was successful."
+    },
+    {
+     "name": "error",
+     "type": "string",
+     "description": "If formatting failed, this field contains the error message. Otherwise, null."
+    }
+   ],
+   "implementation_symbols": [
+    "phonenumbers.phonenumberutil.format_number"
+   ],
+   "implementation_notes": "1. Call 'phonenumbers.parse(e164_number, None)' to get a PhoneNumber object. 2. Call 'phonenumbers.format_number(numobj, format_enum)' where format_enum is mapped from the input string to 'PhoneNumberFormat.E164', 'PhoneNumberFormat.INTERNATIONAL', or 'PhoneNumberFormat.NATIONAL'.",
+   "example_args": {
+    "e164_number": "+14155552671",
+    "format_type": "INTERNATIONAL"
+   }
+  },
+  {
+   "name": "get_carrier_info",
+   "description": "Identifies the carrier/service provider for a phone number.",
+   "params": [
+    {
+     "name": "e164_number",
+     "type": "string",
+     "description": "The phone number in E.164 format (e.g., '+14155552671').",
+     "required": true,
+     "example": "+14155552671"
+    }
+   ],
+   "returns": [
+    {
+     "name": "carrier_name",
+     "type": "string",
+     "description": "The name of the carrier/service provider (e.g., 'Verizon', 'AT&T')."
+    },
+    {
+     "name": "success",
+     "type": "boolean",
+     "description": "Whether the identification was successful."
+    },
+    {
+     "name": "error",
+     "type": "string",
+     "description": "If carrier identification failed, this field contains the error message. Otherwise, null."
+    }
+   ],
+   "implementation_symbols": [],
+   "implementation_notes": "1. Call 'phonenumbers.parse(e164_number, None)' to get a PhoneNumber object. 2. Call 'phonenumbers.carrier(numobj)' to get the carrier name. Note: carrier identification might return an empty string or 'UNKNOWN' if the carrier is not identifiable.",
+   "example_args": {
+    "e164_number": "+14155552671"
+   }
+  }
+ ],
+ "included_symbols": [
+  "phonenumbers.phonenumberutil.parse",
+  "phonenumbers.phonenumberutil.format_number",
+  "phonenumbers.phonenumberutil.is_valid_number",
+  "phonenumbers.phonenumberutil.is_possible_number",
+  "phonenumbers.phonenumberutil.number_type",
+  "phonenumbers.phonenumberutil.region_code_for_number"
+ ],
+ "excluded_symbols": [],
+ "dependencies": [
+  "phonenumbers"
+ ],
+ "side_effects": [],
+ "relevant_tests": [
+  "python/tests/examplenumberstest.py",
+  "python/tests/phonenumberutiltest.py",
+  "python/tests/carriertest.py"
+ ],
+ "uncertainties": [
+  "The 'is_valid_number' check is a pattern match and does not guarantee the number is currently in service or active.",
+  "The 'number_type' check might return 'UNKNOWN' if the number is invalid or if the metadata for that region is not available in the library.",
+  "Carrier identification is based on the library's internal database and may not be current or complete for all regions."
+ ]
+}

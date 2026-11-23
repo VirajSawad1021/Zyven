@@ -1,0 +1,77 @@
+{
+ "tools": {
+  "parse_and_analyze_phone_number": {
+   "args": {
+    "phone_number_string": "+1 415 555 2671",
+    "default_region": "US"
+   },
+   "returns": [
+    "is_valid",
+    "is_possible",
+    "number_type",
+    "region_code",
+    "e164_format",
+    "international_format",
+    "boolean_display",
+    "error",
+    "error_type"
+   ],
+   "required": [
+    "phone_number_string"
+   ],
+   "variants": [
+    {
+     "phone_number_string": "  +1 415 555 2671 ",
+     "default_region": "US"
+    },
+    {
+     "phone_number_string": "+1 415 555 2671",
+     "default_region": "  US "
+    }
+   ]
+  },
+  "format_phone_number": {
+   "args": {
+    "e164_number": "+14155552671",
+    "format_type": "INTERNATIONAL"
+   },
+   "returns": [
+    "format_number_string",
+    "success",
+    "error"
+   ],
+   "required": [
+    "e164_number",
+    "format_type"
+   ],
+   "variants": [
+    {
+     "e164_number": "  +14155552671 ",
+     "format_type": "INTERNATIONAL"
+    },
+    {
+     "e164_number": "+14155552671",
+     "format_type": "  INTERNATIONAL "
+    }
+   ]
+  },
+  "get_carrier_info": {
+   "args": {
+    "e164_number": "+14155552671"
+   },
+   "returns": [
+    "carrier_name",
+    "success",
+    "error"
+   ],
+   "required": [
+    "e164_number"
+   ],
+   "variants": [
+    {
+     "e164_number": "  +14155552671 "
+    }
+   ]
+  }
+ }
+}

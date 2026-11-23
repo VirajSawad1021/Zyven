@@ -7,7 +7,9 @@ signatures, types, decorators, docstrings) is generated deterministically here, 
 
 from __future__ import annotations
 
+import ast
 import json
+import re
 import textwrap
 
 from zyven.ai.schemas import AdapterCode, CapabilitySpec, ToolImpl, ToolSpec
@@ -40,6 +42,65 @@ def docstring(tool: ToolSpec) -> str:
     lines += ["", "Returns: " + ", ".join(f"{r.name} ({r.type}): {r.description}" for r in tool.returns)]
     text = "\n".join(lines).replace('"""', "'''")
     return textwrap.indent(f'"""{text}\n"""', "    ")
+
+
+_DOTTED = re.compile(r"[A-Za-z_]\w*(\.[A-Za-z_]\w*)*")
+
+
+def import_line(line: str) -> str:
+    """An import statement for one entry of a tool's import list. Small models sometimes list the symbol they use
+    ("pyluach.dates.GregorianDate") instead of an import; pasted as is, that line is an expression that fails with
+    NameError. A bare dotted name becomes an import of its module, so the body's dotted use works."""
+    line = line.strip()
+    if not _DOTTED.fullmatch(line):
+        return line
+    parts = line.split(".")
+    return f"import {'.'.join(parts[:-1]) if len(parts) > 1 else parts[0]}"
+
+
+def missing_imports(body: str, imports: list[str], symbols: list[str]) -> list[str]:
+    """Imports for library modules the body uses by dotted name ("pyluach.dates.GregorianDate(...)") without
+    importing them; small models often forget the import line, and their own repair does not always add it. Only the
+    library's own modules (from the spec's included symbols) are added, so the policy gate sees nothing new."""
+    try:
+        tree = ast.parse("\n".join(imports) + "\n" + body)
+    except SyntaxError:
+        return []  # the policy and import gates report it
+    bound, used, dotted = set(), set(), []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            bound.update((a.asname or a.name).split(".")[0] for a in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            bound.update(a.asname or a.name for a in node.names)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            bound.add(node.name)
+        elif isinstance(node, ast.arg):
+            bound.add(node.arg)
+        elif isinstance(node, ast.Name):
+            (bound if isinstance(node.ctx, ast.Store) else used).add(node.id)
+        elif isinstance(node, ast.Attribute):
+            parts, cur = [], node
+            while isinstance(cur, ast.Attribute):
+                parts.append(cur.attr)
+                cur = cur.value
+            if isinstance(cur, ast.Name):
+                dotted.append(".".join([cur.id, *reversed(parts)]))
+    modules = set()
+    for s in symbols:
+        parts = s.split(".")
+        modules.update(".".join(parts[:i]) for i in range(1, len(parts)))
+    roots = {m.split(".")[0] for m in modules}
+    out = []
+    for ref in dotted:  # pyluach.dates.GregorianDate(...) with no import of pyluach
+        parts = ref.split(".")
+        if parts[0] in roots and parts[0] in used and parts[0] not in bound:
+            out.append("import " + next(".".join(parts[:i]) for i in range(len(parts), 0, -1)
+                                        if ".".join(parts[:i]) in modules or i == 1))
+    for s in symbols:  # a symbol of the spec used by its bare name: GregorianDate(...) -> from pyluach.dates import ...
+        module, _, name = s.rpartition(".")
+        if module and name in used and name not in bound:
+            out.append(f"from {module} import {name}")
+    return sorted(dict.fromkeys(out))
 
 
 def assemble(spec: CapabilitySpec, code: AdapterCode, provenance: dict) -> str:
@@ -87,7 +148,8 @@ def assemble(spec: CapabilitySpec, code: AdapterCode, provenance: dict) -> str:
     for tool in spec.tools:
         impl = impls.get(tool.name)
         body = impl.body if impl else "raise NotImplementedError('no implementation generated')"
-        local_imports = [ln.strip() for ln in (impl.imports if impl else []) if ln.strip()]
+        local_imports = list(dict.fromkeys(import_line(ln) for ln in (impl.imports if impl else []) if ln.strip()))
+        local_imports += missing_imports(body, local_imports, spec.included_symbols or [])
         body = "\n".join(local_imports + [textwrap.dedent(body).strip("\n")])
         blocks.append("\n".join([
             "",

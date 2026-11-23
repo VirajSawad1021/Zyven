@@ -1,0 +1,37 @@
+{
+ "repository": "https://github.com/dralshehri/hijridate",
+ "commit": "f6f0f4f69da8e58dc65179213822ef7b83a77dcd",
+ "license": "MIT",
+ "generator": "zyven 0.1.0",
+ "model": "gemma-4-26b-a4b-it@generativelanguage.googleapis.com",
+ "capability": "hijri_gregorian_conversion",
+ "mode": "wrap",
+ "included_symbols": [
+  "hijridate.convert.Hijri",
+  "hijridate.convert.Gregorian"
+ ],
+ "source_checkout": "C:\\Users\\Viraj\\Downloads\\ZYVEN\\workspace\\repos\\hijridate\\src",
+ "source_root": "src",
+ "generated_files": [
+  "server.py"
+ ],
+ "compile_seconds": 668.2,
+ "attempts": 2,
+ "dropped_tools": {},
+ "model_calls": 4,
+ "reassembled": [
+  {
+   "generator": "zyven 0.1.0",
+   "at": "2026-11-22",
+   "gates_rerun": true
+  }
+ ],
+ "edits": [
+  {
+   "at": "2026-11-22",
+   "what": "tool code edited after review, not by the compile's model: tools taking a Hijri date also accept it as day, month name and year ('2 Shawwal 1418'); 16 differential cases written against hijridate (this compile's Tester call had failed, so the differential gate had not run)",
+   "why": "found by an evaluation run with a small model (Gemma 4 E4B), which numbered the months wrongly",
+   "verified": "zyven reassemble: all six gates passed, differential 16/16"
+  }
+ ]
+}

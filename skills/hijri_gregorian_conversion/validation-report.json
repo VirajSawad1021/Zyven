@@ -1,0 +1,457 @@
+{
+ "passed": true,
+ "verified_for": [
+  "policy",
+  "import",
+  "upstream_tests",
+  "input_robustness",
+  "mcp_smoke",
+  "differential"
+ ],
+ "gates": [
+  {
+   "name": "policy",
+   "passed": true,
+   "detail": "imports and builtins within policy",
+   "data": {}
+  },
+  {
+   "name": "import",
+   "passed": true,
+   "detail": "server module imports cleanly",
+   "data": {}
+  },
+  {
+   "name": "upstream_tests",
+   "passed": true,
+   "detail": "5903 tests ran, 0 failures, 0 errors (tests/integration/test_lengths.py, tests/integration/test_references.py, tests/unit/test_convert.py, tests/unit/test_helpers.py, tests/unit/test_locales.py)",
+   "data": {
+    "ran": 5903,
+    "failures": 0,
+    "errors": 0
+   }
+  },
+  {
+   "name": "input_robustness",
+   "passed": true,
+   "detail": "4/4 equivalent-input probes gave identical results",
+   "data": {
+    "probes": [
+     {
+      "tool": "convert_hijri_to_gregorian",
+      "args": {
+       "hijri_date_iso": "  1410-08-13 "
+      },
+      "ok": true,
+      "output": {
+       "gregorian_date_iso": "1990-03-10",
+       "gregorian_year": 1990,
+       "gregorian_month": 3,
+       "gregorian_day": 10,
+       "display_date": "10/03/1990"
+      }
+     },
+     {
+      "tool": "convert_gregorian_to_hijri",
+      "args": {
+       "gregorian_date_iso": "  1990-03-10 "
+      },
+      "ok": true,
+      "output": {
+       "hijri_date_iso": "1410-08-13",
+       "hijri_year": 1410,
+       "hijri_month": 8,
+       "hijri_day": 13,
+       "display_date": "13/08/1410"
+      }
+     },
+     {
+      "tool": "get_hijri_date_properties",
+      "args": {
+       "hijri_date_iso": "  1410-08-13 ",
+       "language_code": "en"
+      },
+      "ok": true,
+      "output": {
+       "month_name": "Sha'ban",
+       "day_name": "Saturday",
+       "weekday_index": 5,
+       "isoweekday_index": 6,
+       "year_length_days": 355,
+       "year_notation": "AH",
+       "month_length_days": 29
+      }
+     },
+     {
+      "tool": "get_hijri_date_properties",
+      "args": {
+       "hijri_date_iso": "1410-08-13",
+       "language_code": "  en "
+      },
+      "ok": true,
+      "output": {
+       "month_name": "Sha'ban",
+       "day_name": "Saturday",
+       "weekday_index": 5,
+       "isoweekday_index": 6,
+       "year_length_days": 355,
+       "year_notation": "AH",
+       "month_length_days": 29
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "mcp_smoke",
+   "passed": true,
+   "detail": "3 tools called with example args; invalid input rejected",
+   "data": {
+    "server_started": true,
+    "listed_tools": [
+     "convert_hijri_to_gregorian",
+     "convert_gregorian_to_hijri",
+     "get_hijri_date_properties"
+    ],
+    "missing_tools": [],
+    "calls": [
+     {
+      "tool": "convert_hijri_to_gregorian",
+      "args": {
+       "hijri_date_iso": "1410-08-13"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "gregorian_date_iso": "1990-03-10",
+       "gregorian_year": 1990,
+       "gregorian_month": 3,
+       "gregorian_day": 10,
+       "display_date": "10/03/1990"
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "convert_gregorian_to_hijri",
+      "args": {
+       "gregorian_date_iso": "1990-03-10"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "hijri_date_iso": "1410-08-13",
+       "hijri_year": 1410,
+       "hijri_month": 8,
+       "hijri_day": 13,
+       "display_date": "13/08/1410"
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "get_hijri_date_properties",
+      "args": {
+       "hijri_date_iso": "1410-08-13",
+       "language_code": "en"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "month_name": "Sha'ban",
+       "day_name": "Saturday",
+       "weekday_index": 5,
+       "isoweekday_index": 6,
+       "year_length_days": 355,
+       "year_notation": "AH",
+       "month_length_days": 29
+      },
+      "missing_fields": []
+     }
+    ],
+    "invalid_calls": [
+     {
+      "ok": true,
+      "tool": "convert_hijri_to_gregorian",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "convert_gregorian_to_hijri",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "get_hijri_date_properties",
+      "detail": "rejected cleanly"
+     }
+    ],
+    "robustness": [
+     {
+      "tool": "convert_hijri_to_gregorian",
+      "args": {
+       "hijri_date_iso": "  1410-08-13 "
+      },
+      "ok": true,
+      "output": {
+       "gregorian_date_iso": "1990-03-10",
+       "gregorian_year": 1990,
+       "gregorian_month": 3,
+       "gregorian_day": 10,
+       "display_date": "10/03/1990"
+      }
+     },
+     {
+      "tool": "convert_gregorian_to_hijri",
+      "args": {
+       "gregorian_date_iso": "  1990-03-10 "
+      },
+      "ok": true,
+      "output": {
+       "hijri_date_iso": "1410-08-13",
+       "hijri_year": 1410,
+       "hijri_month": 8,
+       "hijri_day": 13,
+       "display_date": "13/08/1410"
+      }
+     },
+     {
+      "tool": "get_hijri_date_properties",
+      "args": {
+       "hijri_date_iso": "  1410-08-13 ",
+       "language_code": "en"
+      },
+      "ok": true,
+      "output": {
+       "month_name": "Sha'ban",
+       "day_name": "Saturday",
+       "weekday_index": 5,
+       "isoweekday_index": 6,
+       "year_length_days": 355,
+       "year_notation": "AH",
+       "month_length_days": 29
+      }
+     },
+     {
+      "tool": "get_hijri_date_properties",
+      "args": {
+       "hijri_date_iso": "1410-08-13",
+       "language_code": "  en "
+      },
+      "ok": true,
+      "output": {
+       "month_name": "Sha'ban",
+       "day_name": "Saturday",
+       "weekday_index": 5,
+       "isoweekday_index": 6,
+       "year_length_days": 355,
+       "year_notation": "AH",
+       "month_length_days": 29
+      }
+     }
+    ],
+    "still_alive_after_calls": true
+   }
+  },
+  {
+   "name": "differential",
+   "passed": true,
+   "detail": "16/16 Tester cases match the library",
+   "data": {
+    "results": [
+     {
+      "tool": "convert_hijri_to_gregorian",
+      "args": {
+       "hijri_date_iso": "1418-10-02"
+      },
+      "field": "gregorian_date_iso",
+      "expr": "Hijri(1418, 10, 2).to_gregorian().isoformat()",
+      "expected": "1998-01-30",
+      "got": "1998-01-30",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_hijri_to_gregorian",
+      "args": {
+       "hijri_date_iso": "2 Shawwal 1418"
+      },
+      "field": "gregorian_date_iso",
+      "expr": "Hijri(1418, 10, 2).to_gregorian().isoformat()",
+      "expected": "1998-01-30",
+      "got": "1998-01-30",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_hijri_to_gregorian",
+      "args": {
+       "hijri_date_iso": "2 Shawwal 1418 AH"
+      },
+      "field": "gregorian_date_iso",
+      "expr": "Hijri(1418, 10, 2).to_gregorian().isoformat()",
+      "expected": "1998-01-30",
+      "got": "1998-01-30",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_hijri_to_gregorian",
+      "args": {
+       "hijri_date_iso": "15 Rabi' al-Awwal 1440"
+      },
+      "field": "gregorian_date_iso",
+      "expr": "Hijri(1440, 3, 15).to_gregorian().isoformat()",
+      "expected": "2018-11-23",
+      "got": "2018-11-23",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_hijri_to_gregorian",
+      "args": {
+       "hijri_date_iso": "1 Muharram 1446"
+      },
+      "field": "gregorian_date_iso",
+      "expr": "Hijri(1446, 1, 1).to_gregorian().isoformat()",
+      "expected": "2024-07-07",
+      "got": "2024-07-07",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_hijri_to_gregorian",
+      "args": {
+       "hijri_date_iso": "10 Dhu al-Hijjah 1444"
+      },
+      "field": "gregorian_date_iso",
+      "expr": "Hijri(1444, 12, 10).to_gregorian().isoformat()",
+      "expected": "2023-06-28",
+      "got": "2023-06-28",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_hijri_to_gregorian",
+      "args": {
+       "hijri_date_iso": "Ramadan 27, 1450"
+      },
+      "field": "gregorian_date_iso",
+      "expr": "Hijri(1450, 9, 27).to_gregorian().isoformat()",
+      "expected": "2029-02-11",
+      "got": "2029-02-11",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_hijri_to_gregorian",
+      "args": {
+       "hijri_date_iso": "29 Jumada al-Akhirah 1400"
+      },
+      "field": "gregorian_date_iso",
+      "expr": "Hijri(1400, 6, 29).to_gregorian().isoformat()",
+      "expected": "1980-05-14",
+      "got": "1980-05-14",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_hijri_to_gregorian",
+      "args": {
+       "hijri_date_iso": "1 Sha'ban 1420"
+      },
+      "field": "gregorian_date_iso",
+      "expr": "Hijri(1420, 8, 1).to_gregorian().isoformat()",
+      "expected": "1999-11-09",
+      "got": "1999-11-09",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_gregorian_to_hijri",
+      "args": {
+       "gregorian_date_iso": "1998-01-30"
+      },
+      "field": "hijri_date_iso",
+      "expr": "Gregorian(1998, 1, 30).to_hijri().isoformat()",
+      "expected": "1418-10-02",
+      "got": "1418-10-02",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_gregorian_to_hijri",
+      "args": {
+       "gregorian_date_iso": "2023-04-24"
+      },
+      "field": "hijri_date_iso",
+      "expr": "Gregorian(2023, 4, 24).to_hijri().isoformat()",
+      "expected": "1444-10-04",
+      "got": "1444-10-04",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_gregorian_to_hijri",
+      "args": {
+       "gregorian_date_iso": "1937-03-14"
+      },
+      "field": "hijri_date_iso",
+      "expr": "Gregorian(1937, 3, 14).to_hijri().isoformat()",
+      "expected": "1356-01-01",
+      "got": "1356-01-01",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_gregorian_to_hijri",
+      "args": {
+       "gregorian_date_iso": "2076-11-16"
+      },
+      "field": "hijri_date_iso",
+      "expr": "Gregorian(2076, 11, 16).to_hijri().isoformat()",
+      "expected": "1499-12-19",
+      "got": "1499-12-19",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_gregorian_to_hijri",
+      "args": {
+       "gregorian_date_iso": "2000-02-29"
+      },
+      "field": "hijri_date_iso",
+      "expr": "Gregorian(2000, 2, 29).to_hijri().isoformat()",
+      "expected": "1420-11-23",
+      "got": "1420-11-23",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_hijri_date_properties",
+      "args": {
+       "hijri_date_iso": "9 Ramadan 1445"
+      },
+      "field": "month_length_days",
+      "expr": "Hijri(1445, 9, 9).month_length()",
+      "expected": 30,
+      "got": 30,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_hijri_date_properties",
+      "args": {
+       "hijri_date_iso": "1445-09-09"
+      },
+      "field": "month_name",
+      "expr": "Hijri(1445, 9, 9).month_name('en')",
+      "expected": "Ramadan",
+      "got": "Ramadan",
+      "status": "match",
+      "tool_declined": false
+     }
+    ]
+   }
+  }
+ ],
+ "failing_tools": {}
+}
