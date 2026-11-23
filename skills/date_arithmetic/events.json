@@ -1,0 +1,122 @@
+[
+ {
+  "t": 0.0,
+  "event": "architect.start",
+  "detail": "Perform relative date arithmetic and comparisons (OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model])"
+ },
+ {
+  "t": 58.72,
+  "event": "architect.done",
+  "detail": "4 tools: adjust_date, date_difference, easter_date, parse_date",
+  "resolved": {
+   "dateutil.parser.parse": "dateutil.parser._parser.parse"
+  },
+  "dropped": [
+   "included_symbols: dateutil.relativedelta.MO",
+   "included_symbols: dateutil.relativedelta.TU",
+   "included_symbols: dateutil.relativedelta.WE",
+   "included_symbols: dateutil.relativedelta.TH",
+   "included_symbols: dateutil.relativedelta.FR",
+   "included_symbols: dateutil.relativedelta.SA",
+   "included_symbols: dateutil.relativedelta.SU",
+   "included_symbols: dateutil.easter.EASTER_WESTERN",
+   "included_symbols: dateutil.easter.EASTER_ORTHODOX",
+   "included_symbols: dateutil.easter.EASTER_JULIAN",
+   "adjust_date.implementation: dateutil.relativedelta.MO",
+   "adjust_date.implementation: dateutil.relativedelta.TU",
+   "adjust_date.implementation: dateutil.relativedelta.WE",
+   "adjust_date.implementation: dateutil.relativedelta.TH",
+   "adjust_date.implementation: dateutil.relativedelta.FR",
+   "adjust_date.implementation: dateutil.relativedelta.SA",
+   "adjust_date.implementation: dateutil.relativedelta.SU",
+   "easter_date.implementation: dateutil.easter.EASTER_WESTERN",
+   "easter_date.implementation: dateutil.easter.EASTER_ORTHODOX",
+   "easter_date.implementation: dateutil.easter.EASTER_JULIAN"
+  ],
+  "fixes": [],
+  "lint_warnings": 0
+ },
+ {
+  "t": 58.72,
+  "event": "compiler.start",
+  "detail": "writing 4 tool bodies (OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model])"
+ },
+ {
+  "t": 97.53,
+  "event": "compiler.done",
+  "detail": "all tools implemented"
+ },
+ {
+  "t": 97.53,
+  "event": "tester.start",
+  "detail": "writing differential tests from the spec and library (adapter code not shown; OpenCode (opencode/deepseek-v4.1-flash-free = deepseek/deepseek-v4.1-flash-1017) [coding agent, open-weight model])"
+ },
+ {
+  "t": 268.23,
+  "event": "tester.done",
+  "detail": "37 cases for 4 tools; full coverage",
+  "coverage_gaps": {}
+ },
+ {
+  "t": 268.23,
+  "event": "verify.start",
+  "detail": "attempt 1"
+ },
+ {
+  "t": 268.28,
+  "event": "gate.policy",
+  "detail": "FAIL line 51: call to 'locals' is not allowed; line 52: call to 'locals' is not allowed; line 53: call to 'locals' is not allowed; line 54: call to 'locals' is not allowed; line 55: call to 'locals' is not allowed; line 56: call to 'locals' is not allowed; line 135: call to 'locals' is not allowed; line ",
+  "passed": false
+ },
+ {
+  "t": 268.28,
+  "event": "repair.start",
+  "detail": "4 failing tool(s): adjust_date, date_difference, easter_date, parse_date"
+ },
+ {
+  "t": 275.39,
+  "event": "repair.done",
+  "detail": "patched adjust_date, date_difference, easter_date, parse_date"
+ },
+ {
+  "t": 275.39,
+  "event": "verify.start",
+  "detail": "attempt 2"
+ },
+ {
+  "t": 285.16,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 285.16,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 285.16,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 92 tests ran, 0 failures, 0 errors (tests/test_relativedelta.py, tests/test_utils.py)",
+  "passed": true
+ },
+ {
+  "t": 285.16,
+  "event": "gate.input_robustness",
+  "detail": "PASS 5/5 equivalent-input probes gave identical results",
+  "passed": true
+ },
+ {
+  "t": 285.16,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 4 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 285.16,
+  "event": "gate.differential",
+  "detail": "PASS 36/36 Tester cases + 24/24 generated cases match the library (17 generated not scored: the library or the tool rejected the input); 1 reference expressions invalid (ignored)",
+  "passed": true
+ }
+]

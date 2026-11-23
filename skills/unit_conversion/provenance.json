@@ -1,0 +1,39 @@
+{
+ "repository": "https://github.com/hgrecco/pint",
+ "commit": "af817a6094fbc40005fadd7bcc59b138dbff233e",
+ "license": "unknown (license file present)",
+ "generator": "zyven 0.1.0",
+ "model": "OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model]",
+ "roles": {
+  "architect": "OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model]",
+  "compiler": "OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model]",
+  "repair": "OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model]",
+  "tester": "OpenCode (opencode/deepseek-v4.1-flash-free = deepseek/deepseek-v4.1-flash-1017) [coding agent, open-weight model]"
+ },
+ "role_families": {
+  "architect": "unknown",
+  "compiler": "unknown",
+  "repair": "unknown",
+  "tester": "deepseek"
+ },
+ "tester_independence": "unknown",
+ "capability": "unit_conversion",
+ "mode": "wrap",
+ "included_symbols": [
+  "pint.registry.UnitRegistry",
+  "pint.registry.UnitRegistry.__init__",
+  "pint.facets.plain.quantity.PlainQuantity.to",
+  "pint.facets.plain.registry.GenericPlainRegistry.convert"
+ ],
+ "source_checkout": "C:\\Users\\Viraj\\Downloads\\ZYVEN\\workspace\\repos\\pint",
+ "source_root": ".",
+ "network_hosts": [],
+ "generated_files": [
+  "server.py"
+ ],
+ "compile_seconds": 513.8,
+ "attempts": 3,
+ "dropped_tools": {},
+ "model_calls": 7,
+ "lint_warnings": 3
+}

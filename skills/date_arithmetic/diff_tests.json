@@ -1,0 +1,460 @@
+{
+ "cases": [
+  {
+   "tool": "adjust_date",
+   "args": {
+    "base_date": "2024-01-31",
+    "years": 1,
+    "months": 1,
+    "days": 0,
+    "weeks": 0
+   },
+   "field": "result_date",
+   "reference_imports": [
+    "from dateutil.parser import parse",
+    "from dateutil.relativedelta import relativedelta"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nfrom dateutil.relativedelta import relativedelta\nbase = parse(\"{base_date}\").date()\ndelta = relativedelta(years={years}, months={months}, days={days}, weeks={weeks}, weekday=None)\n(base + delta).isoformat()"
+  },
+  {
+   "tool": "adjust_date",
+   "args": {
+    "base_date": "2024-03-15",
+    "months": 1,
+    "weekday": "Sunday",
+    "weekday_occurrence": 2
+   },
+   "field": "result_weekday",
+   "reference_imports": [
+    "from dateutil.parser import parse",
+    "from dateutil.relativedelta import relativedelta, MO, TU, WE, TH, FR, SA, SU"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nfrom dateutil.relativedelta import relativedelta, MO, TU, WE, TH, FR, SA, SU\nweekdays = {\"Monday\": MO, \"Tuesday\": TU, \"Wednesday\": WE, \"Thursday\": TH, \"Friday\": FR, \"Saturday\": SA, \"Sunday\": SU}\ndelta = relativedelta(months={months}, weekday=weekdays[\"{weekday}\"]({weekday_occurrence}))\n(parse(\"{base_date}\").date() + delta).strftime('%A')"
+  },
+  {
+   "tool": "adjust_date",
+   "args": {
+    "base_date": "April 9, 2024",
+    "years": -1,
+    "months": 2,
+    "days": 5,
+    "weeks": 1
+   },
+   "field": "original_date",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nparse(\"{base_date}\").date().isoformat()"
+  },
+  {
+   "tool": "adjust_date",
+   "args": {
+    "base_date": "2020-06-15",
+    "years": 2
+   },
+   "field": "years_applied",
+   "reference_imports": [
+    "from dateutil.relativedelta import relativedelta"
+   ],
+   "reference_expr": "from dateutil.relativedelta import relativedelta\nrelativedelta(years={years}).years"
+  },
+  {
+   "tool": "adjust_date",
+   "args": {
+    "base_date": "2024-03-15",
+    "months": 1,
+    "weekday": "Sunday",
+    "weekday_occurrence": 2
+   },
+   "field": "months_applied",
+   "reference_imports": [
+    "from dateutil.relativedelta import relativedelta, MO, TU, WE, TH, FR, SA, SU"
+   ],
+   "reference_expr": "from dateutil.relativedelta import relativedelta, MO, TU, WE, TH, FR, SA, SU\nweekdays = {\"Monday\": MO, \"Tuesday\": TU, \"Wednesday\": WE, \"Thursday\": TH, \"Friday\": FR, \"Saturday\": SA, \"Sunday\": SU}\nrelativedelta(months={months}, weekday=weekdays[\"{weekday}\"]({weekday_occurrence})).months"
+  },
+  {
+   "tool": "adjust_date",
+   "args": {
+    "base_date": "April 9, 2024",
+    "years": -1,
+    "months": 2,
+    "days": 5,
+    "weeks": 1
+   },
+   "field": "days_applied",
+   "reference_imports": [
+    "from dateutil.relativedelta import relativedelta"
+   ],
+   "reference_expr": "from dateutil.relativedelta import relativedelta\nrelativedelta(years={years}, months={months}, days={days}, weeks={weeks}, weekday=None).days"
+  },
+  {
+   "tool": "adjust_date",
+   "args": {
+    "base_date": "April 9, 2024",
+    "years": -1,
+    "months": 2,
+    "days": 5,
+    "weeks": 1
+   },
+   "field": "weeks_applied",
+   "reference_imports": [
+    "from dateutil.relativedelta import relativedelta"
+   ],
+   "reference_expr": "from dateutil.relativedelta import relativedelta\nrelativedelta(years={years}, months={months}, days={days}, weeks={weeks}, weekday=None).weeks"
+  },
+  {
+   "tool": "adjust_date",
+   "args": {
+    "base_date": "2024-03-15",
+    "months": 1,
+    "weekday": "Sunday",
+    "weekday_occurrence": 2
+   },
+   "field": "weekday_applied",
+   "reference_imports": [
+    "from dateutil.relativedelta import MO, TU, WE, TH, FR, SA, SU"
+   ],
+   "reference_expr": "from dateutil.relativedelta import MO, TU, WE, TH, FR, SA, SU\nweekdays = {\"Monday\": MO, \"Tuesday\": TU, \"Wednesday\": WE, \"Thursday\": TH, \"Friday\": FR, \"Saturday\": SA, \"Sunday\": SU}\n[\"Monday\", \"Tuesday\", \"Wednesday\", \"Thursday\", \"Friday\", \"Saturday\", \"Sunday\"][weekdays[\"{weekday}\"].weekday]"
+  },
+  {
+   "tool": "adjust_date",
+   "args": {
+    "base_date": "2024-03-15",
+    "months": 1,
+    "weekday": "Sunday",
+    "weekday_occurrence": 2
+   },
+   "field": "weekday_occurrence_applied",
+   "reference_imports": [
+    "from dateutil.relativedelta import MO, TU, WE, TH, FR, SA, SU"
+   ],
+   "reference_expr": "from dateutil.relativedelta import MO, TU, WE, TH, FR, SA, SU\nweekdays = {\"Monday\": MO, \"Tuesday\": TU, \"Wednesday\": WE, \"Thursday\": TH, \"Friday\": FR, \"Saturday\": SA, \"Sunday\": SU}\nweekdays[\"{weekday}\"]({weekday_occurrence}).n"
+  },
+  {
+   "tool": "adjust_date",
+   "args": {
+    "base_date": "2024-01-01",
+    "weekday": "Monday"
+   },
+   "field": "weekday_occurrence_applied",
+   "reference_imports": [
+    "from dateutil.relativedelta import MO, TU, WE, TH, FR, SA, SU"
+   ],
+   "reference_expr": "from dateutil.relativedelta import MO, TU, WE, TH, FR, SA, SU\nweekdays = {\"Monday\": MO, \"Tuesday\": TU, \"Wednesday\": WE, \"Thursday\": TH, \"Friday\": FR, \"Saturday\": SA, \"Sunday\": SU}\nweekdays[\"{weekday}\"]().n"
+  },
+  {
+   "tool": "date_difference",
+   "args": {
+    "start_date": "2023-01-15",
+    "end_date": "2024-03-10"
+   },
+   "field": "years",
+   "reference_imports": [
+    "from dateutil.parser import parse",
+    "from dateutil.relativedelta import relativedelta"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nfrom dateutil.relativedelta import relativedelta\nstart = parse(\"{start_date}\").date()\nend = parse(\"{end_date}\").date()\nrelativedelta(end, start).years"
+  },
+  {
+   "tool": "date_difference",
+   "args": {
+    "start_date": "2023-01-15",
+    "end_date": "2024-03-10"
+   },
+   "field": "months",
+   "reference_imports": [
+    "from dateutil.parser import parse",
+    "from dateutil.relativedelta import relativedelta"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nfrom dateutil.relativedelta import relativedelta\nstart = parse(\"{start_date}\").date()\nend = parse(\"{end_date}\").date()\nrelativedelta(end, start).months"
+  },
+  {
+   "tool": "date_difference",
+   "args": {
+    "start_date": "2023-01-15",
+    "end_date": "2024-03-10"
+   },
+   "field": "days",
+   "reference_imports": [
+    "from dateutil.parser import parse",
+    "from dateutil.relativedelta import relativedelta"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nfrom dateutil.relativedelta import relativedelta\nstart = parse(\"{start_date}\").date()\nend = parse(\"{end_date}\").date()\nrelativedelta(end, start).days"
+  },
+  {
+   "tool": "date_difference",
+   "args": {
+    "start_date": "2023-01-15",
+    "end_date": "2024-03-10"
+   },
+   "field": "total_days",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\n(parse(\"{end_date}\").date() - parse(\"{start_date}\").date()).days"
+  },
+  {
+   "tool": "date_difference",
+   "args": {
+    "start_date": "January 5, 2024",
+    "end_date": "2024-03-01"
+   },
+   "field": "start_date",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nparse(\"{start_date}\").date().isoformat()"
+  },
+  {
+   "tool": "date_difference",
+   "args": {
+    "start_date": "January 5, 2024",
+    "end_date": "2024-03-01"
+   },
+   "field": "end_date",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nparse(\"{end_date}\").date().isoformat()"
+  },
+  {
+   "tool": "date_difference",
+   "args": {
+    "start_date": "January 5, 2024",
+    "end_date": "2024-03-01"
+   },
+   "field": "start_weekday",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nparse(\"{start_date}\").date().strftime('%A')"
+  },
+  {
+   "tool": "date_difference",
+   "args": {
+    "start_date": "January 5, 2024",
+    "end_date": "2024-03-01"
+   },
+   "field": "end_weekday",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nparse(\"{end_date}\").date().strftime('%A')"
+  },
+  {
+   "tool": "date_difference",
+   "args": {
+    "start_date": "2024-02-29",
+    "end_date": "2024-02-29"
+   },
+   "field": "years",
+   "reference_imports": [
+    "from dateutil.parser import parse",
+    "from dateutil.relativedelta import relativedelta"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nfrom dateutil.relativedelta import relativedelta\nstart = parse(\"{start_date}\").date()\nend = parse(\"{end_date}\").date()\nrelativedelta(end, start).years"
+  },
+  {
+   "tool": "date_difference",
+   "args": {
+    "start_date": "2024-03-10",
+    "end_date": "2023-01-15"
+   },
+   "field": "total_days",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\n(parse(\"{end_date}\").date() - parse(\"{start_date}\").date()).days"
+  },
+  {
+   "tool": "date_difference",
+   "args": {
+    "start_date": "2024-01-31",
+    "end_date": "2024-02-29"
+   },
+   "field": "months",
+   "reference_imports": [
+    "from dateutil.parser import parse",
+    "from dateutil.relativedelta import relativedelta"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nfrom dateutil.relativedelta import relativedelta\nstart = parse(\"{start_date}\").date()\nend = parse(\"{end_date}\").date()\nrelativedelta(end, start).months"
+  },
+  {
+   "tool": "date_difference",
+   "args": {
+    "start_date": "2024-01-31",
+    "end_date": "2024-02-29"
+   },
+   "field": "days",
+   "reference_imports": [
+    "from dateutil.parser import parse",
+    "from dateutil.relativedelta import relativedelta"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nfrom dateutil.relativedelta import relativedelta\nstart = parse(\"{start_date}\").date()\nend = parse(\"{end_date}\").date()\nrelativedelta(end, start).days"
+  },
+  {
+   "tool": "easter_date",
+   "args": {
+    "year": 2024
+   },
+   "field": "date",
+   "reference_imports": [
+    "from dateutil.easter import easter, EASTER_WESTERN"
+   ],
+   "reference_expr": "from dateutil.easter import easter, EASTER_WESTERN\neaster({year}, method=EASTER_WESTERN).isoformat()"
+  },
+  {
+   "tool": "easter_date",
+   "args": {
+    "year": 2025,
+    "method": "orthodox"
+   },
+   "field": "weekday",
+   "reference_imports": [
+    "from dateutil.easter import easter, EASTER_ORTHODOX"
+   ],
+   "reference_expr": "from dateutil.easter import easter, EASTER_ORTHODOX\neaster({year}, method=EASTER_ORTHODOX).strftime('%A')"
+  },
+  {
+   "tool": "easter_date",
+   "args": {
+    "year": 2024,
+    "method": "julian"
+   },
+   "field": "date",
+   "reference_imports": [
+    "from dateutil.easter import easter, EASTER_JULIAN"
+   ],
+   "reference_expr": "from dateutil.easter import easter, EASTER_JULIAN\neaster({year}, method=EASTER_JULIAN).isoformat()"
+  },
+  {
+   "tool": "easter_date",
+   "args": {
+    "year": 2024
+   },
+   "field": "year",
+   "reference_imports": [
+    "from dateutil.easter import easter, EASTER_WESTERN"
+   ],
+   "reference_expr": "from dateutil.easter import easter, EASTER_WESTERN\neaster({year}, method=EASTER_WESTERN).year"
+  },
+  {
+   "tool": "easter_date",
+   "args": {
+    "year": 2025,
+    "method": "orthodox"
+   },
+   "field": "method",
+   "reference_imports": [],
+   "reference_expr": "\"{method}\""
+  },
+  {
+   "tool": "parse_date",
+   "args": {
+    "text": "April 9, 2024 13:37"
+   },
+   "field": "input",
+   "reference_imports": [],
+   "reference_expr": "\"{text}\""
+  },
+  {
+   "tool": "parse_date",
+   "args": {
+    "text": "2024-02-29"
+   },
+   "field": "iso_date",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nparse(\"{text}\").date().isoformat()"
+  },
+  {
+   "tool": "parse_date",
+   "args": {
+    "text": "April 9, 2024 13:37"
+   },
+   "field": "iso_datetime",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nparse(\"{text}\").isoformat()"
+  },
+  {
+   "tool": "parse_date",
+   "args": {
+    "text": "April 9, 2024 13:37"
+   },
+   "field": "year",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nparse(\"{text}\").year"
+  },
+  {
+   "tool": "parse_date",
+   "args": {
+    "text": "April 9, 2024 13:37"
+   },
+   "field": "month",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nparse(\"{text}\").month"
+  },
+  {
+   "tool": "parse_date",
+   "args": {
+    "text": "April 9, 2024 13:37"
+   },
+   "field": "day",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nparse(\"{text}\").day"
+  },
+  {
+   "tool": "parse_date",
+   "args": {
+    "text": "2024-12-31"
+   },
+   "field": "weekday",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nparse(\"{text}\").strftime('%A')"
+  },
+  {
+   "tool": "parse_date",
+   "args": {
+    "text": "2024-12-31"
+   },
+   "field": "day_of_year",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nparse(\"{text}\").timetuple().tm_yday"
+  },
+  {
+   "tool": "parse_date",
+   "args": {
+    "text": "2023-12-31"
+   },
+   "field": "day_of_year",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nparse(\"{text}\").timetuple().tm_yday"
+  },
+  {
+   "tool": "parse_date",
+   "args": {
+    "text": "2023-12-31"
+   },
+   "field": "iso_datetime",
+   "reference_imports": [
+    "from dateutil.parser import parse"
+   ],
+   "reference_expr": "from dateutil.parser import parse\nparse(\"{text}\").isoformat()"
+  }
+ ]
+}
