@@ -17,7 +17,8 @@ from zyven.mcpverify.checks import FAIL, INSTRUCTION_PATTERNS, WARN, Report
 INFO_URI = "https://github.com/VirajSawad1021/Zyven"
 HELP_URI = INFO_URI + "#verify-any-mcp-server"
 
-_INSTRUCTION_IDS = ["ignore-instructions", "hide-from-user", "instruction-block", "system-prompt",
+_INSTRUCTION_IDS = ["ignore-instructions", "hide-from-user", "redirect-messages", "tool-shadowing",
+                    "instruction-block", "system-prompt",
                     "do-something-first", "credential-file", "secret-forwarding", "send-to-url", "redirect-tool"]
 assert len(_INSTRUCTION_IDS) == len(INSTRUCTION_PATTERNS), "name every instruction pattern's rule"
 
