@@ -120,10 +120,10 @@ def _tools(rows: list[dict]) -> str:
     return f"{mean(vals):.1f}{rng} of {ok[0]['tools']}"
 
 
-def report(rows: list[dict], label: str, model: str) -> str:
+def report(rows: list[dict], label: str, model: str, commit: str) -> str:
     lines = [f"# Tester validity: {label} ({date.today().isoformat()})", "",
              f"- **Model:** `{model}`",
-             f"- **Code:** commit `{_commit()}`",
+             f"- **Code:** commit `{commit}`",
              "- **Valid** means the reference program evaluates in the sandbox on its own case's arguments; whether it",
              "  matches a tool is not measured. Specs are frozen (`eval/tester_specs/`), so only the Tester varies.",
              "- Each cell is the mean over runs, with the range when runs differ.", "",
@@ -160,6 +160,7 @@ def _commit() -> str:
 
 
 def cmd_run(args) -> None:
+    commit = _commit()  # at the start: a long run must not report a commit made while it ran
     provider = ModelProvider.from_env(paths.env_file())
     cat = Catalog(paths.catalog_file(), paths.home())
     specs = frozen_specs(args.lib)
@@ -180,7 +181,7 @@ def cmd_run(args) -> None:
             print("  " + ("error: " + row["error"] if "error" in row else
                           f"valid {row['valid_first']}/{row['cases_first']} -> {row['valid_after']}/{row['cases_after']}"
                           f", tools {row['tools_with_valid']}/{row['tools']}"), flush=True)
-    (RESULTS / f"{stem}.md").write_text(report(rows, args.label, provider.label), encoding="utf-8")
+    (RESULTS / f"{stem}.md").write_text(report(rows, args.label, provider.label, commit), encoding="utf-8")
     print(f"\nwrote {RESULTS / (stem + '.md')} and {jsonl}")
 
 
