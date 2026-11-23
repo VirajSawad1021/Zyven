@@ -17,7 +17,8 @@ from zyven.analysis.analyzer import analyze  # noqa: E402
 from zyven.analysis.miner import construction_signatures, describe_symbols  # noqa: E402
 
 FILES = {
-    "minical/__init__.py": "from minical.dates import GregorianDate\n",
+    "minical/__init__.py": "from minical.dates import GregorianDate\nfrom minical._impl import Thing\n",
+    "minical/_impl.py": "class Thing:\n    def __init__(self, size):\n        self.size = size\n",
     "minical/dates.py": '''
         import abc
 
@@ -67,6 +68,7 @@ FILES = {
             return date.holiday()
         ''',
     "tests/test_dates.py": '''
+        import minical.cal as mc
         from minical.dates import GregorianDate
 
 
@@ -104,7 +106,7 @@ def test_a_documented_base_class_brings_its_buildable_subclasses(analysis):
     assert "minical.dates.GregorianDate.today()  (staticmethod)" in text
     assert "_private_factory" not in text and "_Cache" not in text  # a caller never builds these
     assert "DateError" not in text  # nor exceptions
-    assert "tests/test_dates.py:5: d = GregorianDate(2024, 9, 2)" in text  # a real call from the upstream tests
+    assert "tests/test_dates.py:6: d = GregorianDate(2024, 9, 2)" in text  # a real call from the upstream tests
 
 
 def test_a_method_is_described_with_how_to_build_its_class(analysis):
@@ -169,3 +171,35 @@ def test_an_added_case_that_still_fails_is_not_kept(analysis, monkeypatch):
     out, problems = pl._reask_unusable(None, analysis, _spec(), DiffTests(cases=[wrong]),
                                        lambda cases: ["TypeError()"] * len(cases), lambda *a, **k: None)
     assert len(out.cases) == 1 and problems == ["TypeError()"]
+
+
+def test_a_name_error_is_answered_with_the_import_it_needs(analysis):
+    """Most of E4B's invalid hijridate references used `Hijri` after importing only the module, and networkx ones used
+    `nx` without `import networkx as nx`. The re-ask names the missing line; it never edits the reference."""
+    from zyven.compiler.pipeline import missing_import
+
+    def run(name):
+        return missing_import(f"NameError(\"name '{name}' is not defined\") running: {name}(1)", analysis)
+
+    name, advice, ids = run("GregorianDate")
+    assert advice == "add `from minical.dates import GregorianDate` to reference_imports"
+    assert ids == ["minical.dates.GregorianDate"]  # so its signature is quoted too
+    assert run("Thing")[1] == "add `from minical import Thing` to reference_imports"  # public re-export, not _impl
+    assert run("mc")[1] == "add `import minical.cal as mc` to reference_imports"  # the alias the library's tests use
+    assert run("G")[1] == "define `G` in the reference's own setup lines before the last line uses it"
+    assert missing_import("TypeError('x') running: f()", analysis) == ("", "", [])
+
+
+def test_the_reask_carries_the_import_hint(analysis, monkeypatch):
+    import zyven.compiler.pipeline as pl
+    wrong = DiffCase(tool="holiday_on", args={"date": "2024-09-02"}, field="holiday", reference_imports=["import minical.cal"],
+                     reference_expr="minical.cal.holiday(GregorianDate.from_iso({date}))")
+    asked = {}
+    monkeypatch.setattr(pl, "tester", lambda p, a, sub, feedback="", followups=True:
+                        asked.update(feedback=feedback) or DiffTests(cases=[]))
+    pl._reask_unusable(None, analysis, _spec(), DiffTests(cases=[wrong]),
+                       lambda cases: ["NameError(\"name 'GregorianDate' is not defined\") running: ..."] * len(cases),
+                       lambda *a, **k: None)
+    fb = asked["feedback"]
+    assert "`GregorianDate` is not defined in that reference: add `from minical.dates import GregorianDate`" in fb
+    assert "minical.dates.GregorianDate(year, month, day)" in fb

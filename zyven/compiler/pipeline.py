@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -264,6 +265,44 @@ def reference_names(c, a: Analysis, resolver: RefResolver) -> tuple[list[str], l
     return list(dict.fromkeys(found)), list(dict.fromkeys(unknown))
 
 
+_NAME_ERROR = re.compile(r"""NameError\(["']name '([A-Za-z_][A-Za-z0-9_]*)' is not defined""")
+
+
+def missing_import(problem: str, a: Analysis) -> tuple[str, str, list[str]]:
+    """What a reference that failed with NameError is missing, as (name, advice, symbol ids to show signatures for).
+
+    - a bare library class or function (`Hijri.fromisoformat(...)` with only `import hijridate.convert`): the import
+      line for each public, non-test symbol with exactly that name (at most three); a symbol in a private module counts
+      only through its public re-export (`pkg._impl.Thing` as `pkg.Thing`)
+    - an alias the library's own code or tests give one of its modules (`nx` for networkx): that import line
+    - anything else (`G`, a graph the reference never built): it must be defined in the reference's own setup lines
+    ("", "", []) when the problem is not a NameError. The harness only advises; it never edits the reference."""
+    m = _NAME_ERROR.search(problem or "")
+    if not m:
+        return "", "", []
+    name = m.group(1)
+    tests = {mod.name for mod in a.modules if mod.is_test}
+    homes: list[tuple[str, str]] = []
+    for s in a.symbols:
+        if s.qualname != name or s.kind not in ("class", "function") or not s.is_public or s.module in tests:
+            continue
+        if not any(part.startswith("_") for part in s.module.split(".")):
+            homes.append((s.id, s.id))
+        else:
+            public = [e.split(" ")[0] for e in s.exported_as if not e.endswith("(instance)")]
+            if public:
+                homes.append((public[0], s.id))
+    if 0 < len(homes) <= 3:
+        return name, ("add " + " or ".join(f"`from {path.rsplit('.', 1)[0]} import {name}`" for path, _ in homes)
+                      + " to reference_imports"), [sid for _, sid in homes]
+    library = {mod.name for mod in a.modules if not mod.is_test}
+    aliased = sorted({mod.imports[name] for mod in a.modules if mod.imports.get(name) in library
+                      and mod.imports[name] != name and "." not in name})
+    if len(aliased) == 1:
+        return name, f"add `import {aliased[0]} as {name}` to reference_imports", []
+    return name, f"define `{name}` in the reference's own setup lines before the last line uses it", []
+
+
 def _reask_unusable(provider, a, spec, diff_tests, check, emit):
     """Ask the Tester once more for every tool its valid reference programs leave with a coverage gap, quoting why
     each rejected reference could not be used. `check(cases)` gives each case's problem or None: the static checks
@@ -304,6 +343,10 @@ def _reask_unusable(provider, a, spec, diff_tests, check, emit):
             seen.add(why)
             lines.append(f"  - this reference could not be used: {why[:400]}")
             ids, unknown = reference_names(c, a, resolver)
+            name, advice, homes = missing_import(why, a)
+            if name:
+                lines.append(f"    `{name}` is not defined in that reference: {advice}")
+                ids = list(dict.fromkeys(ids + homes))
             sigs = describe_symbols(a, ids)
             if sigs:
                 lines.append("    the library's exact signatures for what it calls:\n"
