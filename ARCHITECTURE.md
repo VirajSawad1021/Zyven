@@ -319,6 +319,13 @@ The Tester's coverage is checked deterministically (`coverage_gaps`):
 Coverage is judged only on cases that pass the sandbox's own reference checks (`reference_problem`). Tools with gaps
 are asked about once more, with the rejection reasons quoted.
 
+### 4.15 Measuring the Tester (`eval/tester_validity.py`)
+A reference program is **valid** when it evaluates in the sandbox on its own case's arguments
+(`compiler/verify.py::reference_problems`, which runs `diff_check.py --references`). Whether it matches a tool is the
+Compiler's number and is not measured here. The capability spec is frozen per library (`eval/tester_specs/`), so only
+the Tester varies. Each run records the valid share in the Tester's answer, the same after the re-ask, and the tools
+left with at least one valid case.
+
 ---
 
 ## 5. Trust Boundaries & Threat Model

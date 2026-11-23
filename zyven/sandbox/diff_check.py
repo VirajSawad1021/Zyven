@@ -1,6 +1,7 @@
 """Differential tests, executed INSIDE the sandbox container.
 
 Usage: python /opt/zyven/diff_check.py /skill/server.py /skill/diff_tests.json
+       python /opt/zyven/diff_check.py --references /skill/references.json   (references only, no tool)
 For each case: evaluate the Tester's library reference expression, call the tool function directly with
 the case args, and compare the tool's output field to the reference value. Prints one JSON report.
 
@@ -106,19 +107,29 @@ def _declined(out, field: str) -> bool:
     return bool(out.get("error")) or any(out.get(f) is False for f in FLAGS)
 
 
+def filled(c: dict, args: dict) -> str:
+    """The reference program with its {arg} placeholders replaced by the case's argument values."""
+    expr = c["reference_expr"]
+    for k, v in args.items():  # {arg} placeholders: the reference uses exactly the tool's inputs
+        for quoted in ("'{" + k + "}'", '"{' + k + '}"'):  # placeholder written inside quotes
+            expr = expr.replace(quoted, repr(v))
+        expr = expr.replace("{" + k + "}", repr(v))
+    return expr
+
+
+def reference_value(c: dict, args: dict):
+    """What the library itself gives for this case: run the reference program's imports and setup, then its last line.
+    Raises whatever the library raises."""
+    env: dict = {}
+    for line in c.get("reference_imports", []):
+        exec(line, env)  # noqa: S102 - imports were policy-checked by the harness before the container ran
+    return evaluate(filled(c, args), env)  # policy-checked by the harness, run sandboxed
+
+
 def _check(ns: dict, c: dict, args: dict) -> dict:
-    r = {"tool": c["tool"], "args": args, "field": c["field"], "expr": c["reference_expr"]}
+    r = {"tool": c["tool"], "args": args, "field": c["field"], "expr": filled(c, args)}
     try:
-        env: dict = {}
-        for line in c.get("reference_imports", []):
-            exec(line, env)  # imports were policy-checked by the harness before the container ran
-        expr = c["reference_expr"]
-        for k, v in args.items():  # {arg} placeholders: the reference uses exactly the tool's inputs
-            for quoted in ("'{" + k + "}'", '"{' + k + '}"'):  # placeholder written inside quotes
-                expr = expr.replace(quoted, repr(v))
-            expr = expr.replace("{" + k + "}", repr(v))
-        r["expr"] = expr
-        expected = evaluate(expr, env)  # policy-checked by the harness, run sandboxed
+        expected = reference_value(c, args)
     except Exception as e:  # noqa: BLE001
         r.update(status="invalid_reference", detail=repr(e)[:300])
         return r
@@ -158,9 +169,23 @@ def main(server_path: str, tests_path: str, generated_per_tool: int | None = Non
     return {"results": results}
 
 
+def check_references(tests_path: str) -> dict:
+    """Run each case's reference program on its own arguments, with no tool involved: does the library accept it?
+    Used right after the Tester answers, so a reference that misuses the library can be sent back before any gate."""
+    cases = json.load(open(tests_path, encoding="utf-8"))["cases"]
+    out = []
+    for c in cases:
+        try:
+            reference_value(c, c["args"])
+            out.append({"ok": True})
+        except Exception as e:  # noqa: BLE001
+            out.append({"ok": False, "error": repr(e)[:300], "expr": filled(c, c["args"])[:600]})
+    return {"references": out}
+
+
 if __name__ == "__main__":
     try:
-        out = main(sys.argv[1], sys.argv[2])
+        out = check_references(sys.argv[2]) if sys.argv[1] == "--references" else main(sys.argv[1], sys.argv[2])
     except Exception as e:  # noqa: BLE001
         out = {"fatal": repr(e)}
     print("ZYVEN_DIFF_REPORT=" + json.dumps(out, ensure_ascii=False, default=str))

@@ -111,3 +111,33 @@ async def test_skills_run_isolated_at_runtime(tmp_path):
     assert r["write_skill"].startswith("blocked") and r["write_src"].startswith("blocked")
     assert r["write_tmp"] == "allowed"
     assert r["library_value"] == 42
+
+
+def test_reference_programs_are_run_against_the_library(tmp_path):
+    """A reference that misuses the library (#101: a date string where the constructor takes year, month and day) is
+    reported with the exception and the program as it ran; a valid one passes; a static problem is caught first."""
+    from zyven.ai.schemas import DiffCase
+    from zyven.compiler.verify import reference_problems
+
+    lib = tmp_path / "lib"
+    (lib / "minical").mkdir(parents=True)
+    (lib / "minical" / "__init__.py").write_text("")
+    (lib / "minical" / "dates.py").write_text(
+        "class Day:\n    def __init__(self, year, month, day):\n        self.year, self.month, self.day = year, month, day\n"
+        "    def iso(self):\n        return f'{self.year:04d}-{self.month:02d}-{self.day:02d}'\n")
+    for p in (tmp_path, lib, lib / "minical"):
+        p.chmod(0o755)
+
+    def case(expr: str, args: dict) -> DiffCase:
+        return DiffCase(tool="to_iso", args=args, field="iso", reference_imports=["import minical.dates"],
+                        reference_expr=expr)
+
+    cases = [case("minical.dates.Day({date})", {"date": "2024-09-02"}),
+             case("minical.dates.Day({y}, {m}, {d}).iso()", {"y": 2024, "m": 9, "d": 2}),
+             case("print(minical.dates.Day({y}, 1, 1))", {"y": 2024})]
+    work = tmp_path / "work"
+    problems = reference_problems(cases, lib, ".", {"minical"}, work)
+    assert problems[0] is not None and "TypeError" in problems[0]
+    assert "minical.dates.Day('2024-09-02')" in problems[0]  # the program as it ran, placeholders filled in
+    assert problems[1] is None
+    assert problems[2] is not None and "print" in problems[2]  # static check, never sent to the sandbox

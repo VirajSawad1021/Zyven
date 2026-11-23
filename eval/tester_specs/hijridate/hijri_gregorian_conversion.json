@@ -1,0 +1,205 @@
+{
+ "name": "hijri_gregorian_conversion",
+ "title": "Hijri and Gregorian Calendar Conversion",
+ "summary": "A capability to convert dates between the Islamic lunar Hijri calendar and the Gregorian calendar, providing localized month and day names, and metadata about month and year lengths.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "convert_hijri_to_gregorian",
+   "description": "Converts a Hijri date to its corresponding Gregorian date.",
+   "params": [
+    {
+     "name": "hijri_date_iso",
+     "type": "string",
+     "description": "The Hijri date: YYYY-MM-DD with the month as a number (e.g. 1418-10-02), or day, month name and year as written (e.g. '2 Shawwal 1418'). Prefer the month name when the question gives one.",
+     "required": true,
+     "example": "1410-08-13"
+    }
+   ],
+   "returns": [
+    {
+     "name": "gregorian_date_iso",
+     "type": "string",
+     "description": "The converted Gregorian date in ISO format (YYYY-MM-DD)."
+    },
+    {
+     "name": "gregorian_year",
+     "type": "integer",
+     "description": "The Gregorian year."
+    },
+    {
+     "name": "gregorian_month",
+     "type": "integer",
+     "description": "The Gregorian month."
+    },
+    {
+     "name": "gregorian_day",
+     "type": "integer",
+     "description": "The Gregorian day."
+    },
+    {
+     "name": "display_date",
+     "type": "string",
+     "description": "A human-readable Gregorian date string in DD/MM/YYYY format."
+    }
+   ],
+   "implementation_symbols": [
+    "hijridate.convert.Hijri",
+    "hijridate.convert.Gregorian"
+   ],
+   "implementation_notes": "1. Parse the input 'hijri_date_iso' using 'hijridate.convert.Hijri.fromisoformat'. 2. Call '.to_gregorian()' on the resulting Hijri object. 3. Extract components using '.isoformat()' and '.datetuple()' from the Gregorian object.",
+   "example_args": {
+    "hijri_date_iso": "1410-08-13"
+   }
+  },
+  {
+   "name": "convert_gregorian_to_hijri",
+   "description": "Converts a Gregorian date to its corresponding Hijri date.",
+   "params": [
+    {
+     "name": "gregorian_date_iso",
+     "type": "string",
+     "description": "The Gregorian date in ISO format (YYYY-YYYY-MM-DD).",
+     "required": true,
+     "example": "1990-03-10"
+    }
+   ],
+   "returns": [
+    {
+     "name": "hijri_date_iso",
+     "type": "string",
+     "description": "The converted Hijri date in ISO format (YYYY-MM-DD)."
+    },
+    {
+     "name": "hijri_year",
+     "type": "integer",
+     "description": "The Hijri year."
+    },
+    {
+     "name": "hijri_month",
+     "type": "integer",
+     "description": "The Hijri month."
+    },
+    {
+     "name": "hijri_day",
+     "type": "integer",
+     "description": "The Hijri day."
+    },
+    {
+     "name": "display_date",
+     "type": "string",
+     "description": "A human-readable Hijri date string in DD/MM/YYYY format."
+    }
+   ],
+   "implementation_symbols": [
+    "hijridate.convert.Hijri",
+    "hijridate.convert.Gregorian"
+   ],
+   "implementation_notes": "1. Parse the input 'gregorian_date_iso' using 'hijridate.convert.Gregorian' constructor with parts split from the string. 2. Call '.to_hijri()' on the resulting Gregorian object. 3. Extract components using '.isoformat()' and '.datetuple()' from the Hijri object.",
+   "example_args": {
+    "gregorian_date_iso": "1990-03-10"
+   }
+  },
+  {
+   "name": "get_hijri_date_properties",
+   "description": "Provides detailed information about a specific Hijri date, including its localized names, weekday, and month/year lengths.",
+   "params": [
+    {
+     "name": "hijri_date_iso",
+     "type": "string",
+     "description": "The Hijri date: YYYY-MM-DD with the month as a number (e.g. 1418-10-02), or day, month name and year as written (e.g. '2 Shawwal 1418'). Prefer the month name when the question gives one.",
+     "required": true,
+     "example": "1410-08-13"
+    },
+    {
+     "name": "language_code",
+     "type": "string",
+     "description": "The two-letter language code for localization (e.g., 'en', 'tr').",
+     "required": false,
+     "example": "en"
+    }
+   ],
+   "returns": [
+    {
+     "name": "month_name",
+     "type": "string",
+     "description": "The localized Hijri month name."
+    },
+    {
+     "name": "day_name",
+     "type": "string",
+     "description": "The localized Hijri day name."
+    },
+    {
+     "name": "weekday_index",
+     "type": "integer",
+     "description": "The day of the week index (0=Monday, 6=Sunday)."
+    },
+    {
+     "name": "isoweekday_index",
+     "type": "integer",
+     "description": "The day of the week index (1=Monday, 7=Sunday)."
+    },
+    {
+     "name": "year_length_days",
+     "type": "integer",
+     "description": "The number of days in the Hijri year."
+    },
+    {
+     "name": "year_notation",
+     "type": "string",
+     "description": "The localized Hijri era notation (e.g., 'AH')."
+    },
+    {
+     "name": "month_length_days",
+     "type": "integer",
+     "description": "The number of days in the Hijri month."
+    }
+   ],
+   "implementation_symbols": [
+    "hijridate.convert.Hijri"
+   ],
+   "implementation_notes": "1. Parse input 'hijri_date_iso' using 'hijridate.convert.Hijri.fromisoformat'. 2. Call '.month_name(language)', '.day_name(language)', '.weekday()', '.isoweekday()', '.year_length()', '.month_length()', and '.notation(language)' on the Hijri object.",
+   "example_args": {
+    "hijri_date_iso": "1410-08-13",
+    "language_code": "en"
+   }
+  }
+ ],
+ "included_symbols": [
+  "hijridate.convert.Hijri",
+  "hijridate.convert.Gregorian"
+ ],
+ "excluded_symbols": [
+  {
+   "symbol": "hijridate.convert.Hijri._check_date",
+   "reason": "Internal validation method."
+  },
+  {
+   "symbol": "hijridate.convert.Hijri._compare",
+   "reason": "Internal comparison method."
+  },
+  {
+   "symbol": "hijridate.convert.Hijri._month_index",
+   "reason": "Internal indexing method."
+  },
+  {
+   "symbol": "hijridate.convert.Hijri._year_indexes",
+   "reason": "Internal indexing method."
+  }
+ ],
+ "dependencies": [
+  "hijridate"
+ ],
+ "side_effects": [],
+ "relevant_tests": [
+  "tests/integration/test_lengths.py",
+  "tests/integration/test_references.py",
+  "tests/unit/test_convert.py",
+  "tests/unit/test_helpers.py",
+  "tests/unit/test_locales.py"
+ ],
+ "uncertainties": [
+  "The exact range of supported Hijri years is determined by the library's internal validation logic; users should provide valid Hijri dates."
+ ]
+}
