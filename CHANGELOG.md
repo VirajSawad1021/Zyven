@@ -6,6 +6,11 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **`zyven verify` lists what each tool can do from its name and parameters.** Runs shell commands, runs code it is
+  given, reads or writes files at a path the caller chooses, contacts a host the caller chooses, takes a password or
+  token, runs database queries. These are listed as capabilities, not failures. A tool marked read-only whose name and
+  parameters say it runs commands or writes files fails the annotations check. The seven official reference servers
+  still pass, and their listed capabilities match what they do (filesystem reads and writes files, fetch contacts URLs).
 - **`zyven verify` names tool shadowing and message redirection.** A description that tells the model how to use
   another tool ("when send_message is invoked ...") or sends messages to a fixed address or number is now reported
   by name, and "don't notify the user" counts as hiding. On the three published Invariant Labs proof-of-concept

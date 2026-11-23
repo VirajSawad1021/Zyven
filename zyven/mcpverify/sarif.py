@@ -51,6 +51,8 @@ RULES: list[tuple[str, str, str]] = [
     ("descriptions/missing-description", "no description", "A tool has no description."),
     ("descriptions/long-description", "unusually long", "A description is unusually long; read it."),
     ("annotations/contradictory", "both read-only and destructive", "A tool is marked both read-only and destructive."),
+    ("annotations/read-only-but-changes", "marked read-only, but its name and parameters say",
+     "A tool is marked read-only, but its name and parameters say it runs commands or code, or writes files."),
     ("annotations/missing-read-only-hint", "no readOnlyHint",
      "A tool does not say whether it is read-only, so clients must assume it changes things."),
     ("stability/changed-between-connections", "changed between two connections",

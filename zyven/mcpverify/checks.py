@@ -69,6 +69,55 @@ _INSTRUCTION_RES = [(re.compile(p, re.IGNORECASE | re.DOTALL), why) for p, why i
 CAPABILITY_PATTERNS = {"names a credential or config file", "asks for secrets to be passed along",
                        "asks for data to be sent to a URL"}
 assert CAPABILITY_PATTERNS <= {why for _, why in INSTRUCTION_PATTERNS}
+_SUFFIX = " (from its name and parameters)"
+CAP_SHELL = "runs shell commands" + _SUFFIX
+CAP_CODE = "runs code it is given" + _SUFFIX
+CAP_FILE_WRITE = "writes or deletes files at a path the caller chooses" + _SUFFIX
+CAP_FILE_READ = "reads files at a path the caller chooses" + _SUFFIX
+CAP_HOST = "contacts a host or URL the caller chooses" + _SUFFIX
+CAP_SECRET = "takes a password or token as input" + _SUFFIX
+CAP_SQL = "runs database queries" + _SUFFIX
+CHANGING_CAPABILITIES = {CAP_SHELL, CAP_CODE, CAP_FILE_WRITE}
+_SHELL_PARAMS = {"command", "cmd", "shell_command", "commandline", "command_line"}
+_CODE_PARAMS = {"code", "script", "source", "source_code", "python_code", "expression"}
+_PATH_PARAMS = {"path", "file_path", "filepath", "filename", "file", "file_name", "directory", "dir", "dirpath", "folder"}
+_HOST_PARAMS = {"url", "uri", "host", "hostname", "domain", "endpoint", "server_url", "base_url"}
+_SECRET_PARAMS = {"password", "passwd", "passphrase", "token", "api_key", "apikey", "secret", "access_token",
+                  "auth_token", "jwt", "private_key"}
+_RUN_WORDS = {"run", "exec", "execute", "eval", "evaluate", "shell", "bash", "sh", "terminal", "spawn"}
+_WRITE_WORDS = {"write", "save", "delete", "remove", "rm", "create", "move", "rename", "edit", "append", "upload", "put"}
+
+
+def _words(name: str) -> set[str]:
+    name = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name).lower()
+    return {w for w in re.split(r"[^a-z0-9]+", name) if w}
+
+
+def tool_capabilities(tool: dict) -> list[str]:
+    """What a tool can do, read from its name and parameter names: running commands or code, touching files or hosts
+    the caller picks, taking secrets. Listed like other capabilities, never a failure on their own; a tool that says it is
+    read-only while one of these says it changes things is a finding (see the annotations check)."""
+    words = _words(tool.get("name", ""))
+    props = (tool.get("inputSchema") or {}).get("properties") or {}
+    params = {p.lower() for p in props} if isinstance(props, dict) else set()
+    out = []
+    if params & _SHELL_PARAMS or ({"shell", "bash", "terminal"} & words) or ({"run", "exec", "execute"} & words and
+                                                                           {"command", "cmd", "shell"} & words):
+        out.append(CAP_SHELL)
+    if (params & _CODE_PARAMS and words & _RUN_WORDS) or ({"execute", "exec", "run", "eval"} & words and
+                                                         {"code", "python", "script", "js", "javascript"} & words):
+        out.append(CAP_CODE)
+    if params & _PATH_PARAMS:
+        out.append(CAP_FILE_WRITE if words & _WRITE_WORDS else CAP_FILE_READ)
+    if params & _HOST_PARAMS:
+        out.append(CAP_HOST)
+    if params & _SECRET_PARAMS:
+        out.append(CAP_SECRET)
+    if "sql" in params or ("sql" in words and params & {"query", "statement"}):
+        out.append(CAP_SQL)
+    return out
+
+
 _BASE64_RE = re.compile(r"[A-Za-z0-9+/]{120,}={0,2}")
 _BIDI = {"‪", "‫", "‬", "‭", "‮", "⁦", "⁧", "⁨", "⁩"}
 
@@ -342,6 +391,11 @@ def run_checks(obs: dict[str, Any], lock: dict[str, str] | None = None,
     for t in tools:
         n, ann = t.get("name", ""), t.get("annotations") or {}
         ro, destr = ann.get("readOnlyHint"), ann.get("destructiveHint")
+        found = tool_capabilities(t)
+        capabilities += [f"{n}: {c}" for c in found]
+        changes = [c for c in found if c in CHANGING_CAPABILITIES]
+        if ro is True and changes:
+            bad.append(f"{n}: marked read-only, but its name and parameters say it {changes[0].removesuffix(' (from its name and parameters)')}")
         if ro is True and destr is True:
             bad.append(f"{n}: marked both read-only and destructive")
         if ro is None:

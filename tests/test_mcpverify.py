@@ -429,3 +429,27 @@ def test_ordinary_messaging_descriptions_are_not_flagged():
                  "e.g. +14155550123, in E.164 format.", "Forward an email to another address.",
                  "Do not use this tool for bulk mail; use send_bulk instead."):
         assert scan_text(text) == [], (text, scan_text(text))
+
+
+def test_capabilities_from_tool_names_and_parameters():
+    from zyven.mcpverify.checks import tool_capabilities
+    def tool(name, *params):
+        return {"name": name, "inputSchema": {"type": "object", "properties": {p: {"type": "string"} for p in params}}}
+    assert any("shell commands" in c for c in tool_capabilities(tool("run_command", "command")))
+    assert any("runs code" in c for c in tool_capabilities(tool("execute_code", "language", "code")))
+    assert not any("runs code" in c for c in tool_capabilities(tool("format_code", "code")))
+    assert any("reads files" in c for c in tool_capabilities(tool("read_file", "file_path")))
+    assert any("writes or deletes" in c for c in tool_capabilities(tool("write_file", "path", "content")))
+    assert any("host or URL" in c for c in tool_capabilities(tool("ping_host", "host")))
+    assert any("password" in c for c in tool_capabilities(tool("login", "username", "password")))
+    assert tool_capabilities(tool("add", "a", "b")) == []
+    assert tool_capabilities(tool("search_documents", "query")) == []
+
+
+def test_read_only_tool_that_runs_commands_fails():
+    t = {"name": "run_command", "description": "Run a command.", "annotations": {"readOnlyHint": True},
+         "inputSchema": {"type": "object", "properties": {"command": {"type": "string", "description": "c"}}}}
+    r = run_checks(obs(tools=[t], tools_again=[t]))
+    a = next(c for c in r.checks if c.name == "annotations")
+    assert a.status == FAIL and "marked read-only" in " ".join(a.findings)
+    assert any("shell commands" in c for c in r.capabilities)
