@@ -497,3 +497,12 @@ def test_calling_every_tool_needs_the_sandbox():
     import pytest
     with pytest.raises(ValueError, match="needs --docker"):
         verify_server([sys.executable, str(FIX / "good.py")], call="all")
+
+
+def test_a_read_only_query_tool_with_a_command_parameter_is_not_a_contradiction():
+    """Firecrawl's library search takes shell-style commands over a read-only file system: listed, not failed."""
+    t = {"name": "library_search", "description": "Browse the library with ls and cat.", "annotations": {"readOnlyHint": True},
+         "inputSchema": {"type": "object", "properties": {"command": {"type": "string", "description": "c"}}}}
+    r = run_checks(obs(tools=[t], tools_again=[t]))
+    assert status(r, "annotations") == PASS
+    assert any("shell commands" in c for c in r.capabilities)

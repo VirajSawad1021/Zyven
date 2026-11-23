@@ -6,6 +6,8 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **Checked on 23 popular community MCP servers.** 22 started in the sandbox, 21 passed (348 tools, 119 called);
+  the archived Slack reference server accepts invalid input (`eval/results/verify-community-20261124.md`).
 - **`zyven verify --call read-only|all`: check what tools do, not only what they say.** Each tool is called four times
   with valid sample input from its schema. The results are scanned like descriptions (now including instructions in
   HTML comments), credentials in output are reported masked (tokens, API keys, passwords), and the tools are listed
@@ -158,6 +160,9 @@ build, and installs without a clone.
 - Every sandbox container gets the host name `zyven-sandbox`.
 
 ### Fixed
+- **No false alarm for read-only query tools with a `command` parameter.** "Marked read-only but runs commands" now
+  needs the tool's name to say it runs or writes something (`run_command`, `write_file`). Firecrawl's library search,
+  which takes shell-style commands over a read-only file system, keeps the capability listed but no longer fails.
 - **Docker not running is now said in words.** A sandboxed skill served through `zyven mcp` or the hub used to fail
   with "Connection closed" when Docker was stopped, and the agent saw only that. It now says that Docker is not
   installed, not running, or that the sandbox image needs `zyven setup`. `zyven verify --docker` stops early with the

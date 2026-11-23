@@ -414,6 +414,10 @@ instructions in results, leaked tokens and keys (masked in the report), and tool
 Damn Vulnerable MCP Server this fails 7 of the 15 challenges and lists the risky capability for 3 more, while the
 official servers still pass with all 55 tools called (`eval/results/verify-dvmcp-20261124.md`).
 
+On 23 popular community servers (Playwright, Sentry, Firecrawl, Notion, Heroku, Kubernetes, Brave, Exa, arXiv and
+more), 22 started in the sandbox and 21 passed, with 348 tools checked and 119 called
+(`eval/results/verify-community-20261124.md`).
+
 ```bash
 uv run zyven verify -- npx -y @modelcontextprotocol/server-everything      # a command (runs on this machine)
 uv run zyven verify --url https://example.com/mcp --header "Authorization: Bearer ..."
