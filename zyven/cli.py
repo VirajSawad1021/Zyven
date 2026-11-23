@@ -230,7 +230,8 @@ def cmd_verify(args) -> None:
         lock = Path(args.lock) if args.lock else None
         try:
             r = verify_connection((args.board_dir or paths.home()).resolve(), args.connection, probe=args.probe,
-                                  lock_file=None if args.update_lock else lock, timeout=args.timeout)
+                                  lock_file=None if args.update_lock else lock, timeout=args.timeout,
+                                  call=args.call)
         except ValueError as e:
             sys.exit(f"zyven verify --connection: {e}")
         return _verify_done(args, r, command)
@@ -252,9 +253,12 @@ def cmd_verify(args) -> None:
         if not (sep and cont.startswith("/")):
             host, cont = m, ("/work" if i == 0 else f"/work{i}")
         mounts[Path(host)] = cont
-    r = verify_server(command or None, args.url, headers, env or None, args.docker, mounts or None, probe=args.probe,
-                      lock_file=None if args.update_lock else lock, timeout=args.timeout, network=args.allow_network,
-                      allow_hosts=args.allow_host)
+    try:
+        r = verify_server(command or None, args.url, headers, env or None, args.docker, mounts or None,
+                          probe=args.probe, lock_file=None if args.update_lock else lock, timeout=args.timeout,
+                          network=args.allow_network, allow_hosts=args.allow_host, call=args.call)
+    except ValueError as e:
+        sys.exit(f"zyven verify: {e}")
     _verify_done(args, r, command)
 
 
@@ -434,6 +438,10 @@ def main() -> None:
     s.add_argument("--allow-network", action="store_true", help="with --docker: give the container network access "
                    "(for servers that must reach their service to start; the report says so)")
     s.add_argument("--probe", action="store_true", help="also call each tool with input its schema forbids")
+    s.add_argument("--call", choices=["read-only", "all"], help="call tools with valid sample input (4 times "
+                   "each) and check what they return (hidden instructions, leaked credentials) and whether the tools "
+                   "change after use; 'read-only' calls only tools that declare readOnlyHint, 'all' calls every "
+                   "tool and needs --docker")
     s.add_argument("--lock", help="lock file of tool definitions: written if missing, compared if present")
     s.add_argument("--update-lock", action="store_true", help="rewrite the lock file from this run")
     s.add_argument("--json", help="write the full report here")

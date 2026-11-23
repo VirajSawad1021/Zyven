@@ -6,6 +6,13 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **`zyven verify --call read-only|all`: check what tools do, not only what they say.** Each tool is called four times
+  with valid sample input from its schema. The results are scanned like descriptions (now including instructions in
+  HTML comments), credentials in output are reported masked (tokens, API keys, passwords), and the tools are listed
+  again afterwards to catch a rug pull that waits for a few uses. `read-only` calls only tools that declare
+  `readOnlyHint`; `all` calls every tool and runs only in the sandbox. On Damn Vulnerable MCP Server, 7 of 15
+  challenges fail and 3 more show their risky capability; the seven official servers still pass with every tool called
+  (`eval/results/verify-dvmcp-20261124.md`).
 - **`zyven verify` lists what each tool can do from its name and parameters.** Runs shell commands, runs code it is
   given, reads or writes files at a path the caller chooses, contacts a host the caller chooses, takes a password or
   token, runs database queries. These are listed as capabilities, not failures. A tool marked read-only whose name and

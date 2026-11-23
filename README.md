@@ -409,10 +409,16 @@ It catches all three published tool-poisoning proof-of-concept servers from Inva
 pull through its lock file, and passes all seven official reference servers (55 tools) with no failed check. See
 `eval/results/verify-real-world-20261123.md`.
 
+With `--call`, it also calls the tools with valid sample input, four times each, and reads what they return: hidden
+instructions in results, leaked tokens and keys (masked in the report), and tools that change after a few uses. On
+Damn Vulnerable MCP Server this fails 7 of the 15 challenges and lists the risky capability for 3 more, while the
+official servers still pass with all 55 tools called (`eval/results/verify-dvmcp-20261124.md`).
+
 ```bash
 uv run zyven verify -- npx -y @modelcontextprotocol/server-everything      # a command (runs on this machine)
 uv run zyven verify --url https://example.com/mcp --header "Authorization: Bearer ..."
 uv run zyven verify --probe --lock mcp-lock.json -- python my_server.py    # also send invalid input; pin definitions
+uv run zyven verify --docker IMAGE --call all -- python my_server.py  # call every tool with valid input, in the sandbox
 uv run zyven verify --docker zyven-sandbox:py312 --mount ./skill:/skill -- python /skill/server.py   # in the sandbox
 uv run zyven verify --docker node:22-slim --mount ./srv:/work --allow-host api.example.com -- node /work/index.js
                                                   # in the sandbox, reaching only api.example.com
