@@ -1,0 +1,195 @@
+[
+ {
+  "t": 0.0,
+  "event": "architect.start",
+  "detail": "Symbolic Math (OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model])"
+ },
+ {
+  "t": 103.72,
+  "event": "architect.done",
+  "detail": "4 tools: calculus_expression, evaluate_limit, solve_equation, simplify_or_factor_expression",
+  "resolved": {},
+  "dropped": [],
+  "fixes": [
+   "interface lint: simplify_or_factor_expression: already returns 1 related fact(s) but still omits 37 the library computes directly (cancel, signsimp, gcd, nsimplify, logcombine); consider adding them as named return fields so the agent avoids redundant follow-up tool calls",
+   "interface lint: revision did not improve the interface; kept the draft",
+   "skipped test sympy/core/tests/test_sympify.py: needs flint, gmpy2, mpmath (not available in the sandbox)"
+  ],
+  "lint_warnings": 1
+ },
+ {
+  "t": 103.72,
+  "event": "compiler.start",
+  "detail": "writing 4 tool bodies (OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model])"
+ },
+ {
+  "t": 184.62,
+  "event": "compiler.done",
+  "detail": "all tools implemented"
+ },
+ {
+  "t": 184.62,
+  "event": "tester.start",
+  "detail": "writing differential tests from the spec and library (adapter code not shown; OpenCode (opencode/deepseek-v4.1-flash-free = deepseek/deepseek-v4.1-flash-1017) [coding agent, open-weight model])"
+ },
+ {
+  "t": 510.81,
+  "event": "tester.done",
+  "detail": "52 cases for 4 tools; full coverage",
+  "coverage_gaps": {}
+ },
+ {
+  "t": 510.83,
+  "event": "verify.start",
+  "detail": "attempt 1"
+ },
+ {
+  "t": 1182.01,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 1182.01,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 1182.01,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 762 tests ran, 1 failures, 0 errors; 1 failing tests do not call the wrapped functions and are not counted: sympy/polys/tests/test_polytools.py::test_Poly_rootof_extension_primitive_element (sympy/core/tests/test_diff.py, sympy/integrals/tests/test_integrals.py, sympy/series/tests/test_limits.py, sy",
+  "passed": true
+ },
+ {
+  "t": 1182.01,
+  "event": "gate.input_robustness",
+  "detail": "FAIL 6/9 equivalent-input probes gave identical results: calculus_expression {\"operation\": \"  differentiate \", \"expression\": \"sin(x)*cos(y)\", \"variable\": \"x\", \"order\": 2}; evaluate_limit {\"expression\": \"sin(x)/x\", \"variable\": \"x\", \"point\": \"0\", \"direction\": \"  +- \"}; simplify_or_factor_expression {\"expre",
+  "passed": false
+ },
+ {
+  "t": 1182.01,
+  "event": "gate.mcp_smoke",
+  "detail": "FAIL solve_equation: missing return fields ['equations', 'variables', 'solutions', 'solution_count', 'result']; output=\"Error executing tool solve_equation: 1 validation error for solve_equationArguments\\nequations\\n  Field required [type=missing, input_value={}, input_type=dict]\\n    For further informa",
+  "passed": false
+ },
+ {
+  "t": 1182.01,
+  "event": "gate.differential",
+  "detail": "FAIL 30/40 Tester cases + 2/2 generated cases match the library (13 generated not scored: the library or the tool rejected the input); 12 reference expressions invalid (ignored); no valid case for: solve_equation",
+  "passed": false
+ },
+ {
+  "t": 1182.01,
+  "event": "repair.start",
+  "detail": "4 failing tool(s): solve_equation, calculus_expression, evaluate_limit, simplify_or_factor_expression"
+ },
+ {
+  "t": 1265.45,
+  "event": "repair.done",
+  "detail": "patched calculus_expression, evaluate_limit, solve_equation, simplify_or_factor_expression"
+ },
+ {
+  "t": 1265.45,
+  "event": "verify.start",
+  "detail": "attempt 2"
+ },
+ {
+  "t": 1265.48,
+  "event": "gate.policy",
+  "detail": "FAIL line 197: call to 'locals' is not allowed; line 199: call to 'locals' is not allowed",
+  "passed": false
+ },
+ {
+  "t": 1265.48,
+  "event": "repair.start",
+  "detail": "4 failing tool(s): calculus_expression, evaluate_limit, solve_equation, simplify_or_factor_expression"
+ },
+ {
+  "t": 1322.55,
+  "event": "repair.done",
+  "detail": "patched calculus_expression, evaluate_limit, solve_equation, simplify_or_factor_expression"
+ },
+ {
+  "t": 1322.56,
+  "event": "verify.start",
+  "detail": "attempt 3"
+ },
+ {
+  "t": 1992.38,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 1992.38,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 1992.38,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 762 tests ran, 1 failures, 0 errors; 1 failing tests do not call the wrapped functions and are not counted: sympy/polys/tests/test_polytools.py::test_Poly_rootof_extension_primitive_element (sympy/core/tests/test_diff.py, sympy/integrals/tests/test_integrals.py, sympy/series/tests/test_limits.py, sy",
+  "passed": true
+ },
+ {
+  "t": 1992.38,
+  "event": "gate.input_robustness",
+  "detail": "PASS 9/9 equivalent-input probes gave identical results",
+  "passed": true
+ },
+ {
+  "t": 1992.38,
+  "event": "gate.mcp_smoke",
+  "detail": "FAIL solve_equation: missing return fields ['equations', 'variables', 'solutions', 'solution_count', 'result']; output=\"Error executing tool solve_equation: 1 validation error for solve_equationArguments\\nequations\\n  Field required [type=missing, input_value={}, input_type=dict]\\n    For further informa",
+  "passed": false
+ },
+ {
+  "t": 1992.38,
+  "event": "gate.differential",
+  "detail": "FAIL 30/40 Tester cases + 2/2 generated cases match the library (13 generated not scored: the library or the tool rejected the input); 12 reference expressions invalid (ignored); no valid case for: solve_equation",
+  "passed": false
+ },
+ {
+  "t": 1992.39,
+  "event": "verify.partial",
+  "detail": "re-verifying 2/4 tools without: solve_equation, calculus_expression"
+ },
+ {
+  "t": 2669.2,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 2669.2,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 2669.2,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 762 tests ran, 1 failures, 0 errors; 1 failing tests do not call the wrapped functions and are not counted: sympy/polys/tests/test_polytools.py::test_Poly_rootof_extension_primitive_element (sympy/core/tests/test_diff.py, sympy/integrals/tests/test_integrals.py, sympy/series/tests/test_limits.py, sy",
+  "passed": true
+ },
+ {
+  "t": 2669.2,
+  "event": "gate.input_robustness",
+  "detail": "PASS 6/6 equivalent-input probes gave identical results",
+  "passed": true
+ },
+ {
+  "t": 2669.2,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 2 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 2669.2,
+  "event": "gate.differential",
+  "detail": "PASS 19/19 Tester cases + 2/2 generated cases match the library (13 generated not scored: the library or the tool rejected the input)",
+  "passed": true
+ }
+]

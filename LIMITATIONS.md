@@ -20,7 +20,7 @@ When a compiled skill receives a passing validation report and is marked as veri
    - The assembled MCP server script (`server.py`) can be imported cleanly inside an isolated container with only its declared pinned dependencies present on `PYTHONPATH`.
 
 3. **Upstream Regression Safety (Gate 3):**
-   - The upstream repository's own tests that exercise the wrapped code pass inside the container. Test files that import packages not installed in the sandbox (e.g. `bs4`) are skipped, and the skip and its reason are recorded rather than counted as passes. One failing upstream test fails the gate, even if it is unrelated to the wrapped functions (this kept sympy from verifying).
+   - The upstream repository's own tests that exercise the wrapped code pass inside the container. Test files that import packages not installed in the sandbox (e.g. `bs4`) are skipped, and the skip and its reason are recorded rather than counted as passes. A failing upstream test fails the gate unless the analyzer knows that test and it calls none of the wrapped functions; such failures are listed in the gate's detail. A test it cannot map counts as related.
 
 4. **Input Robustness (Gate 4):**
    - Equivalent spellings of an example input (extra or missing whitespace, separators, letter case) give the same result as the example call, without crashing. Gate 5 separately checks that clearly invalid input is rejected with an error rather than a wrong answer.

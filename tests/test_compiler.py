@@ -698,3 +698,8 @@ def test_pytest_failed_node_ids_are_parsed():
     rep = parse_pytest(SandboxResult(command=["pytest"], exit_code=1, stdout=out, stderr="", seconds=0.5))
     assert rep.failed_nodes == ["tests/test_a.py::TestX::test_y", "tests/test_b.py::test_z"]
     assert (rep.failures, rep.errors, rep.ran) == (1, 1, 4)
+
+
+def test_a_whitespace_only_docstring_has_no_first_line():
+    from zyven.analysis.miner import _first_line
+    assert _first_line("   \n  ") == "" and _first_line(None) == "" and _first_line("\n  Solve it.\n more") == "Solve it."

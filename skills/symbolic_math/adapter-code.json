@@ -1,0 +1,18 @@
+{
+ "tools": [
+  {
+   "tool": "evaluate_limit",
+   "imports": [
+    "import sympy"
+   ],
+   "body": "try:\n    expression\nexcept NameError:\n    expression = None\ntry:\n    variable\nexcept NameError:\n    variable = None\ntry:\n    point\nexcept NameError:\n    point = None\ntry:\n    direction\nexcept NameError:\n    direction = None\n\nif not isinstance(expression, str):\n    raise ValueError('expression must be a string')\nif not isinstance(variable, str):\n    raise ValueError('variable must be a string')\nif not isinstance(point, str):\n    raise ValueError('point must be a string')\nif direction is None:\n    direction = '+'\nelif not isinstance(direction, str):\n    raise ValueError(\"direction must be '+', '-', or '+-'\")\nelse:\n    direction = direction.strip()\nif direction not in ('+', '-', '+-'):\n    raise ValueError(\"direction must be '+', '-', or '+-'\")\n\ntry:\n    expr = sympy.sympify(expression)\n    var = sympy.sympify(variable)\n    pt = sympy.sympify(point)\nexcept Exception as exc:\n    raise ValueError(f'could not parse expression, variable, or point: {exc}')\n\ntry:\n    result_obj = sympy.limit(expr, var, pt, dir=direction)\nexcept Exception as exc:\n    raise ValueError(f'limit evaluation failed: {exc}')\n\nreturn {\n    'expression': expression,\n    'variable': variable,\n    'point': point,\n    'direction': direction,\n    'result': str(result_obj),\n}"
+  },
+  {
+   "tool": "simplify_or_factor_expression",
+   "imports": [
+    "import sympy"
+   ],
+   "body": "try:\n    expression\nexcept NameError:\n    expression = None\ntry:\n    operation\nexcept NameError:\n    operation = None\ntry:\n    deep\nexcept NameError:\n    deep = None\ntry:\n    ratio\nexcept NameError:\n    ratio = None\n\nif operation is None:\n    operation = 'simplify'\nelif not isinstance(operation, str):\n    raise ValueError('operation must be a string')\nelse:\n    operation = operation.strip()\nif operation not in ('simplify', 'factor'):\n    raise ValueError(\"operation must be 'simplify' or 'factor'\")\nif not isinstance(expression, str):\n    raise ValueError('expression must be a string')\nif deep is None:\n    deep = False\nif not isinstance(deep, bool):\n    raise ValueError('deep must be a boolean')\nif ratio is None:\n    ratio = 1.7\nif isinstance(ratio, bool) or not isinstance(ratio, (int, float)):\n    raise ValueError('ratio must be a number')\n\ntry:\n    expr = sympy.sympify(expression)\nexcept Exception as exc:\n    raise ValueError(f'could not parse expression: {exc}')\n\ntry:\n    if operation == 'factor':\n        result_obj = sympy.factor(expr, deep=deep)\n    else:\n        result_obj = sympy.simplify(expr, ratio=ratio)\nexcept Exception as exc:\n    raise ValueError(f'{operation} failed: {exc}')\n\nreturn {\n    'operation': operation,\n    'expression': expression,\n    'result': str(result_obj),\n}"
+  }
+ ]
+}
