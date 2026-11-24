@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Check, GitBranch, Globe, RefreshCw, Terminal, WifiOff } from "lucide-react";
-import { Badge, ArtFrame, Empty, Hero, ToolChip } from "../components/ui";
-import { Reveal, Stars } from "../components/motion";
+import { BookOpen, Box, Check, GitBranch, Globe, RefreshCw, Sparkles, Terminal, WifiOff } from "lucide-react";
+import { Badge, Empty, Hero, ToolChip } from "../components/ui";
+import { Reveal } from "../components/motion";
 import type { CatalogRepo, Skill } from "../lib/types";
 import { api } from "../lib/api";
 
@@ -12,14 +12,24 @@ const GATES: [string, string][] = [
   ["input_robustness", "Robustness"], ["mcp_smoke", "MCP"], ["differential", "Differential"],
 ];
 
-/** A painted tile with a frosted content box anchored at the bottom. */
-function Tile({ seed, tag, mono, children }: { seed: string; tag: string; mono?: boolean; children: React.ReactNode }) {
+/** A skill card: its id and a verified mark on top, the details below; it lifts slightly on hover. */
+function Tile({ tag, children, mark = "verified" }: { seed: string; tag: string; mono?: boolean; mark?: "verified" | "pinned"; children: React.ReactNode }) {
   return (
-    <ArtFrame seed={seed} className="grain flex h-full min-h-[240px] flex-col justify-end gap-2 rounded-[28px] p-4 pt-14 transition-transform duration-300 hover:-translate-y-1">
-      <Stars seed={seed} count={6} from={55} to={95} />
-      <span className={`frost absolute left-3.5 top-3.5 z-10 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.04em] text-ink ${mono ? "font-mono" : "font-mono"}`}>{tag}</span>
-      <div className="frost relative z-10 rounded-[18px] px-4 py-3.5 shadow-[0_1px_2px_rgba(20,20,19,0.08)]">{children}</div>
-    </ArtFrame>
+    <div className="group flex h-full flex-col rounded-[10px] border border-line bg-canvas p-4 transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-px hover:border-line-strong hover:shadow-[0_12px_28px_-18px_rgba(27,25,21,0.28)]">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate font-mono text-[11.5px] text-muted">{tag}</span>
+        {mark === "verified" ? (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-[5px] bg-good-bg px-1.5 py-0.5 text-[10.5px] font-medium text-good">
+            <Check className="h-3 w-3" strokeWidth={2.5} />Verified
+          </span>
+        ) : (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-[5px] bg-panel-2 px-1.5 py-0.5 text-[10.5px] font-medium text-body">
+            <GitBranch className="h-3 w-3" />Pinned
+          </span>
+        )}
+      </div>
+      <div className="flex-1">{children}</div>
+    </div>
   );
 }
 
@@ -60,8 +70,8 @@ export function Skills({ skills, onGoTasks }: { skills: Skill[]; onGoTasks: () =
   return (
     <>
       <Hero
-        eyebrow="Library"
-        title={<>Verified <span className="text-muted">skills.</span></>}
+        icon={<Sparkles />}
+        title="Skills"
         sub="Capabilities Zyven compiled from open-source code and kept because they passed the sandbox. Each one lists exactly which gates it passed, and the agent loads it as an MCP tool on demand."
       />
       {skills.length === 0 ? (
@@ -112,8 +122,8 @@ export function Catalog({ repos }: { repos: CatalogRepo[] }) {
   return (
     <>
       <Hero
-        eyebrow="Sources"
-        title={<>Curated <span className="text-muted">catalog.</span></>}
+        icon={<BookOpen />}
+        title="Catalog"
         sub="Pinned repositories Zyven may compile capabilities from: reviewer-curated, commit-pinned, licenses recorded. Nothing outside this list is ever fetched."
       />
       {repos.length === 0 ? (
@@ -121,7 +131,7 @@ export function Catalog({ repos }: { repos: CatalogRepo[] }) {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {repos.map((r, i) => (
-            <Reveal key={r.repo} delay={Math.min(i, 5) * 80}><Tile seed={r.repo} tag={r.repo} mono>
+            <Reveal key={r.repo} delay={Math.min(i, 5) * 80}><Tile seed={r.repo} tag={r.repo} mono mark="pinned">
               <p className="text-[15px] font-semibold tracking-tight text-ink">{r.repo}</p>
               {r.note && <p className="mt-0.5 text-[13px] leading-relaxed text-body">{r.note}</p>}
               <div className="mt-2.5 flex flex-wrap items-center gap-2 text-[12px] text-muted">

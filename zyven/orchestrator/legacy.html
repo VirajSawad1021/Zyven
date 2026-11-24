@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Zyven — the agent that grows its own tools</title>
-<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="9" fill="%23141413"/><circle cx="11" cy="16" r="4.6" fill="%23ffffff"/><path d="M11 16 C 16.5 16, 17.5 10.5, 23.4 10.9" fill="none" stroke="%23ffffff" stroke-width="3.1" stroke-linecap="round"/><circle cx="24" cy="10.7" r="3.1" fill="%23e8895a"/></svg>'>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="%231b1915"><path d="M7.2 5.5H24.8A1.7 1.7 0 0 1 26.5 7.2V9.6H5.5V7.2A1.7 1.7 0 0 1 7.2 5.5Z"/><path d="M19.8 11.4H26.3L12.2 20.6H5.7Z"/><path d="M5.5 22.4H26.5V24.8A1.7 1.7 0 0 1 24.8 26.5H7.2A1.7 1.7 0 0 1 5.5 24.8Z"/></svg>'>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* ── Zyven design system — InstaJob signature ─────────────────────────────── */
+  /* ── Zyven design system ─────────────────────────────── */
   :root {
     --font-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -177,7 +177,7 @@
   .stat .n { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
   .stat .l { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 11px; color: var(--muted); font-weight: 500; }
 
-  /* ── live agent banner (art + frosted rows — the InstaJob dashboard pattern) ─ */
+  /* ── live agent banner (art + frosted rows) ─ */
   .agent-banner {
     position: relative; border-radius: 24px; overflow: hidden; padding: 20px;
     margin-bottom: 22px; min-height: 132px; display: flex; flex-direction: column; gap: 10px;
@@ -336,12 +336,7 @@
     <div class="sidebar-inner">
       <div class="sidebar-top">
         <a class="logo" href="#/tasks">
-          <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
-            <rect width="32" height="32" rx="9" fill="#141413"/>
-            <circle cx="11" cy="16" r="4.6" fill="#ffffff"/>
-            <path d="M11 16 C 16.5 16, 17.5 10.5, 23.4 10.9" fill="none" stroke="#ffffff" stroke-width="3.1" stroke-linecap="round"/>
-            <circle cx="24" cy="10.7" r="3.1" fill="#e8895a"/>
-          </svg>
+          <svg fill="#1b1915" viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path d="M7.2 5.5H24.8A1.7 1.7 0 0 1 26.5 7.2V9.6H5.5V7.2A1.7 1.7 0 0 1 7.2 5.5Z"/><path d="M19.8 11.4H26.3L12.2 20.6H5.7Z"/><path d="M5.5 22.4H26.5V24.8A1.7 1.7 0 0 1 24.8 26.5H7.2A1.7 1.7 0 0 1 5.5 24.8Z"/></svg>
           <span class="logo-word">zyven</span>
         </a>
       </div>
@@ -362,12 +357,7 @@
 
   <header class="mobile-header">
     <a class="logo" href="#/tasks">
-      <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
-        <rect width="32" height="32" rx="9" fill="#141413"/>
-        <circle cx="11" cy="16" r="4.6" fill="#ffffff"/>
-        <path d="M11 16 C 16.5 16, 17.5 10.5, 23.4 10.9" fill="none" stroke="#ffffff" stroke-width="3.1" stroke-linecap="round"/>
-        <circle cx="24" cy="10.7" r="3.1" fill="#e8895a"/>
-      </svg>
+      <svg fill="#1b1915" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><path d="M7.2 5.5H24.8A1.7 1.7 0 0 1 26.5 7.2V9.6H5.5V7.2A1.7 1.7 0 0 1 7.2 5.5Z"/><path d="M19.8 11.4H26.3L12.2 20.6H5.7Z"/><path d="M5.5 22.4H26.5V24.8A1.7 1.7 0 0 1 24.8 26.5H7.2A1.7 1.7 0 0 1 5.5 24.8Z"/></svg>
       <span class="logo-word">zyven</span>
     </a>
     <button class="menu-btn" id="menu-open" aria-label="Open menu">
@@ -381,12 +371,7 @@
       <div class="sidebar-inner">
         <div class="sidebar-top" style="justify-content:space-between;">
           <a class="logo" href="#/tasks" data-close-drawer>
-            <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
-              <rect width="32" height="32" rx="9" fill="#141413"/>
-              <circle cx="11" cy="16" r="4.6" fill="#ffffff"/>
-              <path d="M11 16 C 16.5 16, 17.5 10.5, 23.4 10.9" fill="none" stroke="#ffffff" stroke-width="3.1" stroke-linecap="round"/>
-              <circle cx="24" cy="10.7" r="3.1" fill="#e8895a"/>
-            </svg>
+            <svg fill="#1b1915" viewBox="0 0 32 32" width="26" height="26" aria-hidden="true"><path d="M7.2 5.5H24.8A1.7 1.7 0 0 1 26.5 7.2V9.6H5.5V7.2A1.7 1.7 0 0 1 7.2 5.5Z"/><path d="M19.8 11.4H26.3L12.2 20.6H5.7Z"/><path d="M5.5 22.4H26.5V24.8A1.7 1.7 0 0 1 24.8 26.5H7.2A1.7 1.7 0 0 1 5.5 24.8Z"/></svg>
             <span class="logo-word">zyven</span>
           </a>
           <button class="menu-btn" id="menu-close" aria-label="Close menu">

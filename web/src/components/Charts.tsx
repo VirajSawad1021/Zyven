@@ -28,7 +28,7 @@ function Tip({ x, y, w, h, children }: { x: number; y: number; w: number; h: num
   const left = (x / w) * 100;
   return (
     <div
-      className="pointer-events-none absolute z-10 w-max max-w-[260px] -translate-y-full rounded-xl border border-line bg-white/95 px-3 py-2 text-[12px] shadow-[0_8px_24px_-12px_rgba(20,20,19,0.35)] backdrop-blur animate-fade-in"
+      className="pointer-events-none absolute z-10 w-max max-w-[260px] -translate-y-full rounded-xl border border-line bg-canvas/95 px-3 py-2 text-[12px] shadow-[0_8px_24px_-12px_rgba(20,20,19,0.35)] backdrop-blur animate-fade-in"
       style={{ left: `${left}%`, top: `calc(${(y / h) * 100}% - 10px)`, transform: `translate(${left > 70 ? "-100%" : left < 30 ? "0" : "-50%"}, -100%)` }}
     >
       {children}

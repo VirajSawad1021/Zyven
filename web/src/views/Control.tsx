@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Bot, Calendar, Check, Container, Plus, Square, X } from "lucide-react";
+import { Bot, Calendar, Check, Container, Plus, Rocket, Square, X } from "lucide-react";
 import { Badge, Button, Card, Empty, Eyebrow, Hero, LiveDot, Stat } from "../components/ui";
 import { api, post } from "../lib/api";
 import { relTime, type Tone } from "../lib/labels";
@@ -20,7 +20,7 @@ interface Run {
 const TONE: Record<string, Tone> = { QUEUED: "neutral", SCHEDULED: "info", RUNNING: "info", NEEDS_APPROVAL: "warn", COMPLETED: "good", FAILED: "bad", CANCELLED: "neutral" };
 const LABEL: Record<string, string> = { QUEUED: "Queued", SCHEDULED: "Scheduled", RUNNING: "Running", NEEDS_APPROVAL: "Needs approval", COMPLETED: "Completed", FAILED: "Failed", CANCELLED: "Cancelled" };
 const EXPOSES: Record<string, string> = { live_output: "live output", tool_calls: "tool calls", approvals: "approvals", file_changes: "file changes", tokens: "token usage" };
-const input = "w-full rounded-xl border border-line-strong/80 bg-white px-3 py-2 text-[13px] text-ink placeholder:text-[#aaa79f] focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink";
+const input = "w-full rounded-xl border border-line-strong/80 bg-canvas px-3 py-2 text-[13px] text-ink placeholder:text-[#aaa79f] focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink";
 
 function RuntimeSwitch({ id, info, onChanged }: { id: string; info: RuntimeInfo; onChanged: () => void }) {
   const [model, setModel] = useState(info.settings?.model ?? "");
@@ -85,9 +85,9 @@ function NewTask({ rt, onCreated, onSettingsChanged }: { rt: Runtimes; onCreated
       <div className="mb-3 flex flex-wrap gap-2">
         {Object.entries(rt.runtimes).map(([id, r]) => (
           <button key={id} onClick={() => setRuntime(id)} title={r.note}
-            className={`flex disabled:cursor-not-allowed disabled:opacity-50 items-center gap-2 rounded-xl border px-3 py-2 text-left text-[13px] ${runtime === id ? "border-ink bg-ink text-white" : "border-line-strong bg-white hover:border-ink/40"} ${r.available ? "" : "opacity-60"}`}>
+            className={`flex disabled:cursor-not-allowed disabled:opacity-50 items-center gap-2 rounded-xl border px-3 py-2 text-left text-[13px] ${runtime === id ? "border-ink bg-ink text-white" : "border-line-strong bg-canvas hover:border-ink/40"} ${r.available ? "" : "opacity-60"}`}>
             {id === "docker" ? <Container className="h-4 w-4" /> : <Bot className="h-4 w-4" />}{r.label}{!r.available && <span className="text-[10px]">off</span>}
-            {r.open_weight && <span className={`rounded-full px-1.5 text-[10px] font-semibold ${runtime === id ? "bg-white/20" : "bg-good-bg text-good"}`}>open</span>}
+            {r.open_weight && <span className={`rounded-full px-1.5 text-[10px] font-semibold ${runtime === id ? "bg-canvas/20" : "bg-good-bg text-good"}`}>open</span>}
           </button>
         ))}
         {Object.entries(rt.planned).map(([id, why]) => (
@@ -277,7 +277,7 @@ function Approvals({ items, onDecided }: { items: Approval[]; onDecided: () => v
       <p className="mt-1 text-[12px] text-muted">An agent wants to do something outside its sandbox. Nothing happens unless you approve; unanswered requests are denied after an hour.</p>
       <div className="mt-3 space-y-2.5">
         {items.map((a) => (
-          <div key={a.id} className="rounded-xl border border-line bg-white p-3">
+          <div key={a.id} className="rounded-xl border border-line bg-canvas p-3">
             <p className="text-[13px] font-medium">{a.summary} <span className="ml-1 rounded-full bg-panel-2 px-1.5 font-mono text-[10px] text-muted">{a.kind}</span></p>
             {a.detail && <pre className="mt-1.5 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-panel px-2.5 py-2 font-mono text-[11.5px]">{a.detail}</pre>}
             <div className="mt-2.5 flex items-center gap-2">
@@ -316,13 +316,13 @@ export function Control() {
     const t2 = setInterval(loadRuntimes, 8000);  // sign-in checks finish in the background; pick up the answer
     return () => { clearInterval(t); clearInterval(t2); };
   }, [load]);
-  if (!rt) return <Hero eyebrow="Control center" title="Loading…" />;
+  if (!rt) return <Hero icon={<Rocket />} title="Control" sub="Loading the runtimes…" />;
   const count = (s: string[]) => runs.filter((r) => s.includes(r.status)).length;
 
   return (
     <>
-      <Hero eyebrow="Control center" title={<>Assign work. <span className="text-muted">Watch it run.</span></>}
-        sub="Create a task, pick a runtime and an isolated environment, then follow the run live. Each runtime reports only what it truly exposes. Open-weight by default." />
+      <Hero icon={<Rocket />} title="Control"
+        sub="Assign work and watch it run. Create a task, pick a runtime and an isolated environment, then follow the run live. Each runtime reports only what it truly exposes. Open-weight by default." />
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat value={count(["RUNNING", "QUEUED"])} label="Running" icon={<LiveDot />} />
         <Stat value={count(["NEEDS_APPROVAL"])} label="Needs approval" />
@@ -337,11 +337,11 @@ export function Control() {
       ) : (
         <div className="grid gap-3.5 lg:grid-cols-4">
           {COLUMNS.map((col) => (
-            <div key={col.title} className="rounded-2xl border border-line bg-panel p-3">
+            <div key={col.title} className="rounded-[10px] border border-line bg-panel p-3">
               <p className="mb-2 flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">{col.title}<span>{count(col.statuses)}</span></p>
               <div className="space-y-2">
                 {runs.filter((r) => col.statuses.includes(r.status)).map((r) => (
-                  <button key={r.id} onClick={() => setSel(r.id)} className={`w-full rounded-xl border bg-white p-3 text-left transition-colors hover:border-ink/40 ${sel === r.id ? "border-ink" : "border-line"}`}>
+                  <button key={r.id} onClick={() => setSel(r.id)} className={`w-full rounded-xl border bg-canvas p-3 text-left transition-colors hover:border-ink/40 ${sel === r.id ? "border-ink" : "border-line"}`}>
                     <p className="line-clamp-2 text-[13px] font-medium">{r.title}</p>
                     <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted">
                       <Badge tone={TONE[r.status]}>{LABEL[r.status]}</Badge>{r.full_access && <Badge tone="bad">full PC access</Badge>}{r.runtime === "docker" ? "Docker" : r.runtime === "zyven" ? "Zyven agent" : r.runtime} · {r.status === "SCHEDULED" && r.run_at ? new Date(r.run_at * 1000).toLocaleTimeString() : relTime(r.created)}

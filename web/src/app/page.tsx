@@ -2,21 +2,117 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, Minus, Plus } from "lucide-react";
+import {
+  ArrowRight, ArrowUpRight, BookOpen, ChartColumn, Check, Copy, LayoutGrid, Minus, Network, Plug, Plus, Rocket, Search,
+  ShieldCheck, Sparkles, Wrench,
+} from "lucide-react";
 import { GITHUB, SiteShell } from "../components/site/Chrome";
-import { Showcase } from "../components/site/Showcase";
-import { CountUp, Reveal, Star, Stars } from "../components/motion";
+import { CountUp, Reveal } from "../components/motion";
+import { LogoMark } from "../components/Logo";
 
-const LEARNS_FROM = ["python-stdnum", "phonenumbers", "hijridate", "pyluach", "py-nepali", "sympy", "MCP", "Docker sandbox", "Gemma 4 · open weights", "FastAPI", "Next.js"];
+const INSTALL = "uvx --from git+https://github.com/VirajSawad1021/Zyven zyven verify --discover";
+
+const GATES = [
+  ["Policy", "No files, processes or network in the tool code; no eval, exec or locals."],
+  ["Import", "The assembled MCP server imports cleanly inside the container."],
+  ["Upstream tests", "The library's own test suite still passes against the pinned checkout."],
+  ["Input robustness", "Spaces, case and separators change nothing; bad input gets a clear error."],
+  ["MCP smoke", "Every tool is listed and called over the real MCP protocol."],
+  ["Differential", "Every answer is compared with the library called directly."],
+];
+
+const SUITES: [string, string, number, number, number][] = [
+  ["Calendar arithmetic", "python-dateutil", 11, 24, 24],
+  ["Unit conversion", "pint", 22, 29, 30],
+  ["IBAN and Luhn checks", "python-stdnum", 6, 18, 18],
+  ["Hijri dates, Jewish holidays, phone numbers", "hijridate · pyluach · phonenumbers", 10, 30, 30],
+];
 
 const FAQ: [string, string][] = [
-  ["Why not just let the model write the code itself?", "Because the model is exactly what gets checksums, calendars and validation rules wrong. The correct, tested logic already exists in open-source libraries. Zyven has the model write only a thin adapter around that code, and the sandbox proves the adapter answers exactly what the library answers."],
-  ["Does anything run without my approval?", "No. When the agent finds a gap it proposes a repository from the pinned catalog and waits. Nothing is cloned, compiled or executed until you approve the card on the board."],
-  ["What does 'verified' actually mean?", "A skill is verified only for the gates it passed, and they are listed on it: policy, import, the library's own upstream tests, input robustness, an MCP smoke test, and differential tests against the library. Tools that cannot be repaired are dropped from the package and recorded, never shipped unverified."],
-  ["Is repository code run on my machine?", "Analysis is static: the source is parsed, never imported. Everything that executes does so in a Docker container with no network, a non-root user, a read-only filesystem, every Linux capability dropped and resource limits."],
-  ["Which models does it use?", "Open-weight models only, across the whole pipeline. The published results use gemma-4-26b-a4b-it through any OpenAI-compatible host, with automatic failover to a second host."],
-  ["Does it get faster over time?", "Yes. Verified skills are stored with their provenance and health. The next task that needs the same capability reuses the skill instead of compiling, which is why a reuse takes seconds and a compile takes minutes."],
+  ["Why not let the model write the code itself?", "Because the model is exactly what gets checksums, calendars and unit factors wrong. The correct, tested logic already exists in open-source libraries. Zyven has a model write only a thin adapter around that code, and the sandbox proves the adapter answers exactly what the library answers."],
+  ["Does anything run without my approval?", "No. When the agent finds a gap it proposes a repository from the pinned catalog and waits on the board. Nothing is cloned, compiled or executed until you approve it."],
+  ["What does 'verified' mean?", "A skill is verified only for the gates it passed, and they are listed on it: policy, import, the library's own tests, input robustness, an MCP smoke test, and differential tests against the library. A tool that cannot be repaired is dropped and recorded, never shipped unverified."],
+  ["Is repository code run on my machine?", "Analysis is static: the source is parsed, never imported. Everything that executes runs in a container with no network, a non-root user, a read-only file system, every capability dropped and resource limits."],
+  ["Which models does it use?", "Any OpenAI-compatible model, or a coding agent (Codex, Claude Code, OpenCode, Qoder) for any role. The published skills and results use open-weight models: Gemma 4, and Reflection Beam 1.0 and DeepSeek V4.1 through OpenCode."],
+  ["Can it check MCP servers I didn't build?", "Yes. zyven verify connects to any MCP server, reads its tools for hidden instructions, pins their definitions against rug pulls, can call them in the sandbox and reports leaked credentials. It runs locally, needs no account and calls no model."],
 ];
+
+function CopyCommand() {
+  const [done, setDone] = useState(false);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(INSTALL); setDone(true); setTimeout(() => setDone(false), 1600); }
+    catch { /* the command stays selectable */ }
+  };
+  return (
+    <div className="mt-6 flex max-w-full items-center gap-2 rounded-[10px] border border-line bg-canvas py-1.5 pl-3.5 pr-1.5">
+      <span className="select-all truncate font-mono text-[12.5px] text-body"><span className="text-muted">$ </span>{INSTALL}</span>
+      <button onClick={copy} aria-label="Copy the command"
+        className="ml-auto inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-[12px] text-muted transition-colors hover:bg-panel-2 hover:text-ink">
+        {done ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}{done ? "Copied" : "Copy"}
+      </button>
+    </div>
+  );
+}
+
+/** The product in a browser frame: the real board layout, with the six gates ticking to pass on load. */
+function AppMock() {
+  const nav: [typeof LayoutGrid, string, boolean, number?][] = [
+    [LayoutGrid, "Tasks", true, 1], [Rocket, "Control", false], [Plug, "Connections", false],
+    [Sparkles, "Skills", false, 9], [BookOpen, "Catalog", false], [Network, "Explorer", false], [ChartColumn, "Insights", false],
+  ];
+  return (
+    <div className="overflow-hidden rounded-xl border border-line-strong bg-canvas shadow-[0_32px_80px_-40px_rgba(27,25,21,0.35),0_2px_8px_rgba(27,25,21,0.04)]">
+      <div className="flex h-9 items-center gap-1.5 border-b border-line bg-panel px-3.5">
+        {[0, 1, 2].map((i) => <span key={i} className="h-2.5 w-2.5 rounded-full bg-line-strong" />)}
+        <span className="mx-auto rounded-md bg-canvas px-3 py-0.5 font-mono text-[11px] text-muted">localhost:8765/app</span>
+      </div>
+      <div className="grid grid-cols-[188px_minmax(0,1fr)] text-left max-md:grid-cols-1">
+        <aside className="border-r border-line bg-cream p-3 max-md:hidden">
+          <div className="mb-3 flex items-center gap-1.5 px-1"><LogoMark className="h-4 w-4" /><span className="text-[13px] font-semibold tracking-[-0.03em]">zyven</span></div>
+          <div className="mb-3 flex h-7 items-center gap-1.5 rounded-md border border-line bg-canvas px-2 text-[11.5px] text-muted">
+            <Search className="h-3 w-3" />Search<span className="ml-auto flex gap-0.5"><kbd className="kbd">Ctrl</kbd><kbd className="kbd">K</kbd></span>
+          </div>
+          {nav.map(([Icon, label, active, n]) => (
+            <div key={label} className={`flex h-7 items-center gap-2 rounded-md border px-2 text-[12px] font-medium ${active ? "border-line bg-canvas text-ink" : "border-transparent text-body"}`}>
+              <Icon className={`h-3.5 w-3.5 ${active ? "text-ink" : "text-muted"}`} strokeWidth={1.75} />{label}
+              {n ? <span className={`ml-auto rounded-[4px] px-1 text-[10px] font-semibold ${active ? "bg-ink text-white" : "bg-panel-2 text-muted"}`}>{n}</span> : null}
+            </div>
+          ))}
+        </aside>
+        <div className="p-5 sm:p-7">
+          <p className="text-[11.5px] text-muted">Zyven / Tasks</p>
+          <p className="mt-3 text-[22px] font-semibold tracking-[-0.02em]">Tasks</p>
+          <div className="mt-4 rounded-[10px] border border-line p-4">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-[13.5px] font-medium leading-snug">How long is it from 1998-03-09 to 2052-01-31, in calendar years, months and days?</p>
+              <span className="shrink-0 rounded-[5px] bg-warn-bg px-1.5 py-0.5 text-[10.5px] font-medium text-warn">Needs approval</span>
+            </div>
+            <div className="mt-3 rounded-md border border-line bg-panel px-3 py-2.5">
+              <p className="text-[11px] text-muted">Capability gap</p>
+              <p className="text-[13px] font-medium">Calendar arithmetic, from <span className="font-mono text-[12px]">python-dateutil @ a78cbd8</span></p>
+              <div className="mt-2.5 flex gap-1.5">
+                <span className="rounded-md bg-ink px-2.5 py-1 text-[11.5px] font-medium text-white">Approve compile</span>
+                <span className="rounded-md border border-line-strong bg-canvas px-2.5 py-1 text-[11.5px] font-medium">Reject</span>
+              </div>
+            </div>
+            <p className="mb-1.5 mt-4 text-[11px] text-muted">Sandbox gates</p>
+            <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-6">
+              {GATES.map(([g], i) => (
+                <span key={g} style={{ animationDelay: `${300 + i * 180}ms` }}
+                  className="gate-pill inline-flex items-center justify-center gap-1 rounded-[5px] bg-good-bg px-1.5 py-1 text-[10.5px] font-medium text-good">
+                  <Check className="h-3 w-3" strokeWidth={2.5} />{g.split(" ")[0]}
+                </span>
+              ))}
+            </div>
+            <p className="mt-3 rounded-md bg-good-bg/60 px-3 py-2 text-[12.5px] text-ink">
+              <span className="font-medium">53 years, 10 months, 22 days.</span> <span className="text-body">Answered with the verified <span className="font-mono text-[11.5px]">date_arithmetic</span> skill.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Faq() {
   const [open, setOpen] = useState<number | null>(0);
@@ -24,12 +120,12 @@ function Faq() {
     <div className="divide-y divide-line border-y border-line">
       {FAQ.map(([q, a], i) => (
         <div key={q}>
-          <button onClick={() => setOpen(open === i ? null : i)} className="flex w-full items-center justify-between gap-6 py-6 text-left" aria-expanded={open === i}>
-            <span className="text-[18px] tracking-[-0.01em] text-ink sm:text-[20px]">{q}</span>
-            {open === i ? <Minus className="h-5 w-5 shrink-0 text-muted" /> : <Plus className="h-5 w-5 shrink-0 text-muted" />}
+          <button onClick={() => setOpen(open === i ? null : i)} className="flex w-full items-center justify-between gap-6 py-5 text-left" aria-expanded={open === i}>
+            <span className="text-[16px] font-medium tracking-[-0.01em] text-ink sm:text-[17px]">{q}</span>
+            {open === i ? <Minus className="h-4 w-4 shrink-0 text-muted" /> : <Plus className="h-4 w-4 shrink-0 text-muted" />}
           </button>
-          <div className={`grid transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${open === i ? "grid-rows-[1fr] pb-6 opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
-            <p className="max-w-3xl overflow-hidden text-[15px] leading-relaxed text-body">{a}</p>
+          <div className={`grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${open === i ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
+            <p className={`max-w-3xl overflow-hidden text-[14.5px] leading-relaxed text-body ${open === i ? "pb-5" : ""}`}>{a}</p>
           </div>
         </div>
       ))}
@@ -37,202 +133,87 @@ function Faq() {
   );
 }
 
-const ROWS = [
-  {
-    n: "01", id: "discover", t: "Read the repository, never run it",
-    b: "The analyzer walks the AST of the whole repository: public symbols, call graph, tests, doctests, side effects and license. It links each function to the tests that exercise it, so the model starts from facts, not guesses.",
-    art: "/art/sage.webp",
-    vis: (
-      <div className="space-y-2.5">
-        {[["stdnum.iban.validate", "tested · pure"], ["stdnum.luhn.checksum", "tested · pure"], ["stdnum.util.get_cc_module", "reads files · skipped"]].map(([s, m], i) => (
-          <div key={s} className="flex items-center justify-between gap-3 rounded-2xl bg-white/90 px-4 py-3 shadow-sm backdrop-blur" style={{ marginLeft: i * 18 }}>
-            <span className="font-mono text-[13px]">{s}</span>
-            <span className={`text-[12px] ${i === 2 ? "text-warn" : "text-muted"}`}>{m}</span>
-          </div>
-        ))}
-      </div>
-    ),
-  },
-  {
-    n: "02", id: "compile", t: "The model proposes. The harness decides.",
-    b: "Scout picks capabilities, Architect designs the tools, Compiler writes them and Tester writes reference cases without ever seeing the adapter. Every name the model writes is resolved against the analysis; invented or ambiguous ones are rejected before any code runs.",
-    art: "/art/warm.webp",
-    vis: (
-      <div className="space-y-2.5">
-        {[["Scout", "2 capabilities"], ["Architect", "3 tools · lint passed"], ["Compiler", "server.py"], ["Tester", "reference cases"]].map(([r, v]) => (
-          <div key={r} className="flex items-center justify-between rounded-2xl bg-white/90 px-4 py-3 shadow-sm backdrop-blur">
-            <span className="flex items-center gap-2 text-[14px] font-medium"><Star className="h-3 w-3 text-clay" />{r}</span>
-            <span className="text-[13px] text-muted">{v}</span>
-          </div>
-        ))}
-      </div>
-    ),
-  },
-  {
-    n: "03", id: "verify", t: "Kept only if it survives the sandbox",
-    b: "Six gates run in a locked-down container. A failure goes to a bounded Repair step and is verified again; a tool that still fails is dropped and recorded. What is left ships with its provenance: repository, pinned commit and the exact gates it passed.",
-    art: "/art/orb.webp",
-    vis: (
-      <div className="space-y-2.5">
-        {[["Upstream tests", "pass"], ["Input robustness", "repaired, then pass"], ["Differential vs library", "pass"]].map(([c, v]) => (
-          <div key={c} className="flex items-center justify-between gap-3 rounded-2xl bg-white/90 px-4 py-3 shadow-sm backdrop-blur">
-            <span className="text-[14px]">{c}</span>
-            <span className={`text-[12px] font-medium ${v === "pass" ? "text-good" : "text-warn"}`}>{v}</span>
-          </div>
-        ))}
-      </div>
-    ),
-  },
-];
+function Kicker({ children }: { children: React.ReactNode }) {
+  return <p className="text-[13px] font-medium text-muted">{children}</p>;
+}
 
-const GATES = [
-  { t: "Policy", b: "Generated code is checked before it runs: import allowlist, no eval, exec or locals.", svg: <path d="M40 10 64 20v18c0 16-10 26-24 32-14-6-24-16-24-32V20z" /> },
-  { t: "Import", b: "The assembled MCP server must import cleanly inside the container.", svg: <><rect x="14" y="22" width="52" height="40" rx="6" /><path d="M14 34h52" /></> },
-  { t: "Upstream tests", b: "The library's own test suite runs against the pinned checkout and must still pass.", svg: <><path d="M20 42l12 12 28-28" /><circle cx="40" cy="40" r="30" /></> },
-  { t: "Input robustness", b: "Spaces, lowercase, separators and junk: tools must answer, not crash.", svg: <><path d="M12 40c8-14 16-14 24 0s16 14 24 0 8-14 8-14" /></> },
-  { t: "MCP smoke", b: "Every tool is listed and called over the real MCP protocol.", svg: <><circle cx="24" cy="40" r="10" /><circle cx="56" cy="40" r="10" /><path d="M34 40h12" /></> },
-  { t: "Differential", b: "Tool answers are compared with the library called directly. This gate caught a silent wrong-algorithm bug.", svg: <><rect x="10" y="24" width="26" height="32" rx="4" /><rect x="44" y="24" width="26" height="32" rx="4" /><path d="M36 40h8" /></> },
-];
-
-const SUITES = [
-  { name: "Global standard numbers", repo: "python-stdnum", what: "IBAN validity, IBAN check digits, Luhn", alone: 0, with: 18, total: 18 },
-  { name: "Calendars and phone numbers", repo: "hijridate · pyluach · phonenumbers", what: "Hijri and Gregorian, Jewish holidays, phone validity and E.164", alone: 18, with: 27, total: 30 },
-  { name: "Bikram Sambat calendar", repo: "py-nepali", what: "Date conversions, weekdays, phone operators", alone: 9, with: 40, total: 40 },
-];
-
-function SuiteBars({ s }: { s: (typeof SUITES)[number] }) {
-  const bar = (v: number, cls: string, label: string) => (
-    <div>
-      <div className="flex items-baseline justify-between text-[12px]">
-        <span className="text-body">{label}</span>
-        <span className="font-mono tabular-nums text-ink">{v}/{s.total}</span>
-      </div>
-      <div className="mt-1.5 h-2.5 rounded-full bg-panel-2">
-        <div className={`h-2.5 origin-left animate-[grow_1.2s_cubic-bezier(0.16,1,0.3,1)_both] rounded-full ${cls}`} style={{ width: `${Math.max(1.5, (v / s.total) * 100)}%` }} />
-      </div>
-    </div>
-  );
-  return (
-    <div className="flex h-full flex-col rounded-[24px] border border-line bg-white p-6">
-      <p className="text-[13px] text-muted">{s.repo}</p>
-      <p className="mt-1 text-[19px] font-medium tracking-[-0.02em]">{s.name}</p>
-      <p className="mt-1 text-[13px] leading-relaxed text-body">{s.what}</p>
-      <p className="mt-6 text-[56px] font-medium leading-none tracking-[-0.04em]">
-        <CountUp to={Math.round((s.with / s.total) * 100)} /><span className="text-[28px] text-muted">%</span>
-      </p>
-      <p className="mt-1 text-[12px] text-muted">correct with compiled skills</p>
-      <div className="mt-auto space-y-3 pt-6">
-        {bar(s.alone, "bg-line-strong", "Model alone")}
-        {bar(s.with, "bg-clay", "Model + Zyven skills")}
-      </div>
-    </div>
-  );
+function H2({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <h2 className={`max-w-3xl text-[32px] font-semibold leading-[1.1] tracking-[-0.03em] text-ink sm:text-[44px] ${className}`}>{children}</h2>;
 }
 
 export default function Landing() {
   return (
     <SiteShell>
-      {/* ---------------- hero ---------------- */}
-      <section className="relative mx-auto max-w-[1240px] px-5 pb-12 pt-16 sm:px-8 sm:pt-24">
-        <div className="grid items-end gap-10 lg:grid-cols-2">
-          <Reveal>
-            <p className="mb-5 inline-flex items-center rounded-full border border-line-strong bg-white/60 px-3 py-1 text-[12px] font-medium text-body">
-              Open source · open-weight models only
-            </p>
-            <h1 className="text-[46px] font-medium leading-[1.02] tracking-[-0.035em] text-ink sm:text-[72px]">
-              Agents that compile
-              <br />
-              their own tools.
-            </h1>
-          </Reveal>
-          <Reveal delay={120}>
-            <div className="lg:pb-3">
-              <p className="max-w-[520px] text-[17px] leading-relaxed text-body">
-                Models are confidently wrong about checksums, calendars and validation rules. Zyven turns the open-source code that gets them right
-                into MCP tools, proves each one in a locked-down sandbox, and lets the agent keep what passes.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <Link href="/app/" className="inline-flex h-12 items-center gap-2 rounded-full bg-ink px-6 text-[15px] font-medium text-white transition-colors hover:bg-ink-soft">
-                  Open the board <ArrowRight className="h-4 w-4" />
-                </Link>
-                <a href={GITHUB} target="_blank" rel="noreferrer" className="inline-flex h-12 items-center gap-1.5 rounded-full border border-line-strong bg-white/60 px-6 text-[15px] font-medium text-ink transition-colors hover:bg-white">
-                  Read the code <ArrowUpRight className="h-4 w-4" />
-                </a>
-              </div>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ---------------- product showcase ---------------- */}
-      <section id="product" className="mx-auto max-w-[1240px] scroll-mt-20 px-3 sm:px-8">
-        <Reveal delay={200}>
-          <Showcase />
-        </Reveal>
-      </section>
-
-      {/* ---------------- marquee ---------------- */}
-      <section className="mx-auto mt-16 max-w-[1240px] px-5 sm:px-8">
-        <p className="text-center text-[13px] text-muted">Learns from open source, built on open tools</p>
-        <div className="relative mt-5 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
-          <div className="flex w-max animate-[marquee_38s_linear_infinite] gap-14">
-            {[...LEARNS_FROM, ...LEARNS_FROM].map((s, i) => (
-              <span key={i} className="whitespace-nowrap text-[20px] font-medium tracking-[-0.02em] text-ink/40">{s}</span>
-            ))}
+      {/* hero */}
+      <section className="mx-auto max-w-[1160px] px-5 pb-10 pt-16 sm:px-8 sm:pt-24">
+        <Reveal className="max-w-[760px]">
+          <p className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas px-3 py-1 text-[12px] font-medium text-body">
+            Open source · runs on your machine · MIT
+          </p>
+          <h1 className="text-[44px] font-semibold leading-[1.02] tracking-[-0.045em] text-ink sm:text-[68px]">
+            Agents that compile their own tools.
+          </h1>
+          <p className="mt-5 max-w-[600px] text-[17px] leading-relaxed text-body">
+            Models are confidently wrong about checksums, calendars and unit factors. Zyven turns the open-source code that gets them
+            right into MCP tools, proves each one in a locked-down sandbox, and checks the MCP servers you did not build.
+          </p>
+          <div className="mt-7 flex flex-wrap gap-2.5">
+            <Link href="/app/" className="inline-flex h-11 items-center gap-1.5 rounded-full bg-ink px-5 text-[14.5px] font-medium text-white transition-colors hover:bg-accent-ink">
+              Open the board <ArrowRight className="h-4 w-4" />
+            </Link>
+            <a href={GITHUB} target="_blank" rel="noreferrer" className="inline-flex h-11 items-center gap-1.5 rounded-full border border-line-strong bg-canvas px-5 text-[14.5px] font-medium text-ink transition-colors hover:bg-panel">
+              Read the code <ArrowUpRight className="h-4 w-4" />
+            </a>
           </div>
-        </div>
+          <CopyCommand />
+        </Reveal>
       </section>
 
-      {/* ---------------- two cards ---------------- */}
-      <section className="mx-auto max-w-[1240px] px-5 py-28 sm:px-8">
+      <section id="product" className="mx-auto max-w-[1160px] scroll-mt-20 px-3 sm:px-8">
+        <Reveal delay={120}><AppMock /></Reveal>
+      </section>
+
+      {/* what it does */}
+      <section className="mx-auto max-w-[1160px] px-5 py-24 sm:px-8">
         <Reveal>
-          <h2 className="max-w-3xl text-[36px] font-medium leading-[1.08] tracking-[-0.03em] sm:text-[52px]">
-            It notices what it can&apos;t do. <span className="text-muted">Then it learns, with your permission.</span>
-          </h2>
+          <Kicker>Two jobs, one gate</Kicker>
+          <H2 className="mt-2">It builds the tools it needs, and checks the ones it is given.</H2>
         </Reveal>
-        <div className="mt-14 grid gap-6 lg:grid-cols-2">
+        <div className="mt-12 grid gap-5 lg:grid-cols-2">
           {[
             {
-              who: "The self-extending agent", title: "Finds the gap, proposes a repository, waits for you", href: "/app/", cta: "Try it on the board",
-              art: "/art/warm.webp",
+              icon: Wrench, title: "Compile", body: "When the agent lacks a capability, Zyven finds it in a pinned open-source library, has a model write a thin MCP adapter, and keeps the tool only if it passes all six gates.",
+              href: "/app/skills/", cta: "See the verified skills",
               ui: (
-                <div className="space-y-2">
-                  <div className="rounded-xl bg-white p-3 shadow-sm">
-                    <p className="text-[11px] text-muted">Capability gap</p>
-                    <p className="text-[15px] font-semibold">Validate a phone number in E.164</p>
-                    <p className="text-[12px] text-body">Proposed source: phonenumbers @ pinned commit</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="rounded-full bg-ink px-3 py-1.5 text-[12px] font-medium text-white">Approve compile</span>
-                    <span className="rounded-full bg-white/90 px-3 py-1.5 text-[12px] font-medium text-ink">Reject</span>
-                  </div>
+                <div className="rounded-[10px] border border-line bg-canvas p-3.5">
+                  <div className="flex items-center justify-between"><span className="font-mono text-[11.5px] text-muted">unit_conversion</span>
+                    <span className="inline-flex items-center gap-1 rounded-[5px] bg-good-bg px-1.5 py-0.5 text-[10.5px] font-medium text-good"><Check className="h-3 w-3" />Verified</span></div>
+                  <p className="mt-2 text-[14px] font-semibold">Unit conversion</p>
+                  <p className="mt-0.5 text-[12.5px] text-body">From pint 0.26.2 · differential 30/30 · compiled by a 501B open-weight model</p>
                 </div>
               ),
             },
             {
-              who: "The skill library", title: "Keeps every verified skill, with its provenance and health", href: "/app/skills/", cta: "Browse the skills",
-              art: "/art/sage.webp",
+              icon: ShieldCheck, title: "Verify", body: "Point it at any MCP server. It reads tools for hidden instructions, pins their definitions against rug pulls, calls them in the sandbox and reports leaked credentials, with no account and no model.",
+              href: GITHUB + "#verify-any-mcp-server", cta: "Verify your servers",
               ui: (
-                <div className="space-y-2">
-                  <div className="rounded-xl bg-white p-3 shadow-sm">
-                    <p className="flex items-center justify-between text-[15px] font-semibold">iban_validation <span className="text-[11px] font-medium text-good">6/6 gates</span></p>
-                    <p className="font-mono text-[11px] text-body">validate_iban · format_iban · calculate_iban_check_digits</p>
-                  </div>
-                  <div className="rounded-xl bg-white/90 p-3 text-[12px] text-body shadow-sm">Reused in seconds next time. A compile takes minutes.</div>
+                <div className="rounded-[10px] border border-line bg-ink p-3.5 font-mono text-[11.5px] leading-relaxed text-white/80">
+                  <p><span className="font-semibold text-[#ff8f80]">FAIL</span>  descriptions  4 suspicious passages</p>
+                  <p className="text-white/55">  - redirects messages to a fixed address</p>
+                  <p className="text-white/55">  - tool shadowing: send_email</p>
+                  <p><span className="font-semibold text-[#7fd49b]">PASS</span>  stability     same definitions twice</p>
                 </div>
               ),
             },
           ].map((c, i) => (
-            <Reveal key={c.who} delay={i * 120}>
-              <div className="group flex h-full flex-col">
-                <p className="text-[15px] text-muted">{c.who}</p>
-                <p className="mt-1 max-w-md text-[22px] font-medium leading-snug tracking-[-0.02em]">{c.title}</p>
-                <div className="relative mt-6 flex min-h-[300px] flex-1 items-end overflow-hidden rounded-[28px] bg-cover bg-center p-6 sm:p-8" style={{ backgroundImage: `url(${c.art})` }}>
-                  <Stars seed={c.who} count={6} from={55} to={95} />
-                  <div className="relative w-full max-w-sm transition-transform duration-700 group-hover:-translate-y-1">{c.ui}</div>
-                </div>
-                <Link href={c.href} className="mt-5 inline-flex items-center gap-1.5 text-[15px] font-medium text-ink hover:gap-2.5 hover:underline">
-                  {c.cta} <ArrowRight className="h-4 w-4 transition-all" />
+            <Reveal key={c.title} delay={i * 100} className="h-full">
+              <div className="group flex h-full flex-col rounded-xl border border-line bg-canvas p-6 transition-[border-color,box-shadow] duration-200 hover:border-line-strong hover:shadow-[0_16px_40px_-28px_rgba(27,25,21,0.35)] sm:p-7">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] border border-line bg-panel"><c.icon className="h-4 w-4" strokeWidth={1.75} /></div>
+                <p className="mt-4 text-[20px] font-semibold tracking-[-0.02em]">{c.title}</p>
+                <p className="mt-1.5 max-w-md text-[14.5px] leading-relaxed text-body">{c.body}</p>
+                <div className="mt-6 flex-1">{c.ui}</div>
+                <Link href={c.href} className="mt-5 inline-flex items-center gap-1 text-[14px] font-medium text-ink">
+                  {c.cta} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               </div>
             </Reveal>
@@ -240,60 +221,35 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---------------- how it works ---------------- */}
-      <section id="how" className="scroll-mt-16 border-y border-line bg-white">
-        <div className="mx-auto max-w-[1240px] px-5 py-28 sm:px-8">
+      {/* how it works */}
+      <section id="how" className="scroll-mt-16 border-y border-line bg-panel/60">
+        <div className="mx-auto max-w-[1160px] px-5 py-24 sm:px-8">
           <Reveal>
-            <p className="text-[15px] text-muted">How it works</p>
-            <h2 className="mt-2 max-w-3xl text-[36px] font-medium leading-[1.08] tracking-[-0.03em] sm:text-[52px]">From a repository to a tool you can trust.</h2>
+            <Kicker>How it works</Kicker>
+            <H2 className="mt-2">From a repository to a tool you can trust.</H2>
           </Reveal>
-          <div className="mt-20 space-y-28">
-            {ROWS.map((row, i) => (
-              <div key={row.n} id={row.id} className={`grid items-center gap-10 lg:grid-cols-2 lg:gap-20 ${i % 2 ? "lg:[&>*:first-child]:order-2" : ""}`}>
-                <Reveal>
-                  <div className="relative overflow-hidden rounded-[28px] bg-cover bg-center px-6 py-14 sm:px-12" style={{ backgroundImage: `url(${row.art})` }}>
-                    <div className="relative mx-auto max-w-md">{row.vis}</div>
+          <div className="mt-12 grid gap-5 lg:grid-cols-3">
+            {[
+              ["1", "Read the repository, never run it", "The analyzer parses the whole library: public functions, call graph, tests and license. The model starts from facts, not guesses.",
+                [["stdnum.iban.validate", "tested · pure"], ["stdnum.luhn.checksum", "tested · pure"], ["stdnum.util.get_cc_module", "reads files · skipped"]]],
+              ["2", "The model proposes, the harness decides", "Any model or coding agent designs the tools, writes them and writes test cases without seeing the code. Invented names are rejected before anything runs.",
+                [["Architect", "3 tools"], ["Compiler", "server.py"], ["Tester", "36 reference cases"]]],
+              ["3", "Kept only if it survives the sandbox", "Six gates run in a locked container. A failure gets a bounded repair; a tool that still fails is dropped and recorded.",
+                [["Upstream tests", "92 passed"], ["Input robustness", "repaired, then pass"], ["Differential", "36/36"]]],
+            ].map(([n, t, b, rows], i) => (
+              <Reveal key={n as string} delay={i * 90} className="h-full">
+                <div className="flex h-full flex-col rounded-xl border border-line bg-canvas p-6">
+                  <span className="font-mono text-[12px] text-muted">0{n as string}</span>
+                  <p className="mt-2 text-[17px] font-semibold tracking-[-0.015em]">{t as string}</p>
+                  <p className="mt-1.5 text-[14px] leading-relaxed text-body">{b as string}</p>
+                  <div className="mt-5 divide-y divide-line rounded-[10px] border border-line">
+                    {(rows as string[][]).map(([k, v]) => (
+                      <div key={k} className="flex items-center justify-between gap-3 px-3 py-2 text-[12.5px]">
+                        <span className="font-mono text-[11.5px] text-ink">{k}</span>
+                        <span className={v.includes("skipped") ? "text-warn" : v.includes("repaired") ? "text-warn" : "text-muted"}>{v}</span>
+                      </div>
+                    ))}
                   </div>
-                </Reveal>
-                <Reveal delay={120}>
-                  <p className="font-mono text-[13px] text-muted">{row.n}</p>
-                  <h3 className="mt-3 text-[28px] font-medium leading-tight tracking-[-0.025em] sm:text-[34px]">{row.t}</h3>
-                  <p className="mt-4 max-w-lg text-[16px] leading-relaxed text-body">{row.b}</p>
-                </Reveal>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ---------------- gates ---------------- */}
-      <section id="gates" className="relative scroll-mt-16 overflow-hidden bg-ink text-white">
-        <div className="mx-auto grid max-w-[1240px] gap-12 px-5 py-28 sm:px-8 lg:grid-cols-[0.9fr_1.3fr]">
-          <Reveal>
-            <p className="text-[15px] text-white/50">Six sandbox gates</p>
-            <h2 className="mt-2 text-[36px] font-medium leading-[1.08] tracking-[-0.03em] sm:text-[52px]">The model writes it. The sandbox proves it.</h2>
-            <p className="mt-5 max-w-md text-[16px] leading-relaxed text-white/60">
-              Every gate runs in Docker with no network, a non-root user, a read-only filesystem and every capability dropped. A skill is verified
-              only for the gates it actually passed.
-            </p>
-            <div className="mt-8 rounded-[20px] border border-white/10 bg-white/[0.04] p-5">
-              <p className="text-[12px] font-medium uppercase tracking-[0.08em] text-clay">Caught in development</p>
-              <p className="mt-2 text-[14px] leading-relaxed text-white/70">
-                A generated &ldquo;Luhn&rdquo; tool silently ran a different checksum. Every other gate passed. The differential gate disagreed with
-                the library on 3 of 8 cases, and the build now scopes imports per tool.
-              </p>
-            </div>
-          </Reveal>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {GATES.map((c, i) => (
-              <Reveal key={c.t} delay={i * 70}>
-                <div className="h-full rounded-[24px] border border-white/10 bg-white/[0.03] p-6 transition-colors hover:bg-white/[0.06]">
-                  <div className="flex items-start justify-between">
-                    <svg viewBox="0 0 80 80" className="h-12 w-12 fill-none stroke-white/70" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">{c.svg}</svg>
-                    <span className="font-mono text-[12px] text-white/35">0{i + 1}</span>
-                  </div>
-                  <p className="mt-6 text-[17px] font-medium">{c.t}</p>
-                  <p className="mt-2 text-[14px] leading-relaxed text-white/55">{c.b}</p>
                 </div>
               </Reveal>
             ))}
@@ -301,56 +257,99 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ---------------- results ---------------- */}
-      <section id="results" className="mx-auto max-w-[1240px] scroll-mt-16 px-5 py-28 sm:px-8">
+      {/* gates */}
+      <section id="gates" className="scroll-mt-16 bg-ink text-white">
+        <div className="mx-auto grid max-w-[1160px] gap-12 px-5 py-24 sm:px-8 lg:grid-cols-[0.85fr_1.4fr]">
+          <Reveal>
+            <p className="text-[13px] font-medium text-white/50">Six sandbox gates</p>
+            <h2 className="mt-2 text-[32px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[44px]">The model writes it. The sandbox proves it.</h2>
+            <p className="mt-5 max-w-md text-[15px] leading-relaxed text-white/60">
+              Every gate runs in a container with no network, a non-root user, a read-only file system and every capability dropped. In a
+              mutation test, the gates caught 90% of deliberately planted bugs.
+            </p>
+          </Reveal>
+          <div className="grid gap-px overflow-hidden rounded-xl border border-white/10 bg-white/10 sm:grid-cols-2">
+            {GATES.map(([t, b], i) => (
+              <Reveal key={t} delay={i * 60} className="h-full">
+                <div className="h-full bg-ink p-5 transition-colors hover:bg-[#24211c]">
+                  <span className="font-mono text-[11.5px] text-white/35">0{i + 1}</span>
+                  <p className="mt-3 text-[15.5px] font-medium">{t}</p>
+                  <p className="mt-1 text-[13.5px] leading-relaxed text-white/55">{b}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* results */}
+      <section id="results" className="mx-auto max-w-[1160px] scroll-mt-16 px-5 py-24 sm:px-8">
         <Reveal>
-          <p className="text-[15px] text-muted">Measured, not claimed</p>
-          <h2 className="mt-2 max-w-3xl text-[36px] font-medium leading-[1.08] tracking-[-0.03em] sm:text-[52px]">
-            Same model, same budget. <span className="text-muted">The only difference is the tools.</span>
-          </h2>
-          <p className="mt-5 max-w-2xl text-[15px] leading-relaxed text-body">
-            Open-weight <span className="font-mono text-[13px]">gemma-4-26b-a4b-it</span> in every condition, with ground truth computed by the source library
-            itself. Raw records are in the repository.
+          <Kicker>Measured, not claimed</Kicker>
+          <H2 className="mt-2">A small model gets the answers right.</H2>
+          <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-body">
+            Gemma 4 E4B, a 4-billion-parameter open model on one free GPU, with the same questions and budget in both runs. Ground truth comes
+            from each library itself; raw records are in the repository.
           </p>
         </Reveal>
-        <div className="mt-12 grid gap-5 lg:grid-cols-3">
-          {SUITES.map((s, i) => (
-            <Reveal key={s.name} delay={i * 100} className="h-full">
-              <SuiteBars s={s} />
+        <Reveal delay={100}>
+          <div className="mt-10 overflow-hidden rounded-xl border border-line">
+            <div className="grid grid-cols-[minmax(0,1fr)_88px_88px] gap-3 border-b border-line bg-panel px-4 py-2.5 text-[12px] text-muted sm:grid-cols-[minmax(0,1fr)_160px_160px]">
+              <span>Suite</span><span className="text-right">Model alone</span><span className="text-right">With skills</span>
+            </div>
+            {SUITES.map(([name, lib, alone, withs, total]) => (
+              <div key={name} className="grid grid-cols-[minmax(0,1fr)_88px_88px] items-center gap-3 border-b border-line px-4 py-3.5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_160px_160px]">
+                <div className="min-w-0"><p className="truncate text-[14px] font-medium">{name}</p><p className="truncate font-mono text-[11.5px] text-muted">{lib}</p></div>
+                <div className="text-right">
+                  <span className="text-[14px] tabular-nums text-body">{alone}/{total}</span>
+                  <div className="mt-1.5 hidden h-1.5 rounded-full bg-panel-2 sm:block"><div className="h-1.5 rounded-full bg-line-strong" style={{ width: `${(alone / total) * 100}%` }} /></div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[14px] font-semibold tabular-nums text-ink">{withs}/{total}</span>
+                  <div className="mt-1.5 hidden h-1.5 rounded-full bg-panel-2 sm:block"><div className="h-1.5 origin-left animate-[grow_1s_cubic-bezier(0.16,1,0.3,1)_both] rounded-full bg-ink" style={{ width: `${(withs / total) * 100}%` }} /></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            [<><CountUp to={101} /><span className="text-muted">/102</span></>, "answers right with verified skills (49 alone)"],
+            [<>3<span className="text-muted">/3</span></>, "published MCP tool-poisoning attacks caught"],
+            [<>0</>, "false alarms on the 7 official MCP servers, every tool called"],
+            [<>21<span className="text-muted">/22</span></>, "popular community MCP servers pass"],
+          ].map(([v, l], i) => (
+            <Reveal key={i} delay={i * 60} className="h-full">
+              <div className="h-full rounded-[10px] border border-line bg-canvas p-4">
+                <p className="text-[28px] font-semibold leading-none tracking-[-0.03em] tabular-nums">{v}</p>
+                <p className="mt-2 text-[12.5px] leading-snug text-body">{l as string}</p>
+              </div>
             </Reveal>
           ))}
         </div>
-        <p className="mt-5 text-[12.5px] leading-relaxed text-muted">
-          Calendars and phone numbers: no Jewish-holiday skill in this run, because the hosted endpoint timed out on that compile, so that category ran without a skill in both conditions.
-        </p>
       </section>
 
-      {/* ---------------- faq ---------------- */}
-      <section id="faq" className="mx-auto grid max-w-[1240px] scroll-mt-20 gap-10 px-5 pb-28 sm:px-8 lg:grid-cols-[0.8fr_1.2fr]">
-        <Reveal>
-          <h2 className="text-[36px] font-medium leading-[1.08] tracking-[-0.03em] sm:text-[48px]">Questions people ask first</h2>
-        </Reveal>
-        <Reveal delay={100}>
-          <Faq />
-        </Reveal>
+      {/* faq */}
+      <section id="faq" className="mx-auto grid max-w-[1160px] scroll-mt-20 gap-10 px-5 pb-24 sm:px-8 lg:grid-cols-[0.75fr_1.25fr]">
+        <Reveal><H2>Questions people ask first</H2></Reveal>
+        <Reveal delay={80}><Faq /></Reveal>
       </section>
 
-      {/* ---------------- final cta ---------------- */}
-      <section className="mx-auto max-w-[1240px] px-5 pb-28 sm:px-8">
+      {/* closing */}
+      <section className="mx-auto max-w-[1160px] px-5 pb-24 sm:px-8">
         <Reveal>
-          <div className="relative overflow-hidden rounded-[36px] bg-[#f8f4eb] px-6 py-20 text-center sm:py-28">
-            <div aria-hidden className="pointer-events-none absolute inset-0 animate-[drift_12s_ease-in-out_infinite] bg-[url(/art/orb.webp)] bg-[length:auto_150%] bg-center bg-no-repeat" />
-            <Stars seed="cta" count={9} />
-            <div className="relative">
-              <h2 className="mx-auto max-w-3xl text-[40px] font-medium leading-[1.04] tracking-[-0.035em] sm:text-[64px]">Give your agent a repository. Get back a tool it can trust.</h2>
-              <div className="mt-9 flex flex-wrap justify-center gap-3">
-                <Link href="/app/" className="inline-flex h-12 items-center gap-2 rounded-full bg-ink px-6 text-[15px] font-medium text-white hover:bg-ink-soft">
-                  Open the board <ArrowRight className="h-4 w-4" />
-                </Link>
-                <a href={GITHUB} target="_blank" rel="noreferrer" className="inline-flex h-12 items-center rounded-full bg-white/80 px-6 text-[15px] font-medium text-ink backdrop-blur hover:bg-white">
-                  Star on GitHub
-                </a>
-              </div>
+          <div className="rounded-xl border border-line bg-panel px-6 py-16 text-center sm:py-20">
+            <LogoMark className="mx-auto h-10 w-10" />
+            <h2 className="mx-auto mt-6 max-w-2xl text-[32px] font-semibold leading-[1.08] tracking-[-0.035em] sm:text-[48px]">
+              Give your agent a repository. Get back a tool it can trust.
+            </h2>
+            <div className="mt-8 flex flex-wrap justify-center gap-2.5">
+              <Link href="/app/" className="inline-flex h-11 items-center gap-1.5 rounded-full bg-ink px-5 text-[14.5px] font-medium text-white hover:bg-accent-ink">
+                Open the board <ArrowRight className="h-4 w-4" />
+              </Link>
+              <a href={GITHUB} target="_blank" rel="noreferrer" className="inline-flex h-11 items-center rounded-full border border-line-strong bg-canvas px-5 text-[14.5px] font-medium text-ink hover:bg-panel">
+                Star on GitHub
+              </a>
             </div>
           </div>
         </Reveal>

@@ -13,19 +13,19 @@ function RepoCard({ repo, active, onClick }: { repo: ExploreRepo; active: boolea
   const share = repo.analyzed && repo.symbols ? (repo.mcp_able ?? 0) / repo.symbols : 0;
   return (
     <button onClick={onClick}
-      className={`group min-w-[180px] flex-1 rounded-2xl border p-3.5 text-left transition-all ${
-        active ? "border-ink bg-ink text-white shadow-[0_10px_30px_-18px_rgba(20,20,19,0.8)]" : "border-line bg-white text-ink hover:-translate-y-0.5 hover:border-ink/30"}`}>
+      className={`group min-w-[180px] flex-1 rounded-[10px] border p-3.5 text-left transition-all ${
+        active ? "border-ink bg-accent-soft text-ink shadow-[0_0_0_1px_var(--color-ink)]" : "border-line bg-canvas text-ink hover:-translate-y-px hover:border-line-strong hover:shadow-[0_12px_28px_-18px_rgba(27,25,21,0.28)]"}`}>
       <p className="flex items-center justify-between gap-2 text-[13.5px] font-semibold">
         {repo.repo}
-        {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : repo.analyzed ? <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-clay" : "bg-good"}`} /> : null}
+        {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : repo.analyzed ? <span className="h-1.5 w-1.5 rounded-full bg-good" /> : null}
       </p>
-      <p className={`mt-0.5 text-[11.5px] ${active ? "text-white/60" : "text-muted"}`}>
+      <p className="mt-0.5 text-[11.5px] text-muted">
         {running ? "analysing…" : repo.analyzed ? `${repo.symbols?.toLocaleString()} symbols` : repo.cloned ? "not analysed yet" : "not cloned"}
       </p>
-      <div className={`mt-3 h-1 rounded-full ${active ? "bg-white/15" : "bg-panel-2"}`}>
-        <div className={`h-1 rounded-full ${active ? "bg-clay" : "bg-olive"}`} style={{ width: `${share * 100}%` }} />
+      <div className="mt-3 h-1 rounded-full bg-panel-2">
+        <div className="h-1 rounded-full bg-ink" style={{ width: `${share * 100}%` }} />
       </div>
-      <p className={`mt-1 text-[10.5px] ${active ? "text-white/50" : "text-muted"}`}>{repo.analyzed ? `${Math.round(share * 100)}% MCP-able` : " "}</p>
+      <p className="mt-1 text-[10.5px] text-muted">{repo.analyzed ? `${Math.round(share * 100)}% MCP-able` : " "}</p>
     </button>
   );
 }
@@ -113,7 +113,7 @@ function Detail({ name, data }: { name: string; data: ExploreData }) {
               <div className="space-y-2">
                 {data.capabilities.map((c) => (
                   <div key={c.name} className="flex items-center gap-3 rounded-xl border border-line px-3.5 py-2.5">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#fbeee6] text-clay"><Star className="h-3.5 w-3.5" /></span>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-panel-2 text-clay"><Star className="h-3.5 w-3.5" /></span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[13px] font-medium">{c.title}</p>
                       <p className="truncate font-mono text-[11px] text-muted">{c.name}</p>
@@ -199,9 +199,9 @@ export function Explorer() {
   return (
     <>
       <Hero
-        eyebrow="Repo explorer"
-        title={<>What could this repo <span className="text-muted">become?</span></>}
-        sub="Static analysis only, nothing executed: how much of a repository looks like it could become MCP tools, how its modules connect, and which parts a catalog capability already covers."
+        icon={<Network />}
+        title="Explorer"
+        sub="What could this repository become? Static analysis only, nothing executed: how much of a repository looks like it could become MCP tools, how its modules connect, and which parts a catalog capability already covers."
       />
 
       <div className="-mx-1 mb-5 flex gap-2.5 overflow-x-auto px-1 pb-2 pt-1 [scrollbar-width:none]">

@@ -13,7 +13,7 @@ function TeX({ src, display }: { src: string; display?: boolean }) {
   try {
     html = katex.renderToString(src, { displayMode: display, throwOnError: false, output: "html", strict: "ignore" });
   } catch {
-    return <code className="rounded bg-white/70 px-1 font-mono text-[12px]">{src}</code>;
+    return <code className="rounded bg-canvas/70 px-1 font-mono text-[12px]">{src}</code>;
   }
   return display
     ? <div className="my-2 overflow-x-auto py-1" dangerouslySetInnerHTML={{ __html: html }} />
@@ -25,7 +25,7 @@ const INLINE = /(`[^`\n]+`|\$\$[^$]+\$\$|\$[^$\n]+\$|\*\*[^*\n]+\*\*|__[^_\n]+__
 function inline(text: string): ReactNode[] {
   return text.split(INLINE).map((t, i) => {
     if (!t) return null;
-    if (t.startsWith("`")) return <code key={i} className="rounded-md bg-white/80 px-1.5 py-px font-mono text-[12px] text-ink ring-1 ring-line">{t.slice(1, -1)}</code>;
+    if (t.startsWith("`")) return <code key={i} className="rounded-md bg-canvas/80 px-1.5 py-px font-mono text-[12px] text-ink ring-1 ring-line">{t.slice(1, -1)}</code>;
     if (t.startsWith("$$")) return <TeX key={i} src={t.slice(2, -2)} />;
     if (t.startsWith("$") && t.length > 2) return <TeX key={i} src={t.slice(1, -1)} />;
     if (t.startsWith("**") || t.startsWith("__")) return <strong key={i} className="font-semibold text-ink">{inline(t.slice(2, -2))}</strong>;
@@ -128,7 +128,7 @@ function Blocks({ blocks }: { blocks: Block[] }) {
             return <TeX key={i} src={b.text} display />;
           case "table":
             return (
-              <div key={i} className="my-2 overflow-x-auto rounded-xl border border-line bg-white/70">
+              <div key={i} className="my-2 overflow-x-auto rounded-xl border border-line bg-canvas/70">
                 <table className="w-full text-left text-[12.5px]">
                   <thead className="bg-panel text-[11.5px] text-muted">
                     <tr>{b.head.map((h, j) => <th key={j} className="px-3 py-2 font-semibold" style={{ textAlign: b.align[j] }}>{inline(h)}</th>)}</tr>

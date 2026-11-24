@@ -217,7 +217,7 @@ export function ForceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
   const bigOnes = new Set(P.map((p, i) => [p.r, i] as const).sort((a, b) => b[0] - a[0]).slice(0, 12).map(([, i]) => i));
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-line bg-panel">
+    <div className="relative overflow-hidden rounded-[10px] border border-line bg-panel">
       <div className="grid-lines pointer-events-none absolute inset-0 opacity-60" />
       <svg
         ref={svg} viewBox={`0 0 ${W} ${H}`}
@@ -272,7 +272,7 @@ export function ForceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
       </svg>
 
       {/* search */}
-      <div className="absolute left-3 top-3 flex w-[min(260px,calc(100%-24px))] items-center gap-2 rounded-full border border-line bg-white/90 px-3 py-1.5 shadow-sm backdrop-blur">
+      <div className="absolute left-3 top-3 flex w-[min(260px,calc(100%-24px))] items-center gap-2 rounded-full border border-line bg-canvas/90 px-3 py-1.5 shadow-sm backdrop-blur">
         <Search className="h-3.5 w-3.5 shrink-0 text-muted" />
         <input
           value={query} onChange={(e) => setQuery(e.target.value)}
@@ -284,7 +284,7 @@ export function ForceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
       </div>
 
       {/* zoom controls */}
-      <div className="absolute bottom-3 left-3 flex overflow-hidden rounded-full border border-line bg-white/90 shadow-sm backdrop-blur">
+      <div className="absolute bottom-3 left-3 flex overflow-hidden rounded-full border border-line bg-canvas/90 shadow-sm backdrop-blur">
         {[
           { l: "Zoom in", i: <Plus className="h-3.5 w-3.5" />, f: () => zoomBy(1.3) },
           { l: "Zoom out", i: <Minus className="h-3.5 w-3.5" />, f: () => zoomBy(1 / 1.3) },
@@ -298,7 +298,7 @@ export function ForceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
 
       {/* hover card */}
       {hover !== null && hover !== sel && (
-        <div className="pointer-events-none absolute left-3 top-14 max-w-[260px] animate-fade-in rounded-xl border border-line bg-white/95 px-3 py-2 text-[12px] shadow-sm backdrop-blur">
+        <div className="pointer-events-none absolute left-3 top-14 max-w-[260px] animate-fade-in rounded-xl border border-line bg-canvas/95 px-3 py-2 text-[12px] shadow-sm backdrop-blur">
           <p className="break-all font-mono text-[11.5px] font-semibold">{P[hover].id}</p>
           <p className="mt-0.5 text-body">{P[hover].symbols.toLocaleString()} symbols · {P[hover].mcp_able.toLocaleString()} MCP-able</p>
         </div>
@@ -306,7 +306,7 @@ export function ForceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
 
       {/* details panel */}
       {s && sel !== null && (
-        <div className="absolute inset-y-3 right-3 flex w-[min(300px,calc(100%-24px))] animate-fade-in flex-col overflow-hidden rounded-2xl border border-line bg-white/95 shadow-[0_12px_40px_-16px_rgba(20,20,19,0.35)] backdrop-blur">
+        <div className="absolute inset-y-3 right-3 flex w-[min(300px,calc(100%-24px))] animate-fade-in flex-col overflow-hidden rounded-[10px] border border-line bg-canvas/95 shadow-[0_12px_40px_-16px_rgba(20,20,19,0.35)] backdrop-blur">
           <div className="flex items-start gap-2 border-b border-line p-4">
             <span className="mt-1 h-3 w-3 shrink-0 rounded-full" style={{ background: colour(s) }} />
             <div className="min-w-0 flex-1">
@@ -317,7 +317,7 @@ export function ForceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
           </div>
           <div className="grid grid-cols-3 gap-px border-b border-line bg-line">
             {[["lines", s.loc], ["symbols", s.symbols], ["MCP-able", s.mcp_able]].map(([l, v]) => (
-              <div key={l as string} className="bg-white px-3 py-2.5">
+              <div key={l as string} className="bg-canvas px-3 py-2.5">
                 <p className="text-[16px] font-medium tabular-nums tracking-tight">{(v as number).toLocaleString()}</p>
                 <p className="text-[10.5px] text-muted">{l}</p>
               </div>
@@ -325,7 +325,7 @@ export function ForceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
           </div>
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 text-[12px]">
             {s.capability && (
-              <p className="rounded-xl bg-[#fbeee6] px-3 py-2 text-[#8a4a26]">Entry point of the <span className="font-semibold">{s.capability}</span> capability</p>
+              <p className="rounded-xl bg-panel-2 px-3 py-2 text-[#8a4a26]">Entry point of the <span className="font-semibold">{s.capability}</span> capability</p>
             )}
             {[{ t: "Imports", list: out, icon: <ArrowUpRight className="h-3 w-3" /> }, { t: "Imported by", list: inc, icon: <ArrowDownLeft className="h-3 w-3" /> }].map((g) => (
               <div key={g.t}>
@@ -333,7 +333,7 @@ export function ForceGraph({ nodes, edges }: { nodes: GraphNode[]; edges: GraphE
                 {g.list.length === 0 ? <p className="text-muted">None among the modules shown.</p> : (
                   <div className="flex flex-wrap gap-1">
                     {g.list.map((j) => (
-                      <button key={j} onClick={() => focus(j)} className="inline-flex items-center gap-1 rounded-lg border border-line bg-white px-2 py-0.5 font-mono text-[11px] text-body hover:border-ink/40 hover:text-ink">
+                      <button key={j} onClick={() => focus(j)} className="inline-flex items-center gap-1 rounded-lg border border-line bg-canvas px-2 py-0.5 font-mono text-[11px] text-body hover:border-ink/40 hover:text-ink">
                         <span className="h-1.5 w-1.5 rounded-full" style={{ background: colour(P[j]) }} />{short(P[j].id)}
                       </button>
                     ))}

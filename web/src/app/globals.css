@@ -1,24 +1,28 @@
 @import "tailwindcss";
 
-/* Design tokens cloned from InstaJob (LSPP-InstaJob/src/app/globals.css). */
+/* Zyven design tokens: warm paper, ink and hairlines.
+   The product UI is monochrome ink; colour comes only from status text and data. */
 @theme {
   --font-sans: var(--font-geist), "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono), "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --color-ink: #141413;
-  --color-ink-soft: #2a2a28;
-  --color-body: #5b5a55;
-  --color-muted: #8d8b84;
+  --color-ink: #1b1915;
+  --color-ink-soft: #2d2a24;
+  --color-body: #57534b;
+  --color-muted: #8f8a80;
 
-  --color-canvas: #ffffff;
-  --color-cream: #f4f3ef;
-  --color-cream-2: #ebe9e3;
-  --color-panel: #f9f8f5;
-  --color-panel-2: #f1efea;
-  --color-line: #e9e7e1;
-  --color-line-strong: #d8d5cc;
+  --color-canvas: #fdfcfa;
+  --color-cream: #f6f4ef;
+  --color-cream-2: #ece9e2;
+  --color-panel: #f8f6f2;
+  --color-panel-2: #f0ede6;
+  --color-line: #ebe7df;
+  --color-line-strong: #dcd7cc;
 
-  --color-clay: #e8895a;
+  --color-accent: #1b1915;
+  --color-accent-ink: #000000;
+  --color-accent-soft: #efece6;
+  --color-clay: #1b1915; /* legacy name: now ink, never orange */
   --color-olive: #4a5a3f;
   --color-bronze: #855b2e;
 
@@ -31,13 +35,11 @@
   --color-info: #33518a;
   --color-info-bg: #ecf0f9;
 
-  --animate-fade-in: fade-in 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  --animate-rise: rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-fade-in: fade-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-rise: rise 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-page: page 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-shimmer: shimmer 1.6s linear infinite;
-  --animate-pulse-dot: pulse-dot 1.8s ease-in-out infinite;
-  --animate-drift: drift 12s ease-in-out infinite;
   --animate-marquee: marquee 38s linear infinite;
-  --animate-twinkle: twinkle 3.2s ease-in-out infinite;
   @keyframes grow {
     from { transform: scaleX(0); }
     to { transform: scaleX(1); }
@@ -59,8 +61,16 @@
     to { opacity: 1; transform: none; }
   }
   @keyframes rise {
-    from { opacity: 0; transform: translateY(18px); }
+    from { opacity: 0; transform: translateY(8px) scale(0.985); }
     to { opacity: 1; transform: none; }
+  }
+  @keyframes page {
+    from { transform: translateY(5px); }
+    to { transform: none; }
+  }
+  @keyframes slide-in {
+    from { transform: translateX(-16px); }
+    to { transform: none; }
   }
   @keyframes shimmer {
     from { background-position: -200% 0; }
@@ -74,26 +84,11 @@
 
 html, body { background: var(--color-canvas); color: var(--color-ink); font-family: var(--font-sans); }
 body { margin: 0; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
-::selection { background: #141413; color: #fff; }
+::selection { background: #e6e1d6; color: var(--color-ink); }
 
-/* The signature soft oil paintings, used as backgrounds under frosted content. */
-.art { background-color: var(--color-cream-2); background-position: center; background-size: cover; }
-.art-warm { background-image: url("/art/warm.webp"); }
-.art-sage { background-image: url("/art/sage.webp"); }
-.art-orb { background-image: url("/art/orb.webp"); }
 
-.frost { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.frost { background: rgba(253, 252, 250, 0.94); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 
-/* Film grain over painted surfaces (InstaJob .grain). */
-.grain::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.18;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.6'/></svg>");
-}
 
 /* Faint drafting grid behind hero areas. */
 .grid-lines {
@@ -112,7 +107,7 @@ body { margin: 0; -webkit-font-smoothing: antialiased; text-rendering: optimizeL
 }
 
 .skeleton {
-  background: linear-gradient(90deg, #f3f1ec 25%, #ebe8e1 37%, #f3f1ec 63%);
+  background: linear-gradient(90deg, #f3f0ea 25%, #ebe7df 37%, #f3f0ea 63%);
   background-size: 400% 100%;
   animation: var(--animate-shimmer);
 }
@@ -127,3 +122,20 @@ body { margin: 0; -webkit-font-smoothing: antialiased; text-rendering: optimizeL
 .timeline li.ink::before { background: var(--color-ink); }
 .timeline li.sub { padding-left: 26px; font-size: 12px; }
 .timeline li.sub::before { width: 6px; height: 6px; left: 1px; top: 8px; }
+
+/* Keyboard hint chips. */
+.kbd { display: inline-flex; align-items: center; height: 18px; min-width: 18px; justify-content: center; padding: 0 5px;
+  border: 1px solid var(--color-line-strong); border-radius: 4px; background: var(--color-panel);
+  font: 500 10.5px/1 var(--font-mono); color: var(--color-muted); }
+
+/* One focus ring for everything clickable; text fields draw their own. */
+:where(a, button, select, summary, [role="button"], [role="option"], input[type="checkbox"], input[type="radio"]):focus-visible {
+  outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 6px;
+}
+
+/* Thin, quiet scrollbars in scrolling panels. */
+.scroll-quiet { scrollbar-width: thin; scrollbar-color: var(--color-line-strong) transparent; }
+
+/* Landing mock: the six gates turn green one after another (they are already green at rest). */
+@keyframes gate-tick { from { background: var(--color-panel-2); color: var(--color-muted); } to { background: var(--color-good-bg); color: var(--color-good); } }
+.gate-pill { animation: gate-tick 0.35s ease-out both; }

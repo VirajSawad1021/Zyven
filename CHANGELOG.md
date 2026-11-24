@@ -166,6 +166,10 @@ build, and installs without a clone.
   the skill's egress proxy with it. That covers the board's agent, the hub and `zyven mcp`.
 
 ### Changed
+- **New look for the board and the site.** A sidebar with grouped pages and counts, a breadcrumb bar and a Ctrl K command
+  palette; warm paper, ink-only chrome, hairlines and small radii; short page titles with icons; pages are complete on
+  the first frame. The landing page shows the board itself and today's results instead of painted backgrounds.
+- **New logo: the split Z.** A solid Z cut into three plates, in one colour; the favicon follows the browser's theme.
 - **Connection secrets are encrypted, with the key in the system keychain.** API keys and OAuth tokens move from a
   plain `connection-secrets.json` into `connection-secrets.enc` (Fernet), whose 44-character key lives in Windows
   Credential Manager, the macOS Keychain or the Linux Secret Service. The keychain cannot hold the tokens themselves:
