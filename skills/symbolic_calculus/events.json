@@ -1,0 +1,152 @@
+[
+ {
+  "t": 0.01,
+  "event": "architect.start",
+  "detail": "Symbolic calculus (OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model])"
+ },
+ {
+  "t": 40.12,
+  "event": "architect.done",
+  "detail": "2 tools: differentiate, integrate",
+  "resolved": {},
+  "dropped": [],
+  "fixes": [
+   "skipped test sympy/core/tests/test_sympify.py: needs flint, gmpy2, mpmath (not available in the sandbox)"
+  ],
+  "lint_warnings": 0
+ },
+ {
+  "t": 40.16,
+  "event": "compiler.start",
+  "detail": "writing 2 tool bodies (OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model])"
+ },
+ {
+  "t": 73.23,
+  "event": "compiler.done",
+  "detail": "all tools implemented"
+ },
+ {
+  "t": 73.23,
+  "event": "tester.start",
+  "detail": "writing differential tests from the spec and library (adapter code not shown; OpenCode (opencode/deepseek-v4.1-flash-free = deepseek/deepseek-v4.1-flash-1017) [coding agent, open-weight model])"
+ },
+ {
+  "t": 133.08,
+  "event": "tester.done",
+  "detail": "18 cases for 2 tools; full coverage",
+  "coverage_gaps": {}
+ },
+ {
+  "t": 133.08,
+  "event": "verify.start",
+  "detail": "attempt 1"
+ },
+ {
+  "t": 133.14,
+  "event": "gate.policy",
+  "detail": "FAIL line 46: call to 'locals' is not allowed; line 81: call to 'locals' is not allowed; line 82: call to 'locals' is not allowed",
+  "passed": false
+ },
+ {
+  "t": 133.14,
+  "event": "repair.start",
+  "detail": "2 failing tool(s): differentiate, integrate"
+ },
+ {
+  "t": 170.23,
+  "event": "repair.done",
+  "detail": "patched differentiate, integrate"
+ },
+ {
+  "t": 170.25,
+  "event": "verify.start",
+  "detail": "attempt 2"
+ },
+ {
+  "t": 723.23,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 723.23,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 723.23,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 528 tests ran, 0 failures, 0 errors (sympy/integrals/tests/test_integrals.py, sympy/core/tests/test_function.py, sympy/series/tests/test_limits.py, sympy/series/tests/test_series.py, sympy/concrete/tests/test_products.py)",
+  "passed": true
+ },
+ {
+  "t": 723.23,
+  "event": "gate.input_robustness",
+  "detail": "PASS 6/6 equivalent-input probes gave identical results",
+  "passed": true
+ },
+ {
+  "t": 723.23,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 2 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 723.23,
+  "event": "gate.differential",
+  "detail": "FAIL 18/18 Tester cases + 6/7 generated cases match the library (17 generated not scored: the library or the tool rejected the input); first mismatch: integrate({\"expression\": \"xp(-x)\", \"variable\": \"x\", \"lower_limit\": \"0\", \"upper_limit\": \"1\"}).definite returned true, library gives false",
+  "passed": false
+ },
+ {
+  "t": 723.23,
+  "event": "repair.start",
+  "detail": "1 failing tool(s): integrate"
+ },
+ {
+  "t": 794.78,
+  "event": "repair.done",
+  "detail": "patched integrate"
+ },
+ {
+  "t": 794.8,
+  "event": "verify.start",
+  "detail": "attempt 3"
+ },
+ {
+  "t": 1259.62,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 1259.62,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 1259.62,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 528 tests ran, 0 failures, 0 errors (sympy/integrals/tests/test_integrals.py, sympy/core/tests/test_function.py, sympy/series/tests/test_limits.py, sympy/series/tests/test_series.py, sympy/concrete/tests/test_products.py)",
+  "passed": true
+ },
+ {
+  "t": 1259.62,
+  "event": "gate.input_robustness",
+  "detail": "PASS 6/6 equivalent-input probes gave identical results",
+  "passed": true
+ },
+ {
+  "t": 1259.62,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 2 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 1259.62,
+  "event": "gate.differential",
+  "detail": "PASS 18/18 Tester cases + 7/7 generated cases match the library (17 generated not scored: the library or the tool rejected the input)",
+  "passed": true
+ }
+]

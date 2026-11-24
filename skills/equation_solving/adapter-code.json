@@ -1,0 +1,20 @@
+{
+ "tools": [
+  {
+   "tool": "solve_equation",
+   "imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "body": "if not isinstance(equation, str) or not equation.strip():\n    raise ValueError('equation must be a non-empty string')\nif not isinstance(variable, str) or not variable.strip():\n    raise ValueError('variable must be a non-empty string')\n\ntry:\n    if '=' in equation:\n        left, right = equation.split('=', 1)\n        expression = sympify(left) - sympify(right)\n    else:\n        expression = sympify(equation)\n    var = sympify(variable)\nexcept Exception as exc:\n    raise ValueError(f'Invalid equation or variable: {exc}') from exc\n\ntry:\n    result = solve(expression, var, dict=True)\nexcept Exception as exc:\n    raise ValueError(f'Could not solve equation: {exc}') from exc\n\nif isinstance(result, dict):\n    result_items = [result]\nelif isinstance(result, (list, tuple, set)):\n    result_items = list(result)\nelif result is None:\n    result_items = []\nelse:\n    result_items = [result]\n\nsolutions = []\nfor item in result_items:\n    if isinstance(item, dict):\n        converted = {str(key): str(value) for key, value in item.items()}\n        key = str(var)\n        if key in converted:\n            solutions.append(converted[key])\n        elif converted:\n            solutions.append(next(iter(converted.values())))\n        else:\n            solutions.append(str(var))\n    elif isinstance(item, (list, tuple)):\n        if len(item) == 1:\n            solutions.append(str(item[0]))\n        else:\n            solutions.append(str(item))\n    else:\n        solutions.append(str(item))\n\nreturn {\n    'equation': equation,\n    'variable': variable,\n    'solutions': solutions,\n    'solution_count': len(solutions),\n    'solutions_display': str(solutions),\n}"
+  },
+  {
+   "tool": "solve_system",
+   "imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "body": "if not isinstance(equations, str) or not equations.strip():\n    raise ValueError('equations must be a non-empty string')\nif not isinstance(variables, str) or not variables.strip():\n    raise ValueError('variables must be a non-empty string')\n\nlines = [line.strip() for line in equations.splitlines()]\nlines = [line for line in lines if line]\nif not lines:\n    raise ValueError('equations must contain at least one non-empty equation')\n\nvar_names = [part.strip() for part in variables.split(',')]\nif not var_names or any(not name for name in var_names):\n    raise ValueError('variables must be a comma-separated list of non-empty names')\n\ntry:\n    expressions = []\n    for line in lines:\n        if '=' in line:\n            left, right = line.split('=', 1)\n            expressions.append(sympify(left) - sympify(right))\n        else:\n            expressions.append(sympify(line))\n    var_symbols = [sympify(name) for name in var_names]\nexcept Exception as exc:\n    raise ValueError(f'Invalid equations or variables: {exc}') from exc\n\ntry:\n    result = solve(expressions, *var_symbols, dict=True)\nexcept Exception as exc:\n    raise ValueError(f'Could not solve system: {exc}') from exc\n\nif isinstance(result, dict):\n    result_items = [result]\nelif isinstance(result, (list, tuple, set)):\n    result_items = list(result)\nelif result is None:\n    result_items = []\nelse:\n    result_items = [result]\n\nsolutions = []\nfor item in result_items:\n    if isinstance(item, dict):\n        solutions.append({str(key): str(value) for key, value in item.items()})\n    elif isinstance(item, (list, tuple)):\n        if len(item) == len(var_symbols):\n            solutions.append({str(var): str(value) for var, value in zip(var_symbols, item)})\n        else:\n            solutions.append(str(item))\n    else:\n        solutions.append(str(item))\n\nreturn {\n    'equations': lines,\n    'variables': var_names,\n    'solutions': solutions,\n    'solution_count': len(solutions),\n    'solutions_display': str(solutions),\n}"
+  }
+ ]
+}

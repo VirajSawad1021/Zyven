@@ -1,0 +1,193 @@
+{
+ "cases": [
+  {
+   "tool": "solve_equation",
+   "args": {
+    "equation": "x**2 - 4 = 0",
+    "variable": "x"
+   },
+   "field": "solutions",
+   "reference_imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "reference_expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = {equation}\nvar = sympify({variable})\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(d[var]) for d in res]"
+  },
+  {
+   "tool": "solve_equation",
+   "args": {
+    "equation": "x**2 - 2",
+    "variable": "x"
+   },
+   "field": "solution_count",
+   "reference_imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "reference_expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = {equation}\nvar = sympify({variable})\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\nlen([str(d[var]) for d in res])"
+  },
+  {
+   "tool": "solve_equation",
+   "args": {
+    "equation": "2*x - 1 = 0",
+    "variable": "x"
+   },
+   "field": "solutions_display",
+   "reference_imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "reference_expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = {equation}\nvar = sympify({variable})\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\nstr([str(d[var]) for d in res])"
+  },
+  {
+   "tool": "solve_equation",
+   "args": {
+    "equation": "y**2 - 9 = 0",
+    "variable": "y"
+   },
+   "field": "variable",
+   "reference_imports": [],
+   "reference_expr": "{variable}"
+  },
+  {
+   "tool": "solve_equation",
+   "args": {
+    "equation": "exp(x) - 1 = 0",
+    "variable": "x"
+   },
+   "field": "equation",
+   "reference_imports": [],
+   "reference_expr": "{equation}"
+  },
+  {
+   "tool": "solve_equation",
+   "args": {
+    "equation": "sin(x) - 1",
+    "variable": "x"
+   },
+   "field": "solutions",
+   "reference_imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "reference_expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = {equation}\nvar = sympify({variable})\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(d[var]) for d in res]"
+  },
+  {
+   "tool": "solve_equation",
+   "args": {
+    "equation": "x**2 = 0",
+    "variable": "x"
+   },
+   "field": "solutions",
+   "reference_imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "reference_expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = {equation}\nvar = sympify({variable})\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(d[var]) for d in res]"
+  },
+  {
+   "tool": "solve_system",
+   "args": {
+    "equations": "x + y = 3\nx - y = 1",
+    "variables": "x, y"
+   },
+   "field": "solutions",
+   "reference_imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "reference_expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in {equations}.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in {variables}.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[{str(k): str(v) for k, v in d.items()} for d in res]"
+  },
+  {
+   "tool": "solve_system",
+   "args": {
+    "equations": "x**2 + y**2 - 5\nx - y - 1",
+    "variables": "x, y"
+   },
+   "field": "solution_count",
+   "reference_imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "reference_expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in {equations}.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in {variables}.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\nlen([{str(k): str(v) for k, v in d.items()} for d in res])"
+  },
+  {
+   "tool": "solve_system",
+   "args": {
+    "equations": "x + y - 3\n\n  x - y - 1  ",
+    "variables": "x, y"
+   },
+   "field": "equations",
+   "reference_imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "reference_expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in {equations}.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in {variables}.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(e) for e in exprs]"
+  },
+  {
+   "tool": "solve_system",
+   "args": {
+    "equations": "x + y - 3\nx - y - 1",
+    "variables": "x,y"
+   },
+   "field": "variables",
+   "reference_imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "reference_expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in {equations}.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in {variables}.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(s) for s in syms]"
+  },
+  {
+   "tool": "solve_system",
+   "args": {
+    "equations": "x + y - 3\nx - y - 1",
+    "variables": "x, y"
+   },
+   "field": "solutions_display",
+   "reference_imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "reference_expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in {equations}.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in {variables}.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\nstr([{str(k): str(v) for k, v in d.items()} for d in res])"
+  },
+  {
+   "tool": "solve_system",
+   "args": {
+    "equations": "x + y - 1\nx + y - 2",
+    "variables": "x, y"
+   },
+   "field": "solution_count",
+   "reference_imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "reference_expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in {equations}.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in {variables}.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\nlen([{str(k): str(v) for k, v in d.items()} for d in res])"
+  },
+  {
+   "tool": "solve_system",
+   "args": {
+    "equations": "2*x - 6",
+    "variables": "x"
+   },
+   "field": "solutions",
+   "reference_imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "reference_expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in {equations}.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in {variables}.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[{str(k): str(v) for k, v in d.items()} for d in res]"
+  },
+  {
+   "tool": "solve_system",
+   "args": {
+    "equations": "x + y - 3",
+    "variables": "x, y"
+   },
+   "field": "solutions",
+   "reference_imports": [
+    "from sympy.solvers.solvers import solve",
+    "from sympy.core.sympify import sympify"
+   ],
+   "reference_expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in {equations}.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in {variables}.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[{str(k): str(v) for k, v in d.items()} for d in res]"
+  }
+ ]
+}

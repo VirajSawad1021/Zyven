@@ -1,0 +1,79 @@
+{
+ "tools": {
+  "differentiate": {
+   "args": {
+    "expression": "sin(x)*exp(x)",
+    "variable": "x",
+    "order": 2
+   },
+   "returns": [
+    "expression",
+    "variable",
+    "order",
+    "derivative"
+   ],
+   "required": [
+    "expression",
+    "variable"
+   ],
+   "variants": [
+    {
+     "expression": "  sin(x)*exp(x) ",
+     "variable": "x",
+     "order": 2
+    },
+    {
+     "expression": "sin(x)*exp(x)",
+     "variable": "  x ",
+     "order": 2
+    }
+   ]
+  },
+  "integrate": {
+   "args": {
+    "expression": "x**2",
+    "variable": "x",
+    "lower_limit": "0",
+    "upper_limit": "1"
+   },
+   "returns": [
+    "expression",
+    "variable",
+    "definite",
+    "limits",
+    "integral",
+    "evaluated"
+   ],
+   "required": [
+    "expression",
+    "variable"
+   ],
+   "variants": [
+    {
+     "expression": "  x**2 ",
+     "variable": "x",
+     "lower_limit": "0",
+     "upper_limit": "1"
+    },
+    {
+     "expression": "x**2",
+     "variable": "  x ",
+     "lower_limit": "0",
+     "upper_limit": "1"
+    },
+    {
+     "expression": "x**2",
+     "variable": "x",
+     "lower_limit": "  0 ",
+     "upper_limit": "1"
+    },
+    {
+     "expression": "x**2",
+     "variable": "x",
+     "lower_limit": "0",
+     "upper_limit": "  1 "
+    }
+   ]
+  }
+ }
+}

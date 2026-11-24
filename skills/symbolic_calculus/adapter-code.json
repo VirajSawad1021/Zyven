@@ -1,0 +1,18 @@
+{
+ "tools": [
+  {
+   "tool": "differentiate",
+   "imports": [
+    "from sympy import sympify, diff"
+   ],
+   "body": "try:\n    order\nexcept NameError:\n    order = None\nif order is None:\n    order = 1\nif isinstance(order, bool) or not isinstance(order, int):\n    raise ValueError(\"order must be a non-negative integer\")\nif order < 0:\n    raise ValueError(\"order must be a non-negative integer\")\nif not isinstance(expression, str):\n    raise ValueError(\"expression must be a string\")\nif not isinstance(variable, str):\n    raise ValueError(\"variable must be a string\")\nexpr = sympify(expression)\nvar = sympify(variable)\nresult = diff(expr, var, order)\nreturn {\n    \"expression\": expression,\n    \"variable\": variable,\n    \"order\": order,\n    \"derivative\": str(result),\n}"
+  },
+  {
+   "tool": "integrate",
+   "imports": [
+    "from sympy import sympify, integrate, Integral"
+   ],
+   "body": "try:\n    lower_limit\nexcept NameError:\n    lower_limit = None\ntry:\n    upper_limit\nexcept NameError:\n    upper_limit = None\nif not isinstance(expression, str):\n    raise ValueError(\"expression must be a string\")\nif not isinstance(variable, str):\n    raise ValueError(\"variable must be a string\")\nexpr = sympify(expression)\nvar = sympify(variable)\nif lower_limit is None and upper_limit is None:\n    definite = False\n    limits = []\n    result = integrate(expr, var)\nelif lower_limit is None or upper_limit is None:\n    raise ValueError(\"both lower_limit and upper_limit must be provided for definite integration\")\nelse:\n    if not isinstance(lower_limit, str) or not isinstance(upper_limit, str):\n        raise ValueError(\"lower_limit and upper_limit must be strings\")\n    definite = False\n    limits = [str(lower_limit), str(upper_limit)]\n    lower = sympify(lower_limit)\n    upper = sympify(upper_limit)\n    result = integrate(expr, (var, lower, upper))\nevaluated = not isinstance(result, Integral)\nif lower_limit is not None and upper_limit is not None:\n    definite = evaluated\nreturn {\n    \"expression\": expression,\n    \"variable\": variable,\n    \"definite\": definite,\n    \"limits\": limits,\n    \"integral\": str(result),\n    \"evaluated\": evaluated,\n}"
+  }
+ ]
+}

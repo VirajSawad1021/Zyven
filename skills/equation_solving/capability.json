@@ -1,0 +1,142 @@
+{
+ "name": "equation_solving",
+ "title": "Symbolic equation solving",
+ "summary": "Solve one equation or a system of equations given as strings, returning exact solutions as strings and the solution count.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "solve_equation",
+   "description": "Solve a single equation exactly for one named variable. The equation may be 'lhs = rhs' or an expression equal to zero.",
+   "params": [
+    {
+     "name": "equation",
+     "type": "string",
+     "description": "Equation to solve, such as 'x**2 - 4 = 0' or 'sin(x) - 1'.",
+     "required": true,
+     "example": "x**2 - 4 = 0"
+    },
+    {
+     "name": "variable",
+     "type": "string",
+     "description": "Name of the variable to solve for, such as 'x'.",
+     "required": true,
+     "example": "x"
+    }
+   ],
+   "returns": [
+    {
+     "name": "equation",
+     "type": "string",
+     "description": "The original equation string."
+    },
+    {
+     "name": "variable",
+     "type": "string",
+     "description": "The solved variable name."
+    },
+    {
+     "name": "solutions",
+     "type": "array",
+     "description": "Exact solutions as strings, such as ['-2', '2']."
+    },
+    {
+     "name": "solution_count",
+     "type": "integer",
+     "description": "Number of solutions returned."
+    },
+    {
+     "name": "solutions_display",
+     "type": "string",
+     "description": "Readable representation of the solution list, such as '[-2, 2]'."
+    }
+   ],
+   "implementation_symbols": [
+    "sympy.core.sympify.sympify",
+    "sympy.solvers.solvers.solve"
+   ],
+   "implementation_notes": "Import solve from sympy.solvers.solvers (also available as sympy.solve) and sympify from sympy.core.sympify (also available as sympy.sympify). For equation, if it contains '=', split on the first '=' and form the expression sympify(left) - sympify(right); otherwise use sympify(equation). Convert variable with sympify(variable). Call solve(expression, variable, dict=True). Normalize the result to a list of dictionaries, convert each dictionary to {str(key): str(value)}, and return those values in solutions. Set solution_count to len(solutions) and solutions_display to str(solutions).",
+   "example_args": {
+    "equation": "x**2 - 4 = 0",
+    "variable": "x"
+   }
+  },
+  {
+   "name": "solve_system",
+   "description": "Solve a system of equations exactly for the named variables. Each equation may be 'lhs = rhs' or an expression equal to zero; equations are separated by newlines.",
+   "params": [
+    {
+     "name": "equations",
+     "type": "string",
+     "description": "System equations separated by newlines, such as 'x + y - 3\\nx - y - 1'.",
+     "required": true,
+     "example": "x + y - 3\nx - y - 1"
+    },
+    {
+     "name": "variables",
+     "type": "string",
+     "description": "Comma-separated variable names to solve for, such as 'x, y'.",
+     "required": true,
+     "example": "x, y"
+    }
+   ],
+   "returns": [
+    {
+     "name": "equations",
+     "type": "array",
+     "description": "The normalized equation strings used for solving."
+    },
+    {
+     "name": "variables",
+     "type": "array",
+     "description": "The variable names solved for."
+    },
+    {
+     "name": "solutions",
+     "type": "array",
+     "description": "List of solution mappings; each maps a variable name to an exact solution string."
+    },
+    {
+     "name": "solution_count",
+     "type": "integer",
+     "description": "Number of solution mappings returned."
+    },
+    {
+     "name": "solutions_display",
+     "type": "string",
+     "description": "Readable representation of all solution mappings."
+    }
+   ],
+   "implementation_symbols": [
+    "sympy.core.sympify.sympify",
+    "sympy.solvers.solvers.solve"
+   ],
+   "implementation_notes": "Import solve from sympy.solvers.solvers and sympify from sympy.core.sympify. Split equations on newlines, strip each line, and discard empty lines. For each equation, if it contains '=', convert it to sympify(left) - sympify(right); otherwise use sympify(equation). Split variables on commas, strip each name, and convert each with sympify. Call solve(expressions, *variables, dict=True). Normalize a dict result to a one-element list, then convert each dictionary to {str(key): str(value)}. Return the normalized equations and variables as arrays. Set solution_count to len(solutions) and solutions_display to str(solutions).",
+   "example_args": {
+    "equations": "x + y - 3\nx - y - 1",
+    "variables": "x, y"
+   }
+  }
+ ],
+ "included_symbols": [
+  "sympy.core.sympify.sympify",
+  "sympy.solvers.solvers.solve"
+ ],
+ "excluded_symbols": [],
+ "dependencies": [
+  "sympy"
+ ],
+ "side_effects": [
+  "none"
+ ],
+ "relevant_tests": [
+  "sympy/solvers/tests/test_solvers.py",
+  "sympy/solvers/tests/test_solveset.py",
+  "sympy/solvers/tests/test_pde.py"
+ ],
+ "uncertainties": [
+  "Equation and variable strings are parsed with SymPy's sympify, which uses eval; only trusted input should be accepted.",
+  "solve may return relational, parametric, or ConditionSet results instead of a finite list; this wrapper stringifies whatever solve returns.",
+  "Equations for solve_system must be separated by newlines; semicolon-separated equations are not supported.",
+  "Empty or unsolvable systems may return an empty solution list or raise SymPy errors depending on the equation type."
+ ]
+}
