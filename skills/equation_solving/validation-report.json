@@ -1,0 +1,805 @@
+{
+ "passed": true,
+ "verified_for": [
+  "policy",
+  "import",
+  "upstream_tests",
+  "input_robustness",
+  "mcp_smoke",
+  "differential"
+ ],
+ "gates": [
+  {
+   "name": "policy",
+   "passed": true,
+   "detail": "imports and builtins within policy",
+   "data": {}
+  },
+  {
+   "name": "import",
+   "passed": true,
+   "detail": "server module imports cleanly",
+   "data": {}
+  },
+  {
+   "name": "upstream_tests",
+   "passed": true,
+   "detail": "335 tests ran, 0 failures, 0 errors (sympy/solvers/tests/test_solvers.py, sympy/solvers/tests/test_solveset.py, sympy/solvers/tests/test_pde.py)",
+   "data": {
+    "ran": 335,
+    "failures": 0,
+    "errors": 0
+   }
+  },
+  {
+   "name": "input_robustness",
+   "passed": true,
+   "detail": "4/4 equivalent-input probes gave identical results",
+   "data": {
+    "probes": [
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "  x**2 - 4 = 0 ",
+       "variable": "x"
+      },
+      "ok": true,
+      "output": {
+       "equation": "  x**2 - 4 = 0 ",
+       "variable": "x",
+       "solutions": [
+        "-2",
+        "2"
+       ],
+       "solution_count": 2,
+       "solutions_display": "['-2', '2']"
+      }
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "x**2 - 4 = 0",
+       "variable": "  x "
+      },
+      "ok": true,
+      "output": {
+       "equation": "x**2 - 4 = 0",
+       "variable": "  x ",
+       "solutions": [
+        "-2",
+        "2"
+       ],
+       "solution_count": 2,
+       "solutions_display": "['-2', '2']"
+      }
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "  x + y - 3\nx - y - 1 ",
+       "variables": "x, y"
+      },
+      "ok": true,
+      "output": {
+       "equations": [
+        "x + y - 3",
+        "x - y - 1"
+       ],
+       "variables": [
+        "x",
+        "y"
+       ],
+       "solutions": [
+        {
+         "x": "2",
+         "y": "1"
+        }
+       ],
+       "solution_count": 1,
+       "solutions_display": "[{'x': '2', 'y': '1'}]"
+      }
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y - 3\nx - y - 1",
+       "variables": "  x, y "
+      },
+      "ok": true,
+      "output": {
+       "equations": [
+        "x + y - 3",
+        "x - y - 1"
+       ],
+       "variables": [
+        "x",
+        "y"
+       ],
+       "solutions": [
+        {
+         "x": "2",
+         "y": "1"
+        }
+       ],
+       "solution_count": 1,
+       "solutions_display": "[{'x': '2', 'y': '1'}]"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "mcp_smoke",
+   "passed": true,
+   "detail": "2 tools called with example args; invalid input rejected",
+   "data": {
+    "server_started": true,
+    "listed_tools": [
+     "solve_equation",
+     "solve_system"
+    ],
+    "missing_tools": [],
+    "calls": [
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "x**2 - 4 = 0",
+       "variable": "x"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "equation": "x**2 - 4 = 0",
+       "variable": "x",
+       "solutions": [
+        "-2",
+        "2"
+       ],
+       "solution_count": 2,
+       "solutions_display": "['-2', '2']"
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y - 3\nx - y - 1",
+       "variables": "x, y"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "equations": [
+        "x + y - 3",
+        "x - y - 1"
+       ],
+       "variables": [
+        "x",
+        "y"
+       ],
+       "solutions": [
+        {
+         "x": "2",
+         "y": "1"
+        }
+       ],
+       "solution_count": 1,
+       "solutions_display": "[{'x': '2', 'y': '1'}]"
+      },
+      "missing_fields": []
+     }
+    ],
+    "invalid_calls": [
+     {
+      "ok": true,
+      "tool": "solve_equation",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "solve_system",
+      "detail": "rejected cleanly"
+     }
+    ],
+    "robustness": [
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "  x**2 - 4 = 0 ",
+       "variable": "x"
+      },
+      "ok": true,
+      "output": {
+       "equation": "  x**2 - 4 = 0 ",
+       "variable": "x",
+       "solutions": [
+        "-2",
+        "2"
+       ],
+       "solution_count": 2,
+       "solutions_display": "['-2', '2']"
+      }
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "x**2 - 4 = 0",
+       "variable": "  x "
+      },
+      "ok": true,
+      "output": {
+       "equation": "x**2 - 4 = 0",
+       "variable": "  x ",
+       "solutions": [
+        "-2",
+        "2"
+       ],
+       "solution_count": 2,
+       "solutions_display": "['-2', '2']"
+      }
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "  x + y - 3\nx - y - 1 ",
+       "variables": "x, y"
+      },
+      "ok": true,
+      "output": {
+       "equations": [
+        "x + y - 3",
+        "x - y - 1"
+       ],
+       "variables": [
+        "x",
+        "y"
+       ],
+       "solutions": [
+        {
+         "x": "2",
+         "y": "1"
+        }
+       ],
+       "solution_count": 1,
+       "solutions_display": "[{'x': '2', 'y': '1'}]"
+      }
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y - 3\nx - y - 1",
+       "variables": "  x, y "
+      },
+      "ok": true,
+      "output": {
+       "equations": [
+        "x + y - 3",
+        "x - y - 1"
+       ],
+       "variables": [
+        "x",
+        "y"
+       ],
+       "solutions": [
+        {
+         "x": "2",
+         "y": "1"
+        }
+       ],
+       "solution_count": 1,
+       "solutions_display": "[{'x': '2', 'y': '1'}]"
+      }
+     }
+    ],
+    "still_alive_after_calls": true
+   }
+  },
+  {
+   "name": "differential",
+   "passed": true,
+   "detail": "15/15 Tester cases + 7/7 generated cases match the library (17 generated not scored: the library or the tool rejected the input)",
+   "data": {
+    "results": [
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "x**2 - 4 = 0",
+       "variable": "x"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = 'x**2 - 4 = 0'\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(d[var]) for d in res]",
+      "expected": "['-2', '2']",
+      "got": "['-2', '2']",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "x**2 - 2",
+       "variable": "x"
+      },
+      "field": "solution_count",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = 'x**2 - 2'\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\nlen([str(d[var]) for d in res])",
+      "expected": 2,
+      "got": 2,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "2*x - 1 = 0",
+       "variable": "x"
+      },
+      "field": "solutions_display",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = '2*x - 1 = 0'\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\nstr([str(d[var]) for d in res])",
+      "expected": "['1/2']",
+      "got": "['1/2']",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "y**2 - 9 = 0",
+       "variable": "y"
+      },
+      "field": "variable",
+      "expr": "'y'",
+      "expected": "y",
+      "got": "y",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "exp(x) - 1 = 0",
+       "variable": "x"
+      },
+      "field": "equation",
+      "expr": "'exp(x) - 1 = 0'",
+      "expected": "exp(x) - 1 = 0",
+      "got": "exp(x) - 1 = 0",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "sin(x) - 1",
+       "variable": "x"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = 'sin(x) - 1'\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(d[var]) for d in res]",
+      "expected": "['pi/2']",
+      "got": "['pi/2']",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "x**2 = 0",
+       "variable": "x"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = 'x**2 = 0'\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(d[var]) for d in res]",
+      "expected": "['0']",
+      "got": "['0']",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y = 3\nx - y = 1",
+       "variables": "x, y"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in 'x + y = 3\\nx - y = 1'.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'x, y'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[{str(k): str(v) for k, v in d.items()} for d in res]",
+      "expected": "[{'x': '2', 'y': '1'}]",
+      "got": "[{'x': '2', 'y': '1'}]",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x**2 + y**2 - 5\nx - y - 1",
+       "variables": "x, y"
+      },
+      "field": "solution_count",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in 'x**2 + y**2 - 5\\nx - y - 1'.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'x, y'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\nlen([{str(k): str(v) for k, v in d.items()} for d in res])",
+      "expected": 2,
+      "got": 2,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y - 3\n\n  x - y - 1  ",
+       "variables": "x, y"
+      },
+      "field": "equations",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in 'x + y - 3\\n\\n  x - y - 1  '.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'x, y'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(e) for e in exprs]",
+      "expected": "['x + y - 3', 'x - y - 1']",
+      "got": "['x + y - 3', 'x - y - 1']",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y - 3\nx - y - 1",
+       "variables": "x,y"
+      },
+      "field": "variables",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in 'x + y - 3\\nx - y - 1'.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'x,y'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(s) for s in syms]",
+      "expected": "['x', 'y']",
+      "got": "['x', 'y']",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y - 3\nx - y - 1",
+       "variables": "x, y"
+      },
+      "field": "solutions_display",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in 'x + y - 3\\nx - y - 1'.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'x, y'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\nstr([{str(k): str(v) for k, v in d.items()} for d in res])",
+      "expected": "[{'x': '2', 'y': '1'}]",
+      "got": "[{'x': '2', 'y': '1'}]",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y - 1\nx + y - 2",
+       "variables": "x, y"
+      },
+      "field": "solution_count",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in 'x + y - 1\\nx + y - 2'.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'x, y'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\nlen([{str(k): str(v) for k, v in d.items()} for d in res])",
+      "expected": 0,
+      "got": 0,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "2*x - 6",
+       "variables": "x"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in '2*x - 6'.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'x'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[{str(k): str(v) for k, v in d.items()} for d in res]",
+      "expected": "[{'x': '3'}]",
+      "got": "[{'x': '3'}]",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y - 3",
+       "variables": "x, y"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in 'x + y - 3'.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'x, y'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[{str(k): str(v) for k, v in d.items()} for d in res]",
+      "expected": "[{'x': '3 - y'}]",
+      "got": "[{'x': '3 - y'}]",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "**2 - 2",
+       "variable": "x"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = '**2 - 2'\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(d[var]) for d in res]",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse '**2 - 2'\", SyntaxError('invalid syntax', ('<string>', 1, 1, '**Integer (2 )-Integer (2 )', 1, 3)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "**2 - 4 = 0",
+       "variable": "x"
+      },
+      "field": "solution_count",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = '**2 - 4 = 0'\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\nlen([str(d[var]) for d in res])",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse '**2 - 4 '\", SyntaxError('invalid syntax', ('<string>', 1, 1, '**Integer (2 )-Integer (4 )', 1, 3)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "1 - )x(nis",
+       "variable": "x"
+      },
+      "field": "solutions_display",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = '1 - )x(nis'\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\nstr([str(d[var]) for d in res])",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse '1 - )x(nis'\", TokenError('unexpected EOF in multi-line statement', (1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "x**2 - ",
+       "variable": "x"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = 'x**2 - '\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(d[var]) for d in res]",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse 'x**2 - '\", SyntaxError('invalid syntax', ('<string>', 1, 0, \"Symbol ('x' )**Integer (2 )-\", 1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "x**2 = ",
+       "variable": "x"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = 'x**2 = '\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(d[var]) for d in res]",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse ' '\", SyntaxError('invalid syntax', ('<string>', 0, 0, '', 0, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "0 = 1 - x*2",
+       "variable": "x"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = '0 = 1 - x*2'\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(d[var]) for d in res]",
+      "expected": "['1/2']",
+      "got": "['1/2']",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "**2 = 0",
+       "variable": "x"
+      },
+      "field": "solution_count",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = '**2 = 0'\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\nlen([str(d[var]) for d in res])",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse '**2 '\", SyntaxError('invalid syntax', ('<string>', 1, 1, '**Integer (2 )', 1, 3)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "0 = 4 - 2**x",
+       "variable": "x"
+      },
+      "field": "solutions_display",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = '0 = 4 - 2**x'\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\nstr([str(d[var]) for d in res])",
+      "expected": "['2']",
+      "got": "['2']",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "sin(x) - ",
+       "variable": "x"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = 'sin(x) - '\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(d[var]) for d in res]",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse 'sin(x) - '\", SyntaxError('invalid syntax', ('<string>', 1, 0, \"sin (Symbol ('x' ))-\", 1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "x**2 - 4 = ",
+       "variable": "x"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = 'x**2 - 4 = '\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(d[var]) for d in res]",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse ' '\", SyntaxError('invalid syntax', ('<string>', 0, 0, '', 0, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "0 = 2**x",
+       "variable": "x"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = '0 = 2**x'\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(d[var]) for d in res]",
+      "expected": "[]",
+      "got": "[]",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "solve_equation",
+      "args": {
+       "equation": "*x - 1 = 0",
+       "variable": "x"
+      },
+      "field": "solution_count",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\neq = '*x - 1 = 0'\nvar = sympify('x')\nexpr = sympify(eq.split('=', 1)[0]) - sympify(eq.split('=', 1)[1]) if '=' in eq else sympify(eq)\nres = solve(expr, var, dict=True)\nres = [res] if isinstance(res, dict) else res\nlen([str(d[var]) for d in res])",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse '*x - 1 '\", SyntaxError('invalid syntax', ('<string>', 1, 1, \"*Symbol ('x' )-Integer (1 )\", 1, 2)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "2*x - 6",
+       "variables": ", y"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in '2*x - 6'.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in ', y'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[{str(k): str(v) for k, v in d.items()} for d in res]",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse ''\", SyntaxError('invalid syntax', ('<string>', 0, 0, '', 0, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "2*x - ",
+       "variables": "x,"
+      },
+      "field": "solution_count",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in '2*x - '.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'x,'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\nlen([{str(k): str(v) for k, v in d.items()} for d in res])",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse '2*x -'\", SyntaxError('invalid syntax', ('<string>', 1, 0, \"Integer (2 )*Symbol ('x' )-\", 1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y - ",
+       "variables": "x, "
+      },
+      "field": "equations",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in 'x + y - '.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'x, '.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(e) for e in exprs]",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse 'x + y -'\", SyntaxError('invalid syntax', ('<string>', 1, 0, \"Symbol ('x' )+Symbol ('y' )-\", 1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "6 - x*2",
+       "variables": "y ,x"
+      },
+      "field": "variables",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in '6 - x*2'.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'y ,x'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(s) for s in syms]",
+      "expected": "['y', 'x']",
+      "got": "['y', 'x']",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y - ",
+       "variables": "x,y"
+      },
+      "field": "solutions_display",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in 'x + y - '.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'x,y'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\nstr([{str(k): str(v) for k, v in d.items()} for d in res])",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse 'x + y -'\", SyntaxError('invalid syntax', ('<string>', 1, 0, \"Symbol ('x' )+Symbol ('y' )-\", 1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": " + y - 3",
+       "variables": ",y"
+      },
+      "field": "solution_count",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in ' + y - 3'.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in ',y'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\nlen([{str(k): str(v) for k, v in d.items()} for d in res])",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse ''\", SyntaxError('invalid syntax', ('<string>', 0, 0, '', 0, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "1 - y - x\n3 - y + x",
+       "variables": ", y"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in '1 - y - x\\n3 - y + x'.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in ', y'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[{str(k): str(v) for k, v in d.items()} for d in res]",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse ''\", SyntaxError('invalid syntax', ('<string>', 0, 0, '', 0, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y - 1\nx + y - ",
+       "variables": ", y"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in 'x + y - 1\\nx + y - '.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in ', y'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[{str(k): str(v) for k, v in d.items()} for d in res]",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse 'x + y -'\", SyntaxError('invalid syntax', ('<string>', 1, 0, \"Symbol ('x' )+Symbol ('y' )-\", 1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": " + y = 3\nx - y = 1",
+       "variables": "y ,x"
+      },
+      "field": "solutions",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in ' + y = 3\\nx - y = 1'.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'y ,x'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[{str(k): str(v) for k, v in d.items()} for d in res]",
+      "expected": "[{'x': '4', 'y': '3'}]",
+      "got": "[{'x': '4', 'y': '3'}]",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y - 3\nx - y - 1",
+       "variables": "y,x"
+      },
+      "field": "solution_count",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in 'x + y - 3\\nx - y - 1'.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'y,x'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\nlen([{str(k): str(v) for k, v in d.items()} for d in res])",
+      "expected": 1,
+      "got": 1,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y - 3\nx - y - ",
+       "variables": "x"
+      },
+      "field": "equations",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in 'x + y - 3\\nx - y - '.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'x'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(e) for e in exprs]",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse 'x - y -'\", SyntaxError('invalid syntax', ('<string>', 1, 0, \"Symbol ('x' )-Symbol ('y' )-\", 1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "solve_system",
+      "args": {
+       "equations": "x + y = 3\nx - y = 1",
+       "variables": "x,y"
+      },
+      "field": "variables",
+      "expr": "from sympy.solvers.solvers import solve\nfrom sympy.core.sympify import sympify\nlines = [s.strip() for s in 'x + y = 3\\nx - y = 1'.split('\\n') if s.strip()]\nexprs = [sympify(s.split('=', 1)[0]) - sympify(s.split('=', 1)[1]) if '=' in s else sympify(s) for s in lines]\nsyms = [sympify(v.strip()) for v in 'x,y'.split(',')]\nres = solve(exprs, *syms, dict=True)\nres = [res] if isinstance(res, dict) else res\n[str(s) for s in syms]",
+      "expected": "['x', 'y']",
+      "got": "['x', 'y']",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     }
+    ]
+   }
+  }
+ ],
+ "failing_tools": {}
+}

@@ -6,6 +6,10 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **sympy calculus and equation solving verify.** `skills/symbolic_calculus` (differentiate, integrate; 528 upstream
+  tests, differential 18/18 plus generated) and `skills/equation_solving` (one equation or a system; 335 upstream tests,
+  differential 15/15 plus generated), compiled through OpenCode by Reflection Beam 1.0 (501B, open weights) with
+  DeepSeek V4.1 Flash as the Tester. Every tool passed all six gates; none was dropped.
 - **sympy verifies: limits, simplify and factor.** `skills/symbolic_math` (sympy `16fa855`), compiled through OpenCode by
   Reflection Beam 1.0 (501B, open weights) with DeepSeek V4.1 Flash as the Tester. Two tools pass all six gates: 762
   upstream tests, differential 19/19 plus generated cases. Two more tools (equation solving, calculus) did not verify

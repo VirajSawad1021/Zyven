@@ -1,0 +1,37 @@
+{
+ "repository": "https://github.com/sympy/sympy",
+ "commit": "16fa855354eb7bcabd3fe10993841e03b1382692",
+ "license": "unknown (license file present)",
+ "generator": "zyven 0.1.0",
+ "model": "OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model]",
+ "roles": {
+  "architect": "OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model]",
+  "compiler": "OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model]",
+  "repair": "OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model]",
+  "tester": "OpenCode (opencode/deepseek-v4.1-flash-free = deepseek/deepseek-v4.1-flash-1017) [coding agent, open-weight model]"
+ },
+ "role_families": {
+  "architect": "unknown",
+  "compiler": "unknown",
+  "repair": "unknown",
+  "tester": "deepseek"
+ },
+ "tester_independence": "unknown",
+ "capability": "equation_solving",
+ "mode": "wrap",
+ "included_symbols": [
+  "sympy.core.sympify.sympify",
+  "sympy.solvers.solvers.solve"
+ ],
+ "source_checkout": "C:\\Users\\Viraj\\Downloads\\ZYVEN\\workspace\\repos\\sympy",
+ "source_root": ".",
+ "network_hosts": [],
+ "generated_files": [
+  "server.py"
+ ],
+ "compile_seconds": 1047.2,
+ "attempts": 1,
+ "dropped_tools": {},
+ "model_calls": 4,
+ "lint_warnings": 0
+}

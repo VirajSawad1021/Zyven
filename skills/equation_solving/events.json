@@ -1,0 +1,78 @@
+[
+ {
+  "t": 0.02,
+  "event": "architect.start",
+  "detail": "Symbolic equation solving (OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model])"
+ },
+ {
+  "t": 72.17,
+  "event": "architect.done",
+  "detail": "2 tools: solve_equation, solve_system",
+  "resolved": {},
+  "dropped": [],
+  "fixes": [],
+  "lint_warnings": 0
+ },
+ {
+  "t": 72.17,
+  "event": "compiler.start",
+  "detail": "writing 2 tool bodies (OpenCode (opencode/beam-free = reflection/beam-1.0-501b-a23b) [coding agent, open-weight model])"
+ },
+ {
+  "t": 125.59,
+  "event": "compiler.done",
+  "detail": "all tools implemented"
+ },
+ {
+  "t": 125.59,
+  "event": "tester.start",
+  "detail": "writing differential tests from the spec and library (adapter code not shown; OpenCode (opencode/deepseek-v4.1-flash-free = deepseek/deepseek-v4.1-flash-1017) [coding agent, open-weight model])"
+ },
+ {
+  "t": 290.73,
+  "event": "tester.done",
+  "detail": "15 cases for 2 tools; full coverage",
+  "coverage_gaps": {}
+ },
+ {
+  "t": 290.73,
+  "event": "verify.start",
+  "detail": "attempt 1"
+ },
+ {
+  "t": 1047.16,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 1047.16,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 1047.16,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 335 tests ran, 0 failures, 0 errors (sympy/solvers/tests/test_solvers.py, sympy/solvers/tests/test_solveset.py, sympy/solvers/tests/test_pde.py)",
+  "passed": true
+ },
+ {
+  "t": 1047.16,
+  "event": "gate.input_robustness",
+  "detail": "PASS 4/4 equivalent-input probes gave identical results",
+  "passed": true
+ },
+ {
+  "t": 1047.16,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 2 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 1047.16,
+  "event": "gate.differential",
+  "detail": "PASS 15/15 Tester cases + 7/7 generated cases match the library (17 generated not scored: the library or the tool rejected the input)",
+  "passed": true
+ }
+]

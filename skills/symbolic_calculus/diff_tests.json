@@ -1,0 +1,247 @@
+{
+ "cases": [
+  {
+   "tool": "differentiate",
+   "args": {
+    "expression": "sin(x)*exp(x)",
+    "variable": "x",
+    "order": 2
+   },
+   "field": "derivative",
+   "reference_imports": [
+    "from sympy import sympify, diff"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nstr(diff(expr, var, {order}))"
+  },
+  {
+   "tool": "differentiate",
+   "args": {
+    "expression": "exp(-x**2)",
+    "variable": "x"
+   },
+   "field": "derivative",
+   "reference_imports": [
+    "from sympy import sympify, diff"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nstr(diff(expr, var))"
+  },
+  {
+   "tool": "differentiate",
+   "args": {
+    "expression": "x**3 + 2*x",
+    "variable": "x",
+    "order": 0
+   },
+   "field": "derivative",
+   "reference_imports": [
+    "from sympy import sympify, diff"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nstr(diff(expr, var, {order}))"
+  },
+  {
+   "tool": "differentiate",
+   "args": {
+    "expression": "sin(x)",
+    "variable": "x",
+    "order": 3
+   },
+   "field": "order",
+   "reference_imports": [
+    "from sympy import sympify, diff"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nresult = diff(expr, var, {order})\nint({order})"
+  },
+  {
+   "tool": "differentiate",
+   "args": {
+    "expression": "1/x",
+    "variable": "x",
+    "order": 1
+   },
+   "field": "expression",
+   "reference_imports": [
+    "from sympy import sympify, diff"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nresult = diff(expr, var, {order})\n{expression}"
+  },
+  {
+   "tool": "differentiate",
+   "args": {
+    "expression": "t**2",
+    "variable": "t",
+    "order": 1
+   },
+   "field": "variable",
+   "reference_imports": [
+    "from sympy import sympify, diff"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nresult = diff(expr, var, {order})\n{variable}"
+  },
+  {
+   "tool": "integrate",
+   "args": {
+    "expression": "x**2",
+    "variable": "x",
+    "lower_limit": "0",
+    "upper_limit": "1"
+   },
+   "field": "integral",
+   "reference_imports": [
+    "from sympy import sympify",
+    "from sympy.integrals.integrals import integrate"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nlower = sympify({lower_limit})\nupper = sympify({upper_limit})\nstr(integrate(expr, (var, lower, upper)))"
+  },
+  {
+   "tool": "integrate",
+   "args": {
+    "expression": "sin(x)",
+    "variable": "x"
+   },
+   "field": "integral",
+   "reference_imports": [
+    "from sympy import sympify",
+    "from sympy.integrals.integrals import integrate"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nstr(integrate(expr, var))"
+  },
+  {
+   "tool": "integrate",
+   "args": {
+    "expression": "x**2",
+    "variable": "x",
+    "lower_limit": "0",
+    "upper_limit": "1"
+   },
+   "field": "definite",
+   "reference_imports": [
+    "from sympy import sympify",
+    "from sympy.integrals.integrals import integrate"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nlower = sympify({lower_limit})\nupper = sympify({upper_limit})\nresult = integrate(expr, (var, lower, upper))\nlower is not None and upper is not None"
+  },
+  {
+   "tool": "integrate",
+   "args": {
+    "expression": "sin(x)",
+    "variable": "x",
+    "lower_limit": "0",
+    "upper_limit": "pi"
+   },
+   "field": "limits",
+   "reference_imports": [
+    "from sympy import sympify",
+    "from sympy.integrals.integrals import integrate"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nlower = sympify({lower_limit})\nupper = sympify({upper_limit})\nresult = integrate(expr, (var, lower, upper))\n[str(lower), str(upper)]"
+  },
+  {
+   "tool": "integrate",
+   "args": {
+    "expression": "exp(sin(x))",
+    "variable": "x"
+   },
+   "field": "evaluated",
+   "reference_imports": [
+    "from sympy import sympify",
+    "from sympy.integrals.integrals import integrate, Integral"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nnot isinstance(integrate(expr, var), Integral)"
+  },
+  {
+   "tool": "integrate",
+   "args": {
+    "expression": "x**2",
+    "variable": "x"
+   },
+   "field": "evaluated",
+   "reference_imports": [
+    "from sympy import sympify",
+    "from sympy.integrals.integrals import integrate, Integral"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nnot isinstance(integrate(expr, var), Integral)"
+  },
+  {
+   "tool": "integrate",
+   "args": {
+    "expression": "sin(x)",
+    "variable": "x"
+   },
+   "field": "limits",
+   "reference_imports": [
+    "from sympy import sympify",
+    "from sympy.integrals.integrals import integrate"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nresult = integrate(expr, var)\n[]"
+  },
+  {
+   "tool": "integrate",
+   "args": {
+    "expression": "sin(x)",
+    "variable": "x"
+   },
+   "field": "definite",
+   "reference_imports": [
+    "from sympy import sympify",
+    "from sympy.integrals.integrals import integrate"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nresult = integrate(expr, var)\nFalse"
+  },
+  {
+   "tool": "integrate",
+   "args": {
+    "expression": "exp(-x)",
+    "variable": "x",
+    "lower_limit": "0",
+    "upper_limit": "oo"
+   },
+   "field": "integral",
+   "reference_imports": [
+    "from sympy import sympify",
+    "from sympy.integrals.integrals import integrate"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nlower = sympify({lower_limit})\nupper = sympify({upper_limit})\nstr(integrate(expr, (var, lower, upper)))"
+  },
+  {
+   "tool": "integrate",
+   "args": {
+    "expression": "sin(x)",
+    "variable": "x",
+    "lower_limit": "1",
+    "upper_limit": "1"
+   },
+   "field": "integral",
+   "reference_imports": [
+    "from sympy import sympify",
+    "from sympy.integrals.integrals import integrate"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nlower = sympify({lower_limit})\nupper = sympify({upper_limit})\nstr(integrate(expr, (var, lower, upper)))"
+  },
+  {
+   "tool": "integrate",
+   "args": {
+    "expression": "cos(x)",
+    "variable": "x"
+   },
+   "field": "expression",
+   "reference_imports": [
+    "from sympy import sympify",
+    "from sympy.integrals.integrals import integrate"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nresult = integrate(expr, var)\n{expression}"
+  },
+  {
+   "tool": "integrate",
+   "args": {
+    "expression": "t**2",
+    "variable": "t"
+   },
+   "field": "variable",
+   "reference_imports": [
+    "from sympy import sympify",
+    "from sympy.integrals.integrals import integrate"
+   ],
+   "reference_expr": "expr = sympify({expression})\nvar = sympify({variable})\nresult = integrate(expr, var)\n{variable}"
+  }
+ ]
+}
