@@ -672,3 +672,34 @@ def test_a_named_test_file_that_must_be_skipped_is_not_run(monkeypatch):
     assert cmds[0][-1] == "tests/test_dates.py" and "tests/test_hebrewcal.py" not in cmds[0][-2:]
     runner.run_upstream_tests(Path("."), ["tests/test_hebrewcal.py"], ignore=["tests/test_hebrewcal.py"])
     assert cmds[1][-1] == "tests" and "--ignore=tests/test_hebrewcal.py" in cmds[1]
+
+
+def test_failing_upstream_tests_that_never_call_wrapped_code_are_not_counted():
+    from zyven.compiler.verify import unrelated_failures
+    refs = {"tests/test_solvers.py": {"test_solve_linear": ["sympy.solvers.solvers.solve"],
+                                      "TestOther.test_plot": ["sympy.plotting.plot.plot"],
+                                      "test_simplify_pow": ["sympy.simplify.simplify.simplify"]}}
+    wrapped = {"sympy.solvers.solvers.solve"}
+    assert unrelated_failures(["tests/test_solvers.py::TestOther::test_plot"], refs, wrapped) == \
+        ["tests/test_solvers.py::TestOther::test_plot"]
+    assert unrelated_failures(["tests/test_solvers.py::test_simplify_pow[x]"], refs, wrapped) == \
+        ["tests/test_solvers.py::test_simplify_pow[x]"]  # a parametrised id maps to its function
+    assert unrelated_failures(["tests/test_solvers.py::test_solve_linear"], refs, wrapped) is None  # reaches solve
+    assert unrelated_failures(["tests/test_solvers.py::test_unknown"], refs, wrapped) is None  # cannot map: related
+    assert unrelated_failures(["tests/test_solvers.py"], refs, wrapped) is None  # the file did not load
+    assert unrelated_failures(["tests/test_solvers.py::TestOther::test_plot"], refs,
+                              {"sympy.plotting"}) is None  # a wrapped module covers its functions
+
+
+def test_pytest_failed_node_ids_are_parsed():
+    from zyven.sandbox.runner import SandboxResult, parse_pytest
+    out = ("..F.\n=== short test summary info ===\nFAILED tests/test_a.py::TestX::test_y - AssertionError\n"
+           "ERROR tests/test_b.py::test_z - ImportError\n1 failed, 2 passed, 1 error in 0.5s\n")
+    rep = parse_pytest(SandboxResult(command=["pytest"], exit_code=1, stdout=out, stderr="", seconds=0.5))
+    assert rep.failed_nodes == ["tests/test_a.py::TestX::test_y", "tests/test_b.py::test_z"]
+    assert (rep.failures, rep.errors, rep.ran) == (1, 1, 4)
+
+
+def test_a_whitespace_only_docstring_has_no_first_line():
+    from zyven.analysis.miner import _first_line
+    assert _first_line("   \n  ") == "" and _first_line(None) == "" and _first_line("\n  Solve it.\n more") == "Solve it."

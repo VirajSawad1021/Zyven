@@ -1,0 +1,74 @@
+{
+ "tools": {
+  "evaluate_limit": {
+   "args": {
+    "expression": "sin(x)/x",
+    "variable": "x",
+    "point": "0",
+    "direction": "+-"
+   },
+   "returns": [
+    "expression",
+    "variable",
+    "point",
+    "direction",
+    "result"
+   ],
+   "required": [
+    "expression",
+    "variable",
+    "point"
+   ],
+   "variants": [
+    {
+     "expression": "  sin(x)/x ",
+     "variable": "x",
+     "point": "0",
+     "direction": "+-"
+    },
+    {
+     "expression": "sin(x)/x",
+     "variable": "  x ",
+     "point": "0",
+     "direction": "+-"
+    },
+    {
+     "expression": "sin(x)/x",
+     "variable": "x",
+     "point": "  0 ",
+     "direction": "+-"
+    },
+    {
+     "expression": "sin(x)/x",
+     "variable": "x",
+     "point": "0",
+     "direction": "  +- "
+    }
+   ]
+  },
+  "simplify_or_factor_expression": {
+   "args": {
+    "expression": "(x**2 - 1)/(x - 1)",
+    "operation": "simplify"
+   },
+   "returns": [
+    "operation",
+    "expression",
+    "result"
+   ],
+   "required": [
+    "expression"
+   ],
+   "variants": [
+    {
+     "expression": "  (x**2 - 1)/(x - 1) ",
+     "operation": "simplify"
+    },
+    {
+     "expression": "(x**2 - 1)/(x - 1)",
+     "operation": "  simplify "
+    }
+   ]
+  }
+ }
+}

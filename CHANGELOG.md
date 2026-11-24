@@ -6,6 +6,15 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **sympy verifies: limits, simplify and factor.** `skills/symbolic_math` (sympy `16fa855`), compiled through OpenCode by
+  Reflection Beam 1.0 (501B, open weights) with DeepSeek V4.1 Flash as the Tester. Two tools pass all six gates: 762
+  upstream tests, differential 19/19 plus generated cases. Two more tools (equation solving, calculus) did not verify
+  and were left out, as the compiler does with any tool it cannot verify.
+- **The upstream-test gate counts only failures that concern the wrapped code.** The analyzer records which library
+  functions each test calls, and pytest reports which tests failed. A failing test that is known not to call any wrapped
+  function is listed in the gate's detail instead of failing it; a file that does not load, a test that cannot be
+  mapped, or a test that calls wrapped code still fails it, and at least one test must reach the wrapped functions.
+  One unrelated failing test is what kept sympy from verifying.
 - **Verified dateutil and pint skills, and a small model gets 101 of 102 across four suites.** `date_arithmetic`
   (python-dateutil 4.0.0) and `unit_conversion` (pint 0.26.2), compiled through OpenCode by Reflection Beam 1.0 (501B,
   open weights) with DeepSeek V4.1 Flash as the Tester, all six gates. With the verified skills, Gemma 4 E4B answered
@@ -172,6 +181,7 @@ build, and installs without a clone.
 - Every sandbox container gets the host name `zyven-sandbox`.
 
 ### Fixed
+- **A docstring of only whitespace no longer crashes the repository summary** (found on sympy).
 - **Upstream tests that need a missing package no longer stop the gate when named explicitly.** pytest's `--ignore`
   does not apply to a file passed on the command line, so a chosen test file importing `bs4` stopped the whole run.
   Such files are now left out of the named list.

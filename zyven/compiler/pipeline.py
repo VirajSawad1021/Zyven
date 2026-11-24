@@ -141,6 +141,7 @@ def compile_capability(
         emit("tester.error", detail=f"no differential tests: {str(e)[:200]}")
 
     skip_tests = [t.file for t in a.tests if t.third_party]  # cannot run offline; never collected
+    test_refs = {t.file: t.test_refs for t in a.tests}  # which library functions each test calls
     report: VerificationReport | None = None
     last_checked: dict[str, str] = {}  # failing tools from the latest report whose policy gate passed
     history: list[str] = []
@@ -149,7 +150,7 @@ def compile_capability(
         (skill_dir / "server.py").write_text(assemble(spec, code, provenance), encoding="utf-8")
         emit("verify.start", detail=f"attempt {attempt}")
         report = verify(skill_dir, spec, repo, package_roots, run_upstream=run_upstream, diff_tests=diff_tests,
-                        source_root=a.source_root, skip_tests=skip_tests)
+                        source_root=a.source_root, skip_tests=skip_tests, test_refs=test_refs)
         for g in report.gates:
             emit(f"gate.{g.name}", detail=("PASS " if g.passed else "FAIL ") + g.detail[:300], passed=g.passed)
         if report.gates and report.gates[0].passed:
@@ -187,7 +188,7 @@ def compile_capability(
             (skill_dir / "server.py").write_text(assemble(sub_spec, sub_code, provenance), encoding="utf-8")
             emit("verify.partial", detail=f"re-verifying {len(keep)}/{len(spec.tools)} tools without: {', '.join(bad)}")
             sub = verify(skill_dir, sub_spec, repo, package_roots, run_upstream=run_upstream, diff_tests=sub_tests,
-                         source_root=a.source_root, skip_tests=skip_tests)
+                         source_root=a.source_root, skip_tests=skip_tests, test_refs=test_refs)
             for g in sub.gates:
                 emit(f"gate.{g.name}", detail=("PASS " if g.passed else "FAIL ") + g.detail[:300], passed=g.passed)
             if sub.passed:
