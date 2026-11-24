@@ -43,6 +43,8 @@ toolkit = [
     "packaging @ git+https://github.com/pypa/packaging@929fd4b1410ac7ef61ef3f45b2f5d7e87711a9b5",
     "networkx @ git+https://github.com/networkx/networkx@49ca2290b80c1389eb4d8d8e49dcba73f8fec016 ; python_full_version >= '3.12'",  # 3.7 needs Python 3.12+
     "phonenumbers @ git+https://github.com/daviddrysdale/python-phonenumbers@e92147091eca7db103f35cb4daed85376ab79328#subdirectory=python",
+    "python-dateutil @ git+https://github.com/dateutil/dateutil@a78cbd81d5d03b5f126eb36edb92bca78972c804",
+    "pint @ git+https://github.com/hgrecco/pint@af817a6094fbc40005fadd7bcc59b138dbff233e ; python_full_version >= '3.12'",  # 0.26 needs Python 3.12+
 ]
 dev = ["pytest>=8"]
 

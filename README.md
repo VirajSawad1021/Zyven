@@ -60,12 +60,16 @@ truth is computed by the source library itself, and the raw records are in `eval
 **With a small model.** Gemma 4 E4B is a 4-billion-parameter model that runs on one free Kaggle GPU. It gains the most from
 verified skills:
 
-| Suite (Gemma 4 E4B) | Model alone | Model + Zyven-compiled skills |
-|---|---|---|
-| Hijri ↔ Gregorian, phone validity and E.164 | **8 / 24** | **24 / 24** |
-| Graph algorithms (networkx) | **22 / 24** at 77.8 s per question | **24 / 24** at 12.9 s per question |
+| Suite (Gemma 4 E4B) | Source | Model alone | Model + Zyven-compiled skills |
+|---|---|---|---|
+| Calendar arithmetic: month ends, nth weekday, Orthodox Easter | [python-dateutil](https://github.com/dateutil/dateutil) | **11 / 24** | **24 / 24** |
+| Unit conversion: speed, temperature, energy, pressure, data | [pint](https://github.com/hgrecco/pint) | **22 / 30** | **29 / 30** |
+| IBAN validity, IBAN check digits, Luhn | python-stdnum | **6 / 18** | **18 / 18** |
+| Hijri ↔ Gregorian, Jewish holidays, phone validity and E.164 | hijridate, pyluach, phonenumbers | **10 / 30** | **30 / 30** |
+| Graph algorithms | networkx | **22 / 24** at 77.8 s per question | **24 / 24** at 12.9 s per question |
 
-Details: `eval/results/e4b-global-20261122.md` and `eval/results/e4b-networkx-20261122.md`.
+The dateutil, pint and Jewish-holiday skills were compiled through OpenCode by Reflection Beam 1.0, a 501B
+open-weight model. Details: `eval/results/e4b-four-suites-20261124.md` and `eval/results/e4b-networkx-20261122.md`.
 
 <details>
 <summary>Per-category breakdown</summary>

@@ -1,0 +1,86 @@
+{
+ "tools": {
+  "convert_units": {
+   "args": {
+    "value": 100,
+    "from_unit": "degC",
+    "to_unit": "degF"
+   },
+   "returns": [
+    "converted_value",
+    "from_unit",
+    "to_unit",
+    "dimensionality",
+    "display"
+   ],
+   "required": [
+    "value",
+    "from_unit",
+    "to_unit"
+   ],
+   "variants": [
+    {
+     "value": 100,
+     "from_unit": "  degC ",
+     "to_unit": "degF"
+    },
+    {
+     "value": 100,
+     "from_unit": "degC",
+     "to_unit": "  degF "
+    }
+   ]
+  },
+  "check_unit_compatibility": {
+   "args": {
+    "unit_a": "km/h",
+    "unit_b": "m/s"
+   },
+   "returns": [
+    "compatible",
+    "dimensionality_a",
+    "dimensionality_b",
+    "normalized_a",
+    "normalized_b",
+    "reason"
+   ],
+   "required": [
+    "unit_a",
+    "unit_b"
+   ],
+   "variants": [
+    {
+     "unit_a": "  km/h ",
+     "unit_b": "m/s"
+    },
+    {
+     "unit_a": "km/h",
+     "unit_b": "  m/s "
+    }
+   ]
+  },
+  "convert_to_base_si_units": {
+   "args": {
+    "value": 1,
+    "unit": "N*m"
+   },
+   "returns": [
+    "base_value",
+    "base_unit",
+    "original_unit",
+    "dimensionality",
+    "display"
+   ],
+   "required": [
+    "value",
+    "unit"
+   ],
+   "variants": [
+    {
+     "value": 1,
+     "unit": "  N*m "
+    }
+   ]
+  }
+ }
+}

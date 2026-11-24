@@ -1,0 +1,341 @@
+{
+ "name": "date_arithmetic",
+ "title": "Relative date arithmetic and comparisons",
+ "summary": "Wrap python-dateutil to perform exact calendar arithmetic, weekday calculations, date differences, Easter dates, and free-form date parsing.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "adjust_date",
+   "description": "Add or subtract years, months, days, or weeks from a date using exact calendar arithmetic, including month-end clamping. Can also move to the nth occurrence of a weekday on or after the resulting date.",
+   "params": [
+    {
+     "name": "base_date",
+     "type": "string",
+     "description": "Starting date, preferably YYYY-MM-DD; any string parseable by dateutil.parser.parse is also accepted.",
+     "required": true,
+     "example": "2024-01-31"
+    },
+    {
+     "name": "years",
+     "type": "integer",
+     "description": "Years to add; negative values subtract.",
+     "required": false,
+     "example": 1
+    },
+    {
+     "name": "months",
+     "type": "integer",
+     "description": "Months to add; negative values subtract.",
+     "required": false,
+     "example": 1
+    },
+    {
+     "name": "days",
+     "type": "integer",
+     "description": "Days to add; negative values subtract.",
+     "required": false,
+     "example": 0
+    },
+    {
+     "name": "weeks",
+     "type": "integer",
+     "description": "Weeks to add; negative values subtract.",
+     "required": false,
+     "example": 0
+    },
+    {
+     "name": "weekday",
+     "type": "string",
+     "description": "Optional weekday name to advance to: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, or Sunday.",
+     "required": false,
+     "example": "Monday"
+    },
+    {
+     "name": "weekday_occurrence",
+     "type": "integer",
+     "description": "Which occurrence of weekday to use when weekday is provided. Defaults to 1.",
+     "required": false,
+     "example": 2
+    }
+   ],
+   "returns": [
+    {
+     "name": "original_date",
+     "type": "string",
+     "description": "Input date normalized to YYYY-MM-DD."
+    },
+    {
+     "name": "result_date",
+     "type": "string",
+     "description": "Resulting date in YYYY-MM-DD format."
+    },
+    {
+     "name": "result_weekday",
+     "type": "string",
+     "description": "Weekday name of result_date."
+    },
+    {
+     "name": "years_applied",
+     "type": "integer",
+     "description": "Years component applied."
+    },
+    {
+     "name": "months_applied",
+     "type": "integer",
+     "description": "Months component applied."
+    },
+    {
+     "name": "days_applied",
+     "type": "integer",
+     "description": "Days component applied, including weeks converted to days by the library."
+    },
+    {
+     "name": "weeks_applied",
+     "type": "integer",
+     "description": "Weeks component applied."
+    },
+    {
+     "name": "weekday_applied",
+     "type": "string",
+     "description": "Weekday applied, or an empty string when none."
+    },
+    {
+     "name": "weekday_occurrence_applied",
+     "type": "integer",
+     "description": "Weekday occurrence applied, or 0 when none."
+    }
+   ],
+   "implementation_symbols": [
+    "dateutil.relativedelta.relativedelta",
+    "dateutil.relativedelta.relativedelta.__init__",
+    "dateutil.parser._parser.parse"
+   ],
+   "implementation_notes": "Import relativedelta and weekday constants from dateutil.relativedelta, and parse from dateutil.parser. Convert base_date with parse(base_date).date(). Map weekday names to MO, TU, WE, TH, FR, SA, and SU; if weekday is provided, construct the weekday value as weekday_constant(weekday_occurrence or 1). Call relativedelta(years=years, months=months, days=days, weeks=weeks, weekday=weekday_value) and add it to the parsed date. Return result.isoformat() and result.strftime('%A'). If no weekday is supplied, pass weekday=None.",
+   "example_args": {
+    "base_date": "2024-01-31",
+    "years": 1,
+    "months": 1,
+    "days": 0,
+    "weeks": 0
+   }
+  },
+  {
+   "name": "date_difference",
+   "description": "Compute the exact difference between two dates in years, months, and days, plus the total number of days.",
+   "params": [
+    {
+     "name": "start_date",
+     "type": "string",
+     "description": "Earlier or reference date, preferably YYYY-MM-DD.",
+     "required": true,
+     "example": "2023-01-15"
+    },
+    {
+     "name": "end_date",
+     "type": "string",
+     "description": "Later or target date, preferably YYYY-MM-DD.",
+     "required": true,
+     "example": "2024-03-10"
+    }
+   ],
+   "returns": [
+    {
+     "name": "start_date",
+     "type": "string",
+     "description": "Normalized start date in YYYY-MM-DD format."
+    },
+    {
+     "name": "end_date",
+     "type": "string",
+     "description": "Normalized end date in YYYY-MM-DD format."
+    },
+    {
+     "name": "years",
+     "type": "integer",
+     "description": "Difference in years."
+    },
+    {
+     "name": "months",
+     "type": "integer",
+     "description": "Difference in months after removing whole years."
+    },
+    {
+     "name": "days",
+     "type": "integer",
+     "description": "Difference in days after removing whole months."
+    },
+    {
+     "name": "total_days",
+     "type": "integer",
+     "description": "Total difference in calendar days."
+    },
+    {
+     "name": "start_weekday",
+     "type": "string",
+     "description": "Weekday name of start_date."
+    },
+    {
+     "name": "end_weekday",
+     "type": "string",
+     "description": "Weekday name of end_date."
+    }
+   ],
+   "implementation_symbols": [
+    "dateutil.relativedelta.relativedelta",
+    "dateutil.relativedelta.relativedelta.__init__",
+    "dateutil.parser._parser.parse"
+   ],
+   "implementation_notes": "Import relativedelta from dateutil.relativedelta and parse from dateutil.parser. Convert both inputs with parse(...).date(), then call relativedelta(end_date, start_date). Return rd.years, rd.months, and rd.days. Compute total_days as (end_date - start_date).days using standard date subtraction.",
+   "example_args": {
+    "start_date": "2023-01-15",
+    "end_date": "2024-03-10"
+   }
+  },
+  {
+   "name": "easter_date",
+   "description": "Return the date of Easter for a given year using the Western, Orthodox, or Julian calendar.",
+   "params": [
+    {
+     "name": "year",
+     "type": "integer",
+     "description": "Calendar year for which to compute Easter.",
+     "required": true,
+     "example": 2024
+    },
+    {
+     "name": "method",
+     "type": "string",
+     "description": "Easter calendar method: western, orthodox, or julian. Defaults to western.",
+     "required": false,
+     "example": "western"
+    }
+   ],
+   "returns": [
+    {
+     "name": "year",
+     "type": "integer",
+     "description": "Requested year."
+    },
+    {
+     "name": "method",
+     "type": "string",
+     "description": "Easter method used."
+    },
+    {
+     "name": "date",
+     "type": "string",
+     "description": "Easter date in YYYY-MM-DD format."
+    },
+    {
+     "name": "weekday",
+     "type": "string",
+     "description": "Weekday name of the Easter date."
+    }
+   ],
+   "implementation_symbols": [
+    "dateutil.easter.easter"
+   ],
+   "implementation_notes": "Import easter and the EASTER_WESTERN, EASTER_ORTHODOX, and EASTER_JULIAN constants from dateutil.easter. Map the method string to the corresponding constant, defaulting to EASTER_WESTERN, then call easter(year, method=constant). Return the resulting date's isoformat() and strftime('%A'). Raise a ValueError for an unrecognized method string.",
+   "example_args": {
+    "year": 2024,
+    "method": "western"
+   }
+  },
+  {
+   "name": "parse_date",
+   "description": "Parse a free-form date or datetime string and return it in ISO format with related calendar fields.",
+   "params": [
+    {
+     "name": "text",
+     "type": "string",
+     "description": "Date or datetime string in a free-form or standard format.",
+     "required": true,
+     "example": "April 9, 2024 13:37"
+    }
+   ],
+   "returns": [
+    {
+     "name": "input",
+     "type": "string",
+     "description": "Original input string."
+    },
+    {
+     "name": "iso_date",
+     "type": "string",
+     "description": "Parsed date in YYYY-MM-DD format."
+    },
+    {
+     "name": "iso_datetime",
+     "type": "string",
+     "description": "Parsed value in ISO 8601 format, including time when present."
+    },
+    {
+     "name": "year",
+     "type": "integer",
+     "description": "Parsed year."
+    },
+    {
+     "name": "month",
+     "type": "integer",
+     "description": "Parsed month number."
+    },
+    {
+     "name": "day",
+     "type": "integer",
+     "description": "Parsed day of month."
+    },
+    {
+     "name": "weekday",
+     "type": "string",
+     "description": "Weekday name of the parsed date."
+    },
+    {
+     "name": "day_of_year",
+     "type": "integer",
+     "description": "Day number within the parsed year."
+    }
+   ],
+   "implementation_symbols": [
+    "dateutil.parser._parser.parse"
+   ],
+   "implementation_notes": "Import parse from dateutil.parser. Call parse(text), then return dt.date().isoformat() for iso_date, dt.isoformat() for iso_datetime, dt.year, dt.month, dt.day, dt.strftime('%A'), and dt.timetuple().tm_yday. Parsing errors from the library propagate as ValueError.",
+   "example_args": {
+    "text": "April 9, 2024 13:37"
+   }
+  }
+ ],
+ "included_symbols": [
+  "dateutil.relativedelta.relativedelta",
+  "dateutil.relativedelta.relativedelta.__init__",
+  "dateutil.easter.easter",
+  "dateutil.parser._parser.parse"
+ ],
+ "excluded_symbols": [
+  {
+   "symbol": "dateutil.relativedelta.relativedelta.normalized",
+   "reason": "Not needed for the requested date arithmetic and comparison operations."
+  },
+  {
+   "symbol": "dateutil.relativedelta.relativedelta.__mul__",
+   "reason": "Scaling relativedeltas is outside the requested capability."
+  }
+ ],
+ "dependencies": [
+  "python-dateutil"
+ ],
+ "side_effects": [
+  "None; all operations are pure computations.",
+  "Invalid date strings or unsupported Easter methods propagate library exceptions, typically ValueError."
+ ],
+ "relevant_tests": [
+  "tests/test_relativedelta.py",
+  "tests/test_utils.py"
+ ],
+ "uncertainties": [
+  "Month-end clamping behavior is delegated to dateutil.relativedelta and follows its documented rules.",
+  "weekday_occurrence is not strictly validated; values outside the usual 1-5 range may move the result beyond the original month.",
+  "Free-form date parsing depends on dateutil.parser.parse and may interpret ambiguous strings according to its default rules.",
+  "Easter methods are mapped to dateutil constants; unsupported method strings are rejected before calling the library.",
+  "Date inputs are ultimately constrained by Python's supported date range."
+ ]
+}

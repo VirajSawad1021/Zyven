@@ -1,0 +1,45 @@
+{
+ "tools": {
+  "validate_iban": {
+   "args": {
+    "iban_string": "GR16 0110 1050 0000 1054 7023 795"
+   },
+   "returns": [
+    "is_valid",
+    "compact_iban",
+    "formatted_iban"
+   ],
+   "required": [
+    "iban_string"
+   ],
+   "variants": [
+    {
+     "iban_string": "  GR16 0110 1050 0000 1054 7023 795 "
+    },
+    {
+     "iban_string": "GR16 0110 1050 0000 1054 7023 795"
+    }
+   ]
+  },
+  "calculate_iban_check_digits": {
+   "args": {
+    "iban_with_placeholders": "BExx435411161155"
+   },
+   "returns": [
+    "check_digits",
+    "formatted_iban_with_digits"
+   ],
+   "required": [
+    "iban_with_placeholders"
+   ],
+   "variants": [
+    {
+     "iban_with_placeholders": "  BExx435411161155 "
+    },
+    {
+     "iban_with_placeholders": "BExx 4354 1116 1155"
+    }
+   ]
+  }
+ }
+}

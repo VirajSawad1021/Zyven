@@ -1,0 +1,32 @@
+{
+ "tools": [
+  {
+   "tool": "calculate_luhn_checksum",
+   "imports": [
+    "from stdnum.luhn import checksum"
+   ],
+   "body": "if alphabet is None:\n    alphabet = '0123456789'\nif not isinstance(number, str):\n    raise ValueError('number must be a string')\nif alphabet is not None and not isinstance(alphabet, str):\n    raise ValueError('alphabet must be a string')\n\nclean_number = number.replace(' ', '').replace('-', '')\nval = checksum(number=clean_number, alphabet=alphabet)\nis_valid = (val == 0)\nreturn {\n    'checksum_value': val,\n    'is_valid': is_valid,\n    'display_result': f'Valid (checksum: {val})' if is_valid else f'Invalid (checksum: {val})'\n}"
+  },
+  {
+   "tool": "calculate_verhoeff_checksum",
+   "imports": [
+    "from stdnum.verhoeff import checksum"
+   ],
+   "body": "if not isinstance(number, str):\n    raise ValueError('number must be a string')\n\nclean_number = number.replace(' ', '').replace('-', '')\nval = checksum(number=clean_number)\nis_valid = (val == 0)\nreturn {\n    'checksum_value': val,\n    'is_valid': is_valid,\n    'display_result': f'Valid (checksum: {val})' if is_valid else f'Invalid (checksum: {val})'\n}"
+  },
+  {
+   "tool": "calculate_iso7064_mod_97_10_checksum",
+   "imports": [
+    "from stdnum.iso7064.mod_97_10 import checksum"
+   ],
+   "body": "if not isinstance(number, str):\n    raise ValueError('number must be a string')\n\nclean_number = number.replace(' ', '').replace('-', '')\nval = checksum(number=clean_number)\nis_valid = (val == 1)\nreturn {\n    'checksum_value': val,\n    'is_valid': is_valid,\n    'display_result': f'Valid (checksum: {val})' if is_valid else f'Invalid (checksum: {val})'\n}"
+  },
+  {
+   "tool": "calculate_iso7064_mod_37_2_checksum",
+   "imports": [
+    "from stdnum.iso7064.mod_37_2 import checksum"
+   ],
+   "body": "if not isinstance(number, str):\n    raise ValueError('number must be a string')\ndef get_alphabet(a):\n    if a is None:\n        return '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ*'\n    return a\nalphabet = get_alphabet(name)\nif not isinstance(alphabet, str):\n    raise ValueError('alphabet must be a string')\nclean_number = number.replace(' ', '').replace('-', '')\nval = checksum(number=clean_number, alphabet=alphabet)\nis_valid = (val == 1)\nreturn {\n    'checksum_value': val,\n    'is_valid': is_valid,\n    'display_result': f'Valid (checksum: {val})' if is_valid else f'Invalid (checksum: {val})'\n}"
+  }
+ ]
+}

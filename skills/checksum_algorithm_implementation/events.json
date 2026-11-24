@@ -1,0 +1,187 @@
+[
+ {
+  "t": 0.0,
+  "event": "architect.start",
+  "detail": "Checksum Algorithm Implementation"
+ },
+ {
+  "t": 67.7,
+  "event": "architect.done",
+  "detail": "4 tools: calculate_luhn_checksum, calculate_verhoeff_checksum, calculate_iso7064_mod_97_10_checksum, calculate_iso7064_mod_37_2_checksum",
+  "resolved": {},
+  "dropped": [
+   "relevant_tests: tests/test_iso7064/mod_97_10.py",
+   "relevant_tests: tests/test_iso7064/mod_37_2.py"
+  ],
+  "fixes": [
+   "interface lint: calculate_luhn_checksum: returns only numbers/objects; add a ready-to-quote formatted string field and named/derived facts (e.g. names instead of numeric codes)",
+   "interface lint: calculate_verhoeff_checksum: returns only numbers/objects; add a ready-to-quote formatted string field and named/derived facts (e.g. names instead of numeric codes)",
+   "interface lint: calculate_iso7064_mod_97_10_checksum: returns only numbers/objects; add a ready-to-quote formatted string field and named/derived facts (e.g. names instead of numeric codes)",
+   "interface lint: calculate_iso7064_mod_37_2_checksum: returns only numbers/objects; add a ready-to-quote formatted string field and named/derived facts (e.g. names instead of numeric codes)",
+   "interface lint: revised: 4 -> 0 interface warnings"
+  ]
+ },
+ {
+  "t": 67.7,
+  "event": "compiler.start",
+  "detail": "writing 4 tool bodies"
+ },
+ {
+  "t": 82.94,
+  "event": "compiler.done",
+  "detail": "all tools implemented"
+ },
+ {
+  "t": 82.94,
+  "event": "tester.start",
+  "detail": "writing differential tests from the spec and library (adapter code not shown)"
+ },
+ {
+  "t": 111.39,
+  "event": "tester.done",
+  "detail": "11 cases for 4 tools"
+ },
+ {
+  "t": 111.39,
+  "event": "verify.start",
+  "detail": "attempt 1"
+ },
+ {
+  "t": 120.72,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 120.72,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 120.72,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 2 tests ran, 0 failures, 0 errors; includes 35 doctest examples (tests/test_luhn.doctest, tests/test_verhoeff.doctest)",
+  "passed": true
+ },
+ {
+  "t": 120.72,
+  "event": "gate.input_robustness",
+  "detail": "FAIL 0/5 equivalent-input probes gave identical results: calculate_luhn_checksum {\"number\": \"  4992739871 \"}; calculate_luhn_checksum {\"number\": \"4992 7398 71\"}; calculate_verhoeff_checksum {\"number\": \"  654 \"}",
+  "passed": false
+ },
+ {
+  "t": 120.72,
+  "event": "gate.mcp_smoke",
+  "detail": "FAIL calculate_iso7064_mod_37_2_checksum: missing return fields ['checksum_value', 'is_valid', 'display_result']; output=\"Error executing tool calculate_iso7064_mod_37_2_checksum\"",
+  "passed": false
+ },
+ {
+  "t": 120.72,
+  "event": "gate.differential",
+  "detail": "FAIL 9/11 cases match the library",
+  "passed": false
+ },
+ {
+  "t": 120.72,
+  "event": "repair.start",
+  "detail": "4 failing tool(s): calculate_iso7064_mod_37_2_checksum, calculate_luhn_checksum, calculate_verhoeff_checksum, calculate_iso7064_mod_97_10_checksum"
+ },
+ {
+  "t": 138.05,
+  "event": "repair.done",
+  "detail": "patched calculate_luhn_checksum, calculate_verhoeff_checksum, calculate_iso7064_mod_97_10_checksum, calculate_iso7064_mod_37_2_checksum"
+ },
+ {
+  "t": 138.05,
+  "event": "verify.start",
+  "detail": "attempt 2"
+ },
+ {
+  "t": 146.78,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 146.78,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 146.78,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 2 tests ran, 0 failures, 0 errors; includes 35 doctest examples (tests/test_luhn.doctest, tests/test_verhoeff.doctest)",
+  "passed": true
+ },
+ {
+  "t": 146.78,
+  "event": "gate.input_robustness",
+  "detail": "PASS 5/5 equivalent-input probes gave identical results",
+  "passed": true
+ },
+ {
+  "t": 146.78,
+  "event": "gate.mcp_smoke",
+  "detail": "FAIL calculate_iso7064_mod_37_2_checksum: missing return fields ['checksum_value', 'is_valid', 'display_result']; output=\"Error executing tool calculate_iso7064_mod_37_2_checksum\"",
+  "passed": false
+ },
+ {
+  "t": 146.78,
+  "event": "gate.differential",
+  "detail": "FAIL 9/11 cases match the library",
+  "passed": false
+ },
+ {
+  "t": 146.78,
+  "event": "repair.start",
+  "detail": "1 failing tool(s): calculate_iso7064_mod_37_2_checksum"
+ },
+ {
+  "t": 152.95,
+  "event": "repair.done",
+  "detail": "patched calculate_iso7064_mod_37_2_checksum"
+ },
+ {
+  "t": 152.95,
+  "event": "verify.start",
+  "detail": "attempt 3"
+ },
+ {
+  "t": 161.81,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 161.81,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 161.81,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 2 tests ran, 0 failures, 0 errors; includes 35 doctest examples (tests/test_luhn.doctest, tests/test_verhoeff.doctest)",
+  "passed": true
+ },
+ {
+  "t": 161.81,
+  "event": "gate.input_robustness",
+  "detail": "PASS 7/7 equivalent-input probes gave identical results",
+  "passed": true
+ },
+ {
+  "t": 161.81,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 4 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 161.81,
+  "event": "gate.differential",
+  "detail": "PASS 11/11 cases match the library",
+  "passed": true
+ }
+]

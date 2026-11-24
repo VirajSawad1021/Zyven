@@ -1,0 +1,97 @@
+[
+ {
+  "t": 0.0,
+  "event": "architect.start",
+  "detail": "IBAN Validation"
+ },
+ {
+  "t": 20.67,
+  "event": "architect.done",
+  "detail": "2 tools: validate_iban, calculate_iban_check_digits",
+  "resolved": {},
+  "dropped": [],
+  "fixes": []
+ },
+ {
+  "t": 20.67,
+  "event": "compiler.start",
+  "detail": "writing 2 tool bodies"
+ },
+ {
+  "t": 49.2,
+  "event": "compiler.done",
+  "detail": "all tools implemented"
+ },
+ {
+  "t": 49.2,
+  "event": "tester.start",
+  "detail": "writing differential tests from the spec and library (adapter code not shown)"
+ },
+ {
+  "t": 68.66,
+  "event": "tester.done",
+  "detail": "6 cases for 2 tools"
+ },
+ {
+  "t": 68.66,
+  "event": "verify.start",
+  "detail": "attempt 1"
+ },
+ {
+  "t": 68.69,
+  "event": "gate.policy",
+  "detail": "FAIL syntax error line 163: invalid syntax",
+  "passed": false
+ },
+ {
+  "t": 68.69,
+  "event": "repair.start",
+  "detail": "2 failing tool(s): validate_iban, calculate_iban_check_digits"
+ },
+ {
+  "t": 81.88,
+  "event": "repair.done",
+  "detail": "patched validate_iban, calculate_iban_check_digits"
+ },
+ {
+  "t": 81.88,
+  "event": "verify.start",
+  "detail": "attempt 2"
+ },
+ {
+  "t": 91.64,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 91.64,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 91.64,
+  "event": "gate.upstream_tests",
+  "detail": "PASS 1 tests ran, 0 failures, 0 errors; includes 14 doctest examples (tests/test_iban.doctest)",
+  "passed": true
+ },
+ {
+  "t": 91.64,
+  "event": "gate.input_robustness",
+  "detail": "PASS 4/4 equivalent-input probes gave identical results",
+  "passed": true
+ },
+ {
+  "t": 91.64,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 2 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 91.64,
+  "event": "gate.differential",
+  "detail": "PASS 6/6 cases match the library",
+  "passed": true
+ }
+]

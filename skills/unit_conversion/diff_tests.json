@@ -1,0 +1,374 @@
+{
+ "cases": [
+  {
+   "tool": "convert_units",
+   "args": {
+    "value": 100,
+    "from_unit": "degC",
+    "to_unit": "degF"
+   },
+   "field": "converted_value",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert({value}, '{from_unit}', '{to_unit}'))"
+  },
+  {
+   "tool": "convert_units",
+   "args": {
+    "value": 0,
+    "from_unit": "degC",
+    "to_unit": "degF"
+   },
+   "field": "converted_value",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert({value}, '{from_unit}', '{to_unit}'))"
+  },
+  {
+   "tool": "convert_units",
+   "args": {
+    "value": 100,
+    "from_unit": "km/h",
+    "to_unit": "m/s"
+   },
+   "field": "converted_value",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert({value}, '{from_unit}', '{to_unit}'))"
+  },
+  {
+   "tool": "convert_units",
+   "args": {
+    "value": 100,
+    "from_unit": "km/h",
+    "to_unit": "m/s"
+   },
+   "field": "dimensionality",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(1, '{from_unit}').dimensionality)"
+  },
+  {
+   "tool": "convert_units",
+   "args": {
+    "value": 100,
+    "from_unit": "km/h",
+    "to_unit": "m/s"
+   },
+   "field": "from_unit",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Unit('{from_unit}'))"
+  },
+  {
+   "tool": "convert_units",
+   "args": {
+    "value": 100,
+    "from_unit": "km/h",
+    "to_unit": "m/s"
+   },
+   "field": "to_unit",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Unit('{to_unit}'))"
+  },
+  {
+   "tool": "convert_units",
+   "args": {
+    "value": 1000,
+    "from_unit": "meter",
+    "to_unit": "kilometer"
+   },
+   "field": "display",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\n_converted = float(_ureg.convert({value}, '{from_unit}', '{to_unit}'))\nstr({value}) + ' ' + '{from_unit}' + ' = ' + str(_converted) + ' ' + '{to_unit}'"
+  },
+  {
+   "tool": "check_unit_compatibility",
+   "args": {
+    "unit_a": "km/h",
+    "unit_b": "m/s"
+   },
+   "field": "compatible",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, '{unit_a}', '{unit_b}')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible"
+  },
+  {
+   "tool": "check_unit_compatibility",
+   "args": {
+    "unit_a": "m",
+    "unit_b": "s"
+   },
+   "field": "compatible",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, '{unit_a}', '{unit_b}')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible"
+  },
+  {
+   "tool": "check_unit_compatibility",
+   "args": {
+    "unit_a": "m",
+    "unit_b": "s"
+   },
+   "field": "reason",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, '{unit_a}', '{unit_b}')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason"
+  },
+  {
+   "tool": "check_unit_compatibility",
+   "args": {
+    "unit_a": "km/h",
+    "unit_b": "m/s"
+   },
+   "field": "reason",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, '{unit_a}', '{unit_b}')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason"
+  },
+  {
+   "tool": "check_unit_compatibility",
+   "args": {
+    "unit_a": "km/h",
+    "unit_b": "m/s"
+   },
+   "field": "dimensionality_a",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(1, '{unit_a}').dimensionality)"
+  },
+  {
+   "tool": "check_unit_compatibility",
+   "args": {
+    "unit_a": "m",
+    "unit_b": "s"
+   },
+   "field": "dimensionality_b",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(1, '{unit_b}').dimensionality)"
+  },
+  {
+   "tool": "check_unit_compatibility",
+   "args": {
+    "unit_a": "km/h",
+    "unit_b": "m/s"
+   },
+   "field": "normalized_a",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Unit('{unit_a}'))"
+  },
+  {
+   "tool": "check_unit_compatibility",
+   "args": {
+    "unit_a": "km/h",
+    "unit_b": "m/s"
+   },
+   "field": "normalized_b",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Unit('{unit_b}'))"
+  },
+  {
+   "tool": "check_unit_compatibility",
+   "args": {
+    "unit_a": "m/s",
+    "unit_b": "m/s"
+   },
+   "field": "compatible",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, '{unit_a}', '{unit_b}')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible"
+  },
+  {
+   "tool": "check_unit_compatibility",
+   "args": {
+    "unit_a": "m/s",
+    "unit_b": "m/s"
+   },
+   "field": "reason",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, '{unit_a}', '{unit_b}')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason"
+  },
+  {
+   "tool": "convert_to_base_si_units",
+   "args": {
+    "value": 1,
+    "unit": "N*m"
+   },
+   "field": "base_value",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.Quantity({value}, '{unit}').to_base_units().magnitude)"
+  },
+  {
+   "tool": "convert_to_base_si_units",
+   "args": {
+    "value": 0,
+    "unit": "degC"
+   },
+   "field": "base_value",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.Quantity({value}, '{unit}').to_base_units().magnitude)"
+  },
+  {
+   "tool": "convert_to_base_si_units",
+   "args": {
+    "value": 0,
+    "unit": "degC"
+   },
+   "field": "base_unit",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity({value}, '{unit}').to_base_units().units)"
+  },
+  {
+   "tool": "convert_to_base_si_units",
+   "args": {
+    "value": 0,
+    "unit": "degC"
+   },
+   "field": "original_unit",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity({value}, '{unit}').units)"
+  },
+  {
+   "tool": "convert_to_base_si_units",
+   "args": {
+    "value": 1,
+    "unit": "km/h"
+   },
+   "field": "dimensionality",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity({value}, '{unit}').dimensionality)"
+  },
+  {
+   "tool": "convert_to_base_si_units",
+   "args": {
+    "value": 1,
+    "unit": "km/h"
+   },
+   "field": "base_value",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.Quantity({value}, '{unit}').to_base_units().magnitude)"
+  },
+  {
+   "tool": "convert_to_base_si_units",
+   "args": {
+    "value": 1,
+    "unit": "km/h"
+   },
+   "field": "base_unit",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity({value}, '{unit}').to_base_units().units)"
+  },
+  {
+   "tool": "convert_to_base_si_units",
+   "args": {
+    "value": 1,
+    "unit": "meter"
+   },
+   "field": "display",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "import pint\n_ureg = pint.UnitRegistry()\n_base_quantity = _ureg.Quantity({value}, '{unit}').to_base_units()\n_base_value = float(_base_quantity.magnitude)\n_base_unit = str(_base_quantity.units)\nstr({value}) + ' ' + '{unit}' + ' = ' + str(_base_value) + ' ' + _base_unit"
+  },
+  {
+   "tool": "convert_units",
+   "args": {
+    "value": 8077.48,
+    "from_unit": "Gibibit",
+    "to_unit": "Megabyte"
+   },
+   "field": "converted_value",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "_u = pint.UnitRegistry()\n_u.convert(8077.48, 'gibibit', 'megabyte')"
+  },
+  {
+   "tool": "convert_units",
+   "args": {
+    "value": 3.5,
+    "from_unit": "Gibit",
+    "to_unit": "MB"
+   },
+   "field": "converted_value",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "_u = pint.UnitRegistry()\n_u.convert(3.5, 'Gibit', 'MB')"
+  },
+  {
+   "tool": "convert_units",
+   "args": {
+    "value": 100,
+    "from_unit": "Degree_Fahrenheit",
+    "to_unit": "Kelvin"
+   },
+   "field": "converted_value",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "_u = pint.UnitRegistry()\n_u.convert(100, 'degree_Fahrenheit', 'kelvin')"
+  },
+  {
+   "tool": "check_unit_compatibility",
+   "args": {
+    "unit_a": "Mebibyte",
+    "unit_b": "gigabit"
+   },
+   "field": "compatible",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "_u = pint.UnitRegistry()\n_u.Unit('mebibyte').dimensionality == _u.Unit('gigabit').dimensionality"
+  },
+  {
+   "tool": "convert_to_base_si_units",
+   "args": {
+    "value": 2,
+    "unit": "Kilowatt_hour"
+   },
+   "field": "base_value",
+   "reference_imports": [
+    "import pint"
+   ],
+   "reference_expr": "_u = pint.UnitRegistry()\n_u.Quantity(2, 'kilowatt_hour').to_base_units().magnitude"
+  }
+ ]
+}

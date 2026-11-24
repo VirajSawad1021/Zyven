@@ -1,0 +1,1171 @@
+{
+ "passed": true,
+ "verified_for": [
+  "policy",
+  "import",
+  "upstream_tests",
+  "input_robustness",
+  "mcp_smoke",
+  "differential"
+ ],
+ "gates": [
+  {
+   "name": "policy",
+   "passed": true,
+   "detail": "imports and builtins within policy",
+   "data": {}
+  },
+  {
+   "name": "import",
+   "passed": true,
+   "detail": "server module imports cleanly",
+   "data": {}
+  },
+  {
+   "name": "upstream_tests",
+   "passed": true,
+   "detail": "5 tests ran, 0 failures, 0 errors (pint/testsuite/test_converters.py)",
+   "data": {
+    "ran": 5,
+    "failures": 0,
+    "errors": 0
+   }
+  },
+  {
+   "name": "input_robustness",
+   "passed": true,
+   "detail": "5/5 equivalent-input probes gave identical results",
+   "data": {
+    "probes": [
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 100,
+       "from_unit": "  degC ",
+       "to_unit": "degF"
+      },
+      "ok": true,
+      "output": {
+       "converted_value": 211.99999999999991,
+       "from_unit": "degree_Celsius",
+       "to_unit": "degree_Fahrenheit",
+       "dimensionality": "[temperature]",
+       "display": "100.0   degC  = 211.99999999999991 degF"
+      }
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 100,
+       "from_unit": "degC",
+       "to_unit": "  degF "
+      },
+      "ok": true,
+      "output": {
+       "converted_value": 211.99999999999991,
+       "from_unit": "degree_Celsius",
+       "to_unit": "degree_Fahrenheit",
+       "dimensionality": "[temperature]",
+       "display": "100.0 degC = 211.99999999999991   degF "
+      }
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "  km/h ",
+       "unit_b": "m/s"
+      },
+      "ok": true,
+      "output": {
+       "compatible": true,
+       "dimensionality_a": "[length] / [time]",
+       "dimensionality_b": "[length] / [time]",
+       "normalized_a": "kilometer / hour",
+       "normalized_b": "meter / second",
+       "reason": ""
+      }
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "km/h",
+       "unit_b": "  m/s "
+      },
+      "ok": true,
+      "output": {
+       "compatible": true,
+       "dimensionality_a": "[length] / [time]",
+       "dimensionality_b": "[length] / [time]",
+       "normalized_a": "kilometer / hour",
+       "normalized_b": "meter / second",
+       "reason": ""
+      }
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 1,
+       "unit": "  N*m "
+      },
+      "ok": true,
+      "output": {
+       "base_value": 1.0,
+       "base_unit": "kilogram * meter ** 2 / second ** 2",
+       "original_unit": "meter * newton",
+       "dimensionality": "[mass] * [length] ** 2 / [time] ** 2",
+       "display": "1.0   N*m  = 1.0 kilogram * meter ** 2 / second ** 2"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "mcp_smoke",
+   "passed": true,
+   "detail": "3 tools called with example args; invalid input rejected",
+   "data": {
+    "server_started": true,
+    "listed_tools": [
+     "convert_units",
+     "check_unit_compatibility",
+     "convert_to_base_si_units"
+    ],
+    "missing_tools": [],
+    "calls": [
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 100,
+       "from_unit": "degC",
+       "to_unit": "degF"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "converted_value": 211.99999999999991,
+       "from_unit": "degree_Celsius",
+       "to_unit": "degree_Fahrenheit",
+       "dimensionality": "[temperature]",
+       "display": "100.0 degC = 211.99999999999991 degF"
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "km/h",
+       "unit_b": "m/s"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "compatible": true,
+       "dimensionality_a": "[length] / [time]",
+       "dimensionality_b": "[length] / [time]",
+       "normalized_a": "kilometer / hour",
+       "normalized_b": "meter / second",
+       "reason": ""
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 1,
+       "unit": "N*m"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "base_value": 1.0,
+       "base_unit": "kilogram * meter ** 2 / second ** 2",
+       "original_unit": "meter * newton",
+       "dimensionality": "[mass] * [length] ** 2 / [time] ** 2",
+       "display": "1.0 N*m = 1.0 kilogram * meter ** 2 / second ** 2"
+      },
+      "missing_fields": []
+     }
+    ],
+    "invalid_calls": [
+     {
+      "ok": true,
+      "tool": "convert_units",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "check_unit_compatibility",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "convert_to_base_si_units",
+      "detail": "rejected cleanly"
+     }
+    ],
+    "robustness": [
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 100,
+       "from_unit": "  degC ",
+       "to_unit": "degF"
+      },
+      "ok": true,
+      "output": {
+       "converted_value": 211.99999999999991,
+       "from_unit": "degree_Celsius",
+       "to_unit": "degree_Fahrenheit",
+       "dimensionality": "[temperature]",
+       "display": "100.0   degC  = 211.99999999999991 degF"
+      }
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 100,
+       "from_unit": "degC",
+       "to_unit": "  degF "
+      },
+      "ok": true,
+      "output": {
+       "converted_value": 211.99999999999991,
+       "from_unit": "degree_Celsius",
+       "to_unit": "degree_Fahrenheit",
+       "dimensionality": "[temperature]",
+       "display": "100.0 degC = 211.99999999999991   degF "
+      }
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "  km/h ",
+       "unit_b": "m/s"
+      },
+      "ok": true,
+      "output": {
+       "compatible": true,
+       "dimensionality_a": "[length] / [time]",
+       "dimensionality_b": "[length] / [time]",
+       "normalized_a": "kilometer / hour",
+       "normalized_b": "meter / second",
+       "reason": ""
+      }
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "km/h",
+       "unit_b": "  m/s "
+      },
+      "ok": true,
+      "output": {
+       "compatible": true,
+       "dimensionality_a": "[length] / [time]",
+       "dimensionality_b": "[length] / [time]",
+       "normalized_a": "kilometer / hour",
+       "normalized_b": "meter / second",
+       "reason": ""
+      }
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 1,
+       "unit": "  N*m "
+      },
+      "ok": true,
+      "output": {
+       "base_value": 1.0,
+       "base_unit": "kilogram * meter ** 2 / second ** 2",
+       "original_unit": "meter * newton",
+       "dimensionality": "[mass] * [length] ** 2 / [time] ** 2",
+       "display": "1.0   N*m  = 1.0 kilogram * meter ** 2 / second ** 2"
+      }
+     }
+    ],
+    "still_alive_after_calls": true
+   }
+  },
+  {
+   "name": "differential",
+   "passed": true,
+   "detail": "30/30 Tester cases + 13/13 generated cases match the library (23 generated not scored: the library or the tool rejected the input)",
+   "data": {
+    "results": [
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 100,
+       "from_unit": "degC",
+       "to_unit": "degF"
+      },
+      "field": "converted_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert(100, 'degC', 'degF'))",
+      "expected": 211.99999999999991,
+      "got": 211.99999999999991,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 0,
+       "from_unit": "degC",
+       "to_unit": "degF"
+      },
+      "field": "converted_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert(0, 'degC', 'degF'))",
+      "expected": 31.999999999999936,
+      "got": 31.999999999999936,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 100,
+       "from_unit": "km/h",
+       "to_unit": "m/s"
+      },
+      "field": "converted_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert(100, 'km/h', 'm/s'))",
+      "expected": 27.77777777777778,
+      "got": 27.77777777777778,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 100,
+       "from_unit": "km/h",
+       "to_unit": "m/s"
+      },
+      "field": "dimensionality",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(1, 'km/h').dimensionality)",
+      "expected": "[length] / [time]",
+      "got": "[length] / [time]",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 100,
+       "from_unit": "km/h",
+       "to_unit": "m/s"
+      },
+      "field": "from_unit",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Unit('km/h'))",
+      "expected": "kilometer / hour",
+      "got": "kilometer / hour",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 100,
+       "from_unit": "km/h",
+       "to_unit": "m/s"
+      },
+      "field": "to_unit",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Unit('m/s'))",
+      "expected": "meter / second",
+      "got": "meter / second",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 1000,
+       "from_unit": "meter",
+       "to_unit": "kilometer"
+      },
+      "field": "display",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\n_converted = float(_ureg.convert(1000, 'meter', 'kilometer'))\nstr(1000) + ' ' + 'meter' + ' = ' + str(_converted) + ' ' + 'kilometer'",
+      "expected": "1000 meter = 1.0 kilometer",
+      "got": "1000 meter = 1.0 kilometer",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "km/h",
+       "unit_b": "m/s"
+      },
+      "field": "compatible",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'km/h', 'm/s')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "m",
+       "unit_b": "s"
+      },
+      "field": "compatible",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'm', 's')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "m",
+       "unit_b": "s"
+      },
+      "field": "reason",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'm', 's')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason",
+      "expected": "Cannot convert from 'meter' ([length]) to 'second' ([time])",
+      "got": "Cannot convert from 'meter' ([length]) to 'second' ([time])",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "km/h",
+       "unit_b": "m/s"
+      },
+      "field": "reason",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'km/h', 'm/s')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason",
+      "expected": "",
+      "got": "",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "km/h",
+       "unit_b": "m/s"
+      },
+      "field": "dimensionality_a",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(1, 'km/h').dimensionality)",
+      "expected": "[length] / [time]",
+      "got": "[length] / [time]",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "m",
+       "unit_b": "s"
+      },
+      "field": "dimensionality_b",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(1, 's').dimensionality)",
+      "expected": "[time]",
+      "got": "[time]",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "km/h",
+       "unit_b": "m/s"
+      },
+      "field": "normalized_a",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Unit('km/h'))",
+      "expected": "kilometer / hour",
+      "got": "kilometer / hour",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "km/h",
+       "unit_b": "m/s"
+      },
+      "field": "normalized_b",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Unit('m/s'))",
+      "expected": "meter / second",
+      "got": "meter / second",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "m/s",
+       "unit_b": "m/s"
+      },
+      "field": "compatible",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'm/s', 'm/s')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "m/s",
+       "unit_b": "m/s"
+      },
+      "field": "reason",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'm/s', 'm/s')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason",
+      "expected": "",
+      "got": "",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 1,
+       "unit": "N*m"
+      },
+      "field": "base_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.Quantity(1, 'N*m').to_base_units().magnitude)",
+      "expected": 1.0,
+      "got": 1.0,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 0,
+       "unit": "degC"
+      },
+      "field": "base_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.Quantity(0, 'degC').to_base_units().magnitude)",
+      "expected": 273.15,
+      "got": 273.15,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 0,
+       "unit": "degC"
+      },
+      "field": "base_unit",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(0, 'degC').to_base_units().units)",
+      "expected": "kelvin",
+      "got": "kelvin",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 0,
+       "unit": "degC"
+      },
+      "field": "original_unit",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(0, 'degC').units)",
+      "expected": "degree_Celsius",
+      "got": "degree_Celsius",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 1,
+       "unit": "km/h"
+      },
+      "field": "dimensionality",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(1, 'km/h').dimensionality)",
+      "expected": "[length] / [time]",
+      "got": "[length] / [time]",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 1,
+       "unit": "km/h"
+      },
+      "field": "base_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.Quantity(1, 'km/h').to_base_units().magnitude)",
+      "expected": 0.2777777777777778,
+      "got": 0.2777777777777778,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 1,
+       "unit": "km/h"
+      },
+      "field": "base_unit",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(1, 'km/h').to_base_units().units)",
+      "expected": "meter / second",
+      "got": "meter / second",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 1,
+       "unit": "meter"
+      },
+      "field": "display",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\n_base_quantity = _ureg.Quantity(1, 'meter').to_base_units()\n_base_value = float(_base_quantity.magnitude)\n_base_unit = str(_base_quantity.units)\nstr(1) + ' ' + 'meter' + ' = ' + str(_base_value) + ' ' + _base_unit",
+      "expected": "1 meter = 1.0 meter",
+      "got": "1 meter = 1.0 meter",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 8077.48,
+       "from_unit": "Gibibit",
+       "to_unit": "Megabyte"
+      },
+      "field": "converted_value",
+      "expr": "_u = pint.UnitRegistry()\n_u.convert(8077.48, 'gibibit', 'megabyte')",
+      "expected": 1084141.01356544,
+      "got": 1084141.01356544,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 3.5,
+       "from_unit": "Gibit",
+       "to_unit": "MB"
+      },
+      "field": "converted_value",
+      "expr": "_u = pint.UnitRegistry()\n_u.convert(3.5, 'Gibit', 'MB')",
+      "expected": 469.762048,
+      "got": 469.762048,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 100,
+       "from_unit": "Degree_Fahrenheit",
+       "to_unit": "Kelvin"
+      },
+      "field": "converted_value",
+      "expr": "_u = pint.UnitRegistry()\n_u.convert(100, 'degree_Fahrenheit', 'kelvin')",
+      "expected": 310.9277777777778,
+      "got": 310.9277777777778,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "Mebibyte",
+       "unit_b": "gigabit"
+      },
+      "field": "compatible",
+      "expr": "_u = pint.UnitRegistry()\n_u.Unit('mebibyte').dimensionality == _u.Unit('gigabit').dimensionality",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 2,
+       "unit": "Kilowatt_hour"
+      },
+      "field": "base_value",
+      "expr": "_u = pint.UnitRegistry()\n_u.Quantity(2, 'kilowatt_hour').to_base_units().magnitude",
+      "expected": 7200000.0,
+      "got": 7200000.0,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": -1000,
+       "from_unit": "Cged",
+       "to_unit": "m/"
+      },
+      "field": "converted_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert(-1000, 'Cged', 'm/'))",
+      "status": "inconclusive",
+      "detail": "UndefinedUnitError('Cged')",
+      "generated": true
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 99,
+       "from_unit": "degC",
+       "to_unit": "degF"
+      },
+      "field": "converted_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert(99, 'degC', 'degF'))",
+      "expected": 210.19999999999993,
+      "got": 210.19999999999993,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 0,
+       "from_unit": "m/h",
+       "to_unit": "m/"
+      },
+      "field": "converted_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert(0, 'm/h', 'm/'))",
+      "status": "inconclusive",
+      "detail": "DefinitionSyntaxError('missing operand')",
+      "generated": true
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 1,
+       "from_unit": "retem",
+       "to_unit": "/s"
+      },
+      "field": "display",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\n_converted = float(_ureg.convert(1, 'retem', '/s'))\nstr(1) + ' ' + 'retem' + ' = ' + str(_converted) + ' ' + '/s'",
+      "status": "inconclusive",
+      "detail": "UndefinedUnitError('retem')",
+      "generated": true
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 10000,
+       "from_unit": "egC",
+       "to_unit": "Fged"
+      },
+      "field": "converted_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert(10000, 'egC', 'Fged'))",
+      "status": "inconclusive",
+      "detail": "UndefinedUnitError('egC')",
+      "generated": true
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": -1000,
+       "from_unit": "degC",
+       "to_unit": "Fged"
+      },
+      "field": "converted_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert(-1000, 'degC', 'Fged'))",
+      "status": "inconclusive",
+      "detail": "UndefinedUnitError('Fged')",
+      "generated": true
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 999,
+       "from_unit": "degC",
+       "to_unit": "m/"
+      },
+      "field": "converted_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert(999, 'degC', 'm/'))",
+      "status": "inconclusive",
+      "detail": "DefinitionSyntaxError('missing operand')",
+      "generated": true
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 100,
+       "from_unit": "Cged",
+       "to_unit": "m/s"
+      },
+      "field": "display",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\n_converted = float(_ureg.convert(100, 'Cged', 'm/s'))\nstr(100) + ' ' + 'Cged' + ' = ' + str(_converted) + ' ' + 'm/s'",
+      "status": "inconclusive",
+      "detail": "UndefinedUnitError('Cged')",
+      "generated": true
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 1000,
+       "from_unit": "retem",
+       "to_unit": "deg"
+      },
+      "field": "converted_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert(1000, 'retem', 'deg'))",
+      "status": "inconclusive",
+      "detail": "UndefinedUnitError('retem')",
+      "generated": true
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 1001,
+       "from_unit": "meter",
+       "to_unit": "Fged"
+      },
+      "field": "converted_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert(1001, 'meter', 'Fged'))",
+      "status": "inconclusive",
+      "detail": "UndefinedUnitError('Fged')",
+      "generated": true
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": -1,
+       "from_unit": "egC",
+       "to_unit": "Fged"
+      },
+      "field": "converted_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.convert(-1, 'egC', 'Fged'))",
+      "status": "inconclusive",
+      "detail": "UndefinedUnitError('egC')",
+      "generated": true
+     },
+     {
+      "tool": "convert_units",
+      "args": {
+       "value": 1001,
+       "from_unit": "Cged",
+       "to_unit": "deg"
+      },
+      "field": "display",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\n_converted = float(_ureg.convert(1001, 'Cged', 'deg'))\nstr(1001) + ' ' + 'Cged' + ' = ' + str(_converted) + ' ' + 'deg'",
+      "status": "inconclusive",
+      "detail": "UndefinedUnitError('Cged')",
+      "generated": true
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "/s",
+       "unit_b": "s/m"
+      },
+      "field": "compatible",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, '/s', 's/m')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing unary operator '/'\n",
+      "generated": true
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "h/mk",
+       "unit_b": "m/s"
+      },
+      "field": "compatible",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'h/mk', 'm/s')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "/s",
+       "unit_b": "m/"
+      },
+      "field": "reason",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, '/s', 'm/')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing unary operator '/'\n",
+      "generated": true
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "s/m",
+       "unit_b": "/s"
+      },
+      "field": "reason",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 's/m', '/s')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing unary operator '/'\n",
+      "generated": true
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "m/h",
+       "unit_b": "s/m"
+      },
+      "field": "compatible",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'm/h', 's/m')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "m/",
+       "unit_b": "/s"
+      },
+      "field": "reason",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'm/', '/s')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing operand\n",
+      "generated": true
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "m",
+       "unit_b": "/s"
+      },
+      "field": "compatible",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'm', '/s')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing unary operator '/'\n",
+      "generated": true
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "m/",
+       "unit_b": "m/"
+      },
+      "field": "compatible",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'm/', 'm/')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing operand\n",
+      "generated": true
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "h/mk",
+       "unit_b": "s"
+      },
+      "field": "reason",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'h/mk', 's')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason",
+      "expected": "Cannot convert from 'hour / milliboltzmann_constant' ([time] ** 3 * [temperature] / [mass] / [length] ** 2) to 'second' ([time])",
+      "got": "Cannot convert from 'hour / milliboltzmann_constant' ([time] ** 3 * [temperature] / [mass] / [length] ** 2) to 'second' ([time])",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "m",
+       "unit_b": "s/m"
+      },
+      "field": "reason",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'm', 's/m')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason",
+      "expected": "Cannot convert from 'meter' ([length]) to 'second / meter' ([time] / [length])",
+      "got": "Cannot convert from 'meter' ([length]) to 'second / meter' ([time] / [length])",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "s/m",
+       "unit_b": "m/"
+      },
+      "field": "compatible",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 's/m', 'm/')\n    _compatible = True\nexcept Exception:\n    _compatible = False\n_compatible",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing operand\n",
+      "generated": true
+     },
+     {
+      "tool": "check_unit_compatibility",
+      "args": {
+       "unit_a": "km/",
+       "unit_b": "s"
+      },
+      "field": "reason",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\ntry:\n    _ureg.convert(1.0, 'km/', 's')\n    _reason = ''\nexcept Exception as _exc:\n    _reason = str(_exc)\n_reason",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: DefinitionSyntaxError: missing operand\n",
+      "generated": true
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 0,
+       "unit": "meter"
+      },
+      "field": "base_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.Quantity(0, 'meter').to_base_units().magnitude)",
+      "expected": 0.0,
+      "got": 0.0,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": -1,
+       "unit": "mete"
+      },
+      "field": "base_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.Quantity(-1, 'mete').to_base_units().magnitude)",
+      "status": "inconclusive",
+      "detail": "UndefinedUnitError('mete')",
+      "generated": true
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 10,
+       "unit": "N*m"
+      },
+      "field": "base_unit",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(10, 'N*m').to_base_units().units)",
+      "expected": "kilogram * meter ** 2 / second ** 2",
+      "got": "kilogram * meter ** 2 / second ** 2",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 2,
+       "unit": "meter"
+      },
+      "field": "original_unit",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(2, 'meter').units)",
+      "expected": "meter",
+      "got": "meter",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 1,
+       "unit": "egC"
+      },
+      "field": "dimensionality",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(1, 'egC').dimensionality)",
+      "status": "inconclusive",
+      "detail": "UndefinedUnitError('egC')",
+      "generated": true
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 1,
+       "unit": "h/mk"
+      },
+      "field": "base_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.Quantity(1, 'h/mk').to_base_units().magnitude)",
+      "expected": 2.607469385774371e+29,
+      "got": 2.607469385774371e+29,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 1,
+       "unit": "m*N"
+      },
+      "field": "base_unit",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(1, 'm*N').to_base_units().units)",
+      "expected": "kilogram * meter ** 2 / second ** 2",
+      "got": "kilogram * meter ** 2 / second ** 2",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": -1,
+       "unit": "km/h"
+      },
+      "field": "display",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\n_base_quantity = _ureg.Quantity(-1, 'km/h').to_base_units()\n_base_value = float(_base_quantity.magnitude)\n_base_unit = str(_base_quantity.units)\nstr(-1) + ' ' + 'km/h' + ' = ' + str(_base_value) + ' ' + _base_unit",
+      "expected": "-1 km/h = -0.2777777777777778 meter / second",
+      "got": "-1 km/h = -0.2777777777777778 meter / second",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 10,
+       "unit": "meter"
+      },
+      "field": "base_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.Quantity(10, 'meter').to_base_units().magnitude)",
+      "expected": 10.0,
+      "got": 10.0,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": -1,
+       "unit": "egC"
+      },
+      "field": "base_value",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nfloat(_ureg.Quantity(-1, 'egC').to_base_units().magnitude)",
+      "status": "inconclusive",
+      "detail": "UndefinedUnitError('egC')",
+      "generated": true
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 1,
+       "unit": "eter"
+      },
+      "field": "base_unit",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(1, 'eter').to_base_units().units)",
+      "status": "inconclusive",
+      "detail": "UndefinedUnitError('eter')",
+      "generated": true
+     },
+     {
+      "tool": "convert_to_base_si_units",
+      "args": {
+       "value": 0,
+       "unit": "N*m"
+      },
+      "field": "original_unit",
+      "expr": "import pint\n_ureg = pint.UnitRegistry()\nstr(_ureg.Quantity(0, 'N*m').units)",
+      "expected": "meter * newton",
+      "got": "meter * newton",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     }
+    ]
+   }
+  }
+ ],
+ "failing_tools": {}
+}
