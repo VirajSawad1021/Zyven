@@ -359,6 +359,7 @@ def test_instructions_in_tool_output_are_caught():
 
 
 def test_tool_output_is_read_from_a_real_server():
+    import asyncio
     from zyven.mcpverify.probe import result_text
     import mcp.types as types
     res = types.CallToolResult(content=[types.TextContent(type="text", text="hi")], structured_content={"x": 1})

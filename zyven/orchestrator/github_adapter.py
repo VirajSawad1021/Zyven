@@ -12,6 +12,7 @@ private unless the task says otherwise. Off unless ZYVEN_ENABLE_GITHUB=1 and `gh
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess

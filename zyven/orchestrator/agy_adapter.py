@@ -18,6 +18,7 @@ Off unless ZYVEN_ENABLE_AGY=1.
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any, Callable

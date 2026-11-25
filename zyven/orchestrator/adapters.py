@@ -15,7 +15,9 @@ The built-in Zyven agent is not an adapter: it runs as a board card and the Cont
 
 from __future__ import annotations
 
+import json
 import os
+import shutil
 import subprocess
 import threading
 from dataclasses import dataclass

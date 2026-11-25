@@ -432,8 +432,8 @@ def repair(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, current: 
     system = ("You are the Repair role of a capability compiler. Generated MCP tool bodies failed verification "
               "in a sandbox. Fix them with the smallest change that makes them correct. "
               f"{UNTRUSTED_NOTE}\n{_CODE_RULES}\nReturn corrected entries for the failing tools only.")
-    user = ("FAILING TOOLS AND OBSERVED ERRORS\n" + "\n".join(f"- {k}: {v}" for k, v in failures.items())
-            + ("\n\nEARLIER ATTEMPTS THAT ALSO FAILED\n" + "\n".join(history) if history else "")
+    user = (f"FAILING TOOLS AND OBSERVED ERRORS\n" + "\n".join(f"- {k}: {v}" for k, v in failures.items())
+            + (f"\n\nEARLIER ATTEMPTS THAT ALSO FAILED\n" + "\n".join(history) if history else "")
             + f"\n\nCURRENT CODE\n{cur.model_dump_json(indent=1)}\n\nSPEC (failing tools)\n{sub.model_dump_json(indent=1)}"
             + f"\n\nLIBRARY EVIDENCE\n{_impl_evidence(a, sub)}")
     return provider.generate_structured([{"role": "system", "content": system}, {"role": "user", "content": user}],

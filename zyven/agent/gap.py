@@ -55,7 +55,7 @@ GAP_SYSTEM = (
 def gap_check(provider: ModelProvider, task: str, tools: list[dict]) -> GapCheck:
     tool_lines = [f"- {t['function']['name']}: {t['function'].get('description', '').splitlines()[0][:160]}"
                   for t in tools] or ["(none)"]
-    user = "CURRENT TOOLS\n" + "\n".join(tool_lines) + f"\n\nTASK\n{task}"
+    user = f"CURRENT TOOLS\n" + "\n".join(tool_lines) + f"\n\nTASK\n{task}"
     result = provider.generate_structured(
         [{"role": "system", "content": GAP_SYSTEM}, {"role": "user", "content": user}], GapCheck, max_tokens=4096)
     if result.missing_capabilities:
