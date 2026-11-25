@@ -323,7 +323,7 @@ def none_chain_hint(problem: str) -> str:
     return (f"a call before `.{m.group(1)}` returned None: a method that changes an object in place (add_..., append, "
             "update, sort) returns None, so never chain onto it. Build the object on its own line, call the in-place "
             "method on its own line, and compute the value on the last line, e.g.\n"
-            "      obj = lib.Thing()\n      obj.add_items({items})\n      lib.compute(obj)")
+            "      c = collections.Counter()\n      c.update({words})\n      c.most_common(1)[0][0]")
 
 
 def _reask_unusable(provider, a, spec, diff_tests, check, emit):

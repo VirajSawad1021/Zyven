@@ -271,7 +271,7 @@ def test_a_call_chained_onto_none_is_answered_with_the_multi_line_form(analysis,
                         asked.update(feedback=feedback) or DiffTests(cases=[]))
     pl._reask_unusable(None, analysis, _spec(), DiffTests(cases=[wrong]), lambda cases: [why] * len(cases),
                        lambda *a, **k: None)
-    assert "never chain onto it" in asked["feedback"] and "obj.add_items({items})" in asked["feedback"]
+    assert "never chain onto it" in asked["feedback"] and "c.update({words})" in asked["feedback"]
 
 
 def test_a_syntax_error_quotes_the_program():
