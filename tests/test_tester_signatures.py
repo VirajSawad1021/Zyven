@@ -281,3 +281,16 @@ def test_a_syntax_error_quotes_the_program():
     c = DiffCase(tool="t", args={"x": 1}, field="f", reference_imports=[], reference_expr="calc.f({x}")
     why = reference_problem(c, {"calc"})
     assert why.startswith("syntax error: ") and why.endswith("in: calc.f({x}")
+
+
+def test_a_reference_that_retypes_its_arguments_is_pointed_at_the_placeholders(analysis, monkeypatch):
+    """E4B retyped networkx edge lists as literals and broke the brackets (`[[...]]])`) in every run."""
+    import zyven.compiler.pipeline as pl
+    typed = DiffCase(tool="holiday_on", args={"date": "2024-09-02"}, field="holiday", reference_imports=[],
+                     reference_expr="minical.cal.holiday(minical.dates.GregorianDate.from_iso('2024-09-02'))")
+    asked = {}
+    monkeypatch.setattr(pl, "tester", lambda p, a, sub, feedback="", followups=True:
+                        asked.update(feedback=feedback) or DiffTests(cases=[]))
+    pl._reask_unusable(None, analysis, _spec(), DiffTests(cases=[typed]), lambda cases: ["syntax error: x"] * len(cases),
+                       lambda *a, **k: None)
+    assert "it retypes the argument values: write them as placeholders ({date})" in asked["feedback"]

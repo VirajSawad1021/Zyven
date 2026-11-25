@@ -380,6 +380,12 @@ def _reask_unusable(provider, a, spec, diff_tests, check, emit):
             hint = none_chain_hint(why)
             if hint:
                 lines.append(f"    {hint}")
+            if params and not any("{" + p + "}" in c.reference_expr for p in params):
+                # E4B retyped networkx edge lists as literals and broke the brackets in every run
+                lines.append("    it retypes the argument values: write them as placeholders ("
+                             + ", ".join("{" + p + "}" for p in sorted(params))
+                             + "), which the harness fills with the case's exact values, so no list or string is "
+                               "ever typed by hand")
             sigs = describe_symbols(a, ids)
             if sigs:
                 lines.append("    the library's exact signatures for what it calls:\n"

@@ -16,13 +16,19 @@ checks every reference in the sandbox. Per run it records:
   (b) the same after the re-ask
   (c) tools with at least one valid case (after the re-ask), out of the spec's tools
 The model is the one in .env (MODEL_* variables in the environment take precedence). Results go to
-eval/results/tester-validity-<label>-<date>.{md,jsonl}. `freeze` asks the Architect for a spec once and writes it
+eval/results/tester-validity-<label>-<date>.{md,jsonl}; each jsonl row also keeps every reference program and why it
+could not be used, so a failure can be read without rerunning.
+
+`--cache` reuses the model's reply to an identical request in the same run number (stored under the workspace). A
+change to the re-ask then re-calls only the re-ask, on the same first answers, which is faster and compares the two
+versions without the noise of a new first answer. Published before/after numbers are run without it. `freeze` asks the Architect for a spec once and writes it
 under eval/tester_specs/; a frozen spec is never rewritten by `run`.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -36,7 +42,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from zyven import paths  # noqa: E402
-from zyven.ai.provider import ModelProvider, ProviderError  # noqa: E402
+from zyven.ai.provider import ChatResult, ModelProvider, ProviderError  # noqa: E402
 from zyven.ai.roles import architect, tester  # noqa: E402
 from zyven.ai.schemas import CandidateCapability, CapabilitySpec  # noqa: E402
 from zyven.analysis.analyzer import analyze  # noqa: E402
@@ -71,6 +77,28 @@ def frozen_specs(libs: list[str] | None) -> list[tuple[str, CapabilitySpec]]:
     return out
 
 
+class ReplyCache:
+    """Model replies keyed by (model, run number, request). Only `chat` is wrapped, so everything the harness does
+    with a reply (validation, repairs, import fixing, the checks) still runs."""
+
+    def __init__(self, provider: ModelProvider, folder: Path):
+        self.provider, self.folder, self.run_no, self.hits = provider, folder, 0, 0
+        folder.mkdir(parents=True, exist_ok=True)
+        self._chat = provider.chat
+        provider.chat = self.chat  # type: ignore[method-assign]
+
+    def chat(self, messages, tools=None, response_format=None, temperature=None, max_tokens=None) -> ChatResult:
+        key = hashlib.sha256(json.dumps([self.provider.model, self.run_no, messages, tools, response_format,
+                                         temperature, max_tokens], sort_keys=True).encode()).hexdigest()[:32]
+        f = self.folder / f"{key}.json"
+        if f.exists():
+            self.hits += 1
+            return ChatResult(**json.loads(f.read_text(encoding="utf-8")))
+        out = self._chat(messages, tools, response_format, temperature, max_tokens)
+        f.write_text(json.dumps(out.__dict__, ensure_ascii=False), encoding="utf-8")
+        return out
+
+
 def measure(provider: ModelProvider, lib: str, spec: CapabilitySpec, repo: Path, run_no: int) -> dict:
     a = analyze(repo)
     roots = set(a.packages)
@@ -98,6 +126,9 @@ def measure(provider: ModelProvider, lib: str, spec: CapabilitySpec, repo: Path,
                tools_with_valid=len(valid_tools & {t.name for t in spec.tools}),
                tools_without_valid=sorted({t.name for t in spec.tools} - valid_tools),
                problems=[{"tool": c.tool, "problem": p[:400]} for c, p in zip(after.cases, problems) if p],
+               cases=[{"stage": "first" if i < len(first.cases) else "reask", "tool": c.tool, "field": c.field,
+                       "args": c.args, "imports": c.reference_imports, "program": c.reference_expr, "problem": p}
+                      for i, (c, p) in enumerate(zip(after.cases, problems))],
                model_calls=provider.stats.calls - calls_before, seconds=round(time.monotonic() - started, 1))
     return row
 
@@ -162,6 +193,7 @@ def _commit() -> str:
 def cmd_run(args) -> None:
     commit = _commit()  # at the start: a long run must not report a commit made while it ran
     provider = ModelProvider.from_env(paths.env_file())
+    cache = ReplyCache(provider, paths.home() / "runs" / "tester-validity" / "cache") if args.cache else None
     cat = Catalog(paths.catalog_file(), paths.home())
     specs = frozen_specs(args.lib)
     if not specs:
@@ -174,14 +206,19 @@ def cmd_run(args) -> None:
         repo = checkout(cat, lib)
         for n in range(1, args.runs + 1):
             print(f"{lib}/{spec.name} run {n}/{args.runs} ({provider.label})", flush=True)
+            if cache:
+                cache.run_no, hits = n, cache.hits
             row = measure(provider, lib, spec, repo, n)
+            if cache:
+                row["cached_replies"] = cache.hits - hits
             rows.append(row)
             with jsonl.open("a", encoding="utf-8") as f:  # appended as it goes: a long run that stops keeps its rows
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
             print("  " + ("error: " + row["error"] if "error" in row else
                           f"valid {row['valid_first']}/{row['cases_first']} -> {row['valid_after']}/{row['cases_after']}"
                           f", tools {row['tools_with_valid']}/{row['tools']}"), flush=True)
-    (RESULTS / f"{stem}.md").write_text(report(rows, args.label, provider.label, commit), encoding="utf-8")
+    label = args.label + (" (cached replies)" if cache else "")
+    (RESULTS / f"{stem}.md").write_text(report(rows, label, provider.label, commit), encoding="utf-8")
     print(f"\nwrote {RESULTS / (stem + '.md')} and {jsonl}")
 
 
@@ -217,6 +254,8 @@ def main() -> None:
     r.add_argument("--lib", action="append", help="only this library (repeatable); default: every frozen spec")
     r.add_argument("--runs", type=int, default=3)
     r.add_argument("--label", default="run", help="names the result files, e.g. before or after")
+    r.add_argument("--cache", action="store_true", help="reuse the reply to an identical request in the same run "
+                   "number (for iterating; publish numbers without it)")
     r.set_defaults(fn=cmd_run)
     f = sub.add_parser("freeze", help="ask the Architect for a library's spec once and freeze it")
     f.add_argument("--lib", required=True)
