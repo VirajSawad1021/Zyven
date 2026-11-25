@@ -309,6 +309,23 @@ def missing_import(problem: str, a: Analysis, params: frozenset[str] | set[str] 
     return name, f"define `{name}` in the reference's own setup lines before the last line uses it", []
 
 
+_NONE_ATTR = re.compile(r"""AttributeError\(["']'NoneType' object has no attribute '([A-Za-z_][A-Za-z0-9_]*)'""")
+
+
+def none_chain_hint(problem: str) -> str:
+    """Advice for a reference that chained a call onto a method returning None, or "" for any other problem.
+
+    Gemma 4 E4B wrote every networkx reference as `nx.Graph().add_weighted_edges_from([...]).dijkstra_path_length(...)`:
+    add_weighted_edges_from changes the graph in place and returns None, so no networkx tool ever got a valid case."""
+    m = _NONE_ATTR.search(problem or "")
+    if not m:
+        return ""
+    return (f"a call before `.{m.group(1)}` returned None: a method that changes an object in place (add_..., append, "
+            "update, sort) returns None, so never chain onto it. Build the object on its own line, call the in-place "
+            "method on its own line, and compute the value on the last line, e.g.\n"
+            "      obj = lib.Thing()\n      obj.add_items({items})\n      lib.compute(obj)")
+
+
 def _reask_unusable(provider, a, spec, diff_tests, check, emit):
     """Ask the Tester once more for every tool its valid reference programs leave with a coverage gap, quoting why
     each rejected reference could not be used. `check(cases)` gives each case's problem or None: the static checks
@@ -360,6 +377,9 @@ def _reask_unusable(provider, a, spec, diff_tests, check, emit):
             if name:
                 lines.append(f"    `{name}` is not defined in that reference: {advice}")
                 ids = list(dict.fromkeys(ids + homes))
+            hint = none_chain_hint(why)
+            if hint:
+                lines.append(f"    {hint}")
             sigs = describe_symbols(a, ids)
             if sigs:
                 lines.append("    the library's exact signatures for what it calls:\n"

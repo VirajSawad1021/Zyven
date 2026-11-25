@@ -205,8 +205,8 @@ def reference_problem(c, package_roots: set[str]) -> str | None:
     this too, right after the Tester answers, so a tool left without a usable case is asked about again."""
     try:
         body = ast.parse(c.reference_expr).body
-    except SyntaxError as e:
-        return f"syntax error: {e.msg}"
+    except SyntaxError as e:  # quote the program: the re-ask and the eval results then show what did not parse
+        return f"syntax error: {e.msg} (line {e.lineno}) in: {c.reference_expr[:300]}"
     last = body[-1] if body else None
     if not isinstance(last, ast.Expr):
         return "the last line must be the expression that computes the value"

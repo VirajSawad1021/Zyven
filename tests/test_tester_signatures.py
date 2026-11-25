@@ -254,3 +254,30 @@ def test_the_reask_asks_once_per_tool_and_skips_tools_without_parameters(analysi
     pl._reask_unusable(None, analysis, spec, DiffTests(cases=[]), lambda cases: [None] * len(cases),
                        lambda *a, **k: None)
     assert asked == [["holiday_on"], ["festival_on"]]  # one focused request each; `today` can never get a case
+
+
+def test_a_call_chained_onto_none_is_answered_with_the_multi_line_form(analysis, monkeypatch):
+    """review of #108: E4B wrote every networkx reference as `nx.Graph().add_weighted_edges_from([...]).f(...)`, and
+    add_weighted_edges_from returns None. The re-ask names that pattern and shows the multi-line form."""
+    import zyven.compiler.pipeline as pl
+    why = ("AttributeError(\"'NoneType' object has no attribute 'dijkstra_path_length'\") running: "
+           "networkx.Graph().add_weighted_edges_from([]).dijkstra_path_length('A', 'C')")
+    assert "`.dijkstra_path_length` returned None" in pl.none_chain_hint(why)
+    assert pl.none_chain_hint("AttributeError(\"'Graph' object has no attribute 'x'\")") == ""
+    wrong = DiffCase(tool="holiday_on", args={"date": "2024-09-02"}, field="holiday", reference_imports=[],
+                     reference_expr="minical.cal.Calendar().add({date}).holiday()")
+    asked = {}
+    monkeypatch.setattr(pl, "tester", lambda p, a, sub, feedback="", followups=True:
+                        asked.update(feedback=feedback) or DiffTests(cases=[]))
+    pl._reask_unusable(None, analysis, _spec(), DiffTests(cases=[wrong]), lambda cases: [why] * len(cases),
+                       lambda *a, **k: None)
+    assert "never chain onto it" in asked["feedback"] and "obj.add_items({items})" in asked["feedback"]
+
+
+def test_a_syntax_error_quotes_the_program():
+    """An IBAN run lost every case to `syntax error: invalid syntax` with nothing to show which program; the problem
+    now carries it, for the re-ask and for the eval results."""
+    from zyven.compiler.verify import reference_problem
+    c = DiffCase(tool="t", args={"x": 1}, field="f", reference_imports=[], reference_expr="calc.f({x}")
+    why = reference_problem(c, {"calc"})
+    assert why.startswith("syntax error: ") and why.endswith("in: calc.f({x}")
