@@ -15,10 +15,13 @@ TEMPLATES = [
              "give it only the capabilities you want, share the pages it may see with it, and paste its token.",
      "url": "", "command": "npx", "args": ["-y", "@notionhq/notion-mcp-server"], "secrets": ["NOTION_TOKEN"]},
     {"id": "slack", "label": "Slack (bot token, community server)", "kind": "stdio",
-     "hint": "A community server, not Slack's own: review its code before trusting it. Create a Slack app, add a bot with "
-             "only the scopes you want (for example channels:read, channels:history, users:read), install it, and paste the xoxb- token. "
+     "hint": "A community server, not Slack's own: review its code before trusting it. Create a Slack app, give its bot "
+             "these read scopes (it will not start without all of them): channels:read, channels:history, groups:read, "
+             "groups:history, im:read, im:history, mpim:read, mpim:history, users:read, plus usergroups:read for user "
+             "groups. Install it and paste the xoxb- token. "
              "The bot only sees channels it was invited to and cannot search. "
-             "Posting messages stays off unless you add SLACK_MCP_ADD_MESSAGE_TOOL = true below.",
+             "Posting messages stays off unless you add SLACK_MCP_ADD_MESSAGE_TOOL = true below. "
+             "Its read tools are marked both read-only and destructive, so Zyven's check reports a problem; that is the server's mistake.",
      "url": "", "command": "npx", "args": ["-y", "slack-mcp-server@1.3.0", "--transport", "stdio"],
      "secrets": ["SLACK_MCP_XOXB_TOKEN"]},
     {"id": "filesystem", "label": "Folder access", "kind": "stdio",
