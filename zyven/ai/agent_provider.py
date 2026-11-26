@@ -206,6 +206,7 @@ class AgentProvider(ModelProvider):
                 self.stats.latency_s += latency
                 self.stats.prompt_tokens += int(totals["in"])
                 self.stats.completion_tokens += int(totals["out"])
+                self.stats.cost_usd += float(totals.get("cost") or 0)
                 content = extract_json(text) if response_format else text
                 return ChatResult(content=content, tool_calls=[], raw_message={"role": "assistant", "content": content},
                                   latency_s=latency, attempts=attempt, finish_reason="stop", served_by=self.label)

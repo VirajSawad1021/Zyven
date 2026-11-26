@@ -181,3 +181,17 @@ def test_cancel_denies_a_waiting_approval_and_decisions_are_final(tmp_path):
         c.decide(ap["id"], True)
     with pytest.raises(KeyError):
         c.decide("missing", True)
+
+
+def test_claude_code_tokens_and_cost_are_added_to_the_run_totals():
+    """#107: Claude Code's result line carries its tokens and cost; they were only printed, so every Claude Code run
+    counted 0 tokens and a compile could not record what it cost."""
+    totals = {"in": 0, "out": 0, "cost": 0.0}
+    seen: list[tuple[str, str]] = []
+    line = json.dumps({"type": "result", "is_error": False, "result": "ok", "total_cost_usd": 0.0421,
+                       "usage": {"input_tokens": 12, "cache_creation_input_tokens": 3000,
+                                 "cache_read_input_tokens": 9000, "output_tokens": 640}})
+    assert parse_stream_line(line, lambda k, t: seen.append((k, t)), totals) is False
+    assert totals == {"in": 12012, "out": 640, "cost": 0.0421}
+    assert ("info", "done: 12012 in / 640 out tokens, $0.0421") in seen
+    assert parse_stream_line(line, lambda k, t: None) is False  # without totals (Qoder's use) nothing changes
