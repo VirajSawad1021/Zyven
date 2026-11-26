@@ -185,6 +185,10 @@ build, and installs without a clone.
 - Every sandbox container gets the host name `zyven-sandbox`.
 
 ### Fixed
+- **Signing in to Gmail or Google Docs now keeps a token.** Google's hosted servers list their tools without a sign-in
+  and refuse only tool calls, so Sign in used to finish at once: the tools were listed, no token was kept, the card
+  said "Not signed in", and every call failed. Sign in now runs the OAuth step whenever there is no valid token, even
+  if the server answers without one. Found by the live Gmail test (#106).
 - **A docstring of only whitespace no longer crashes the repository summary** (found on sympy).
 - **Upstream tests that need a missing package no longer stop the gate when named explicitly.** pytest's `--ignore`
   does not apply to a file passed on the command line, so a chosen test file importing `bs4` stopped the whole run.
