@@ -361,3 +361,22 @@ def test_a_plain_result_read_as_an_object_gets_its_own_advice(why, expect, avoid
     import zyven.compiler.pipeline as pl
     hint = pl.none_chain_hint(why)
     assert expect in hint and avoid not in hint
+
+
+def test_json_spelled_constants_are_named_as_such(analysis):
+    """E4B's pyluach reference converted the date string correctly but wrote `israel=false`; the old advice said to
+    define `false` in the setup lines."""
+    from zyven.compiler.pipeline import missing_import
+    name, advice, _ = missing_import("NameError(\"name 'false' is not defined\") running: f(x, israel=false)",
+                                     analysis, {"date"})
+    assert name == "false" and "`False`" in advice and "setup lines" not in advice
+
+
+def test_a_slice_inside_a_placeholder_is_pointed_outside_the_braces(analysis):
+    """E4B wrote `GregorianDate({date_str[0:4]}, ...)`; only the bare `{date_str}` is replaced."""
+    from zyven.compiler.pipeline import missing_import
+    why = "NameError(\"name 'date_str' is not defined\") running: GregorianDate({date_str[0:4]}, {date_str[5:7]}, 1)"
+    name, advice, _ = missing_import(why, analysis, {"date_str"})
+    assert name == "date_str" and "`{date_str}[0:4]`" in advice
+    plain = "NameError(\"name 'date_str' is not defined\") running: GregorianDate.from_iso(date_str)"
+    assert "placeholder {date_str}" in missing_import(plain, analysis, {"date_str"})[1]  # the old advice still applies

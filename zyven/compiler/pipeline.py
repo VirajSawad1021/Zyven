@@ -266,6 +266,7 @@ def reference_names(c, a: Analysis, resolver: RefResolver) -> tuple[list[str], l
 
 
 _NAME_ERROR = re.compile(r"""NameError\(["']name '([A-Za-z_][A-Za-z0-9_]*)' is not defined""")
+_JSON_WORDS = {"true": "True", "false": "False", "null": "None"}
 
 
 def missing_import(problem: str, a: Analysis, params: frozenset[str] | set[str] = frozenset()
@@ -284,6 +285,15 @@ def missing_import(problem: str, a: Analysis, params: frozenset[str] | set[str] 
     if not m:
         return "", "", []
     name = m.group(1)
+    if name in _JSON_WORDS:  # E4B wrote pyluach's flags as `israel=false`; its date conversion was right
+        return name, (f"`{name}` is how JSON spells it; in Python it is `{_JSON_WORDS[name]}`. Better still, pass the "
+                      "tool's own arguments as their placeholders"), []
+    program = problem.split(" running: ", 1)[1] if " running: " in problem else ""
+    if name in params and re.search(r"\{" + re.escape(name) + r"\s*[\[.(]", program):
+        # E4B wrote `GregorianDate({date_str[0:4]}, ...)`: the placeholder must be the bare name
+        return name, (f"a placeholder is only the bare name `{{{name}}}`, replaced by the value itself, so nothing can "
+                      f"be written inside the braces. Slice or call methods outside them: `{{{name}}}[0:4]`, "
+                      f"`{{{name}}}.split('-')`"), []
     if name in params:
         return name, (f"it is the tool's argument: write it as the placeholder {{{name}}} (with the braces, inside the "
                       "program), which is replaced by the case's value; never as a bare variable"), []
