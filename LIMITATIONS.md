@@ -106,6 +106,21 @@ outside-in checks (section 6), which are not the same as the six gates.**
 - **Coding agents send the task text to their provider** (for example OpenAI for Codex), unlike the open-weight roles above.
 - **Notion rotates refresh tokens**, so copying a connection's secrets to another process invalidates the original
   sign-in. One board should own a connection.
+- **Gmail, Slack and GitHub were checked live once each** (Windows, 2026-11-26, throwaway accounts;
+  `tests/test_connections_live.py`, skipped unless `ZYVEN_GMAIL_LIVE`, `ZYVEN_SLACK_LIVE` or `ZYVEN_GITHUB_LIVE` is
+  1). Each connected and passed `zyven verify`. Each one's read-only tools were called, and a tool that can change
+  something was refused by the approval gate before it reached the service. What each one showed:
+  - **Gmail (Google hosted):** 23 tools, of which 6 are read-only and 17 ask for approval. It has drafts but no send tool.
+    Sign-in asks Google for every scope the server lists, including full mail access and sending, as any standard
+    MCP client would. That's broader than the tools need, so use a test account or accept that.
+  - **Slack (bot token, slack-mcp-server 1.3.0):** 13 tools. The server marks six read tools both read-only and
+    destructive, so `zyven verify` fails it, and turning it on needs "Turn on anyway". The bot token needs read scopes
+    for every kind of conversation, or the server exits at start ("Connection closed"). Slack's hosted server was not
+    tried.
+  - **GitHub (`@modelcontextprotocol/server-github`, archived):** 26 tools. None says it is read-only, so every tool
+    asks, and no read call was made. GitHub's hosted server was not tried.
+  - Not checked live: posting to Slack (off by default in that server) and anything a user approves; the gate was
+    only ever answered "no".
 - **Hub start-up time:** the first request in a run starts that run's tool servers, in parallel; each Docker-based skill adds
   1-2 s. One real skill (IBAN validation) was served through the hub with Codex; a task with many skills has not been timed.
 
