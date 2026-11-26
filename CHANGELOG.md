@@ -189,6 +189,9 @@ build, and installs without a clone.
   and refuse only tool calls, so Sign in used to finish at once: the tools were listed, no token was kept, the card
   said "Not signed in", and every call failed. Sign in now runs the OAuth step whenever there is no valid token, even
   if the server answers without one. Found by the live Gmail test (#106).
+  Google's server also names its authorization server "https://accounts.google.com/" while Google's issuer is
+  "https://accounts.google.com"; that trailing slash alone (the same URL) no longer stops the sign-in with "issuer
+  mismatch". Any other difference is still refused.
 - **A docstring of only whitespace no longer crashes the repository summary** (found on sympy).
 - **Upstream tests that need a missing package no longer stop the gate when named explicitly.** pytest's `--ignore`
   does not apply to a file passed on the command line, so a chosen test file importing `bs4` stopped the whole run.

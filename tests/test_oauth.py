@@ -224,3 +224,15 @@ def test_signing_in_to_a_server_that_lists_tools_anonymously_still_gets_a_token(
 
     with oauth_mcp_server(anonymous_listing=True) as (base, provider):
         asyncio.run(go(base, provider))
+
+
+@pytest.mark.parametrize("advertised, used", [
+    ("https://accounts.google.com/", "https://accounts.google.com"),  # Google's Gmail server vs Google's own issuer
+    ("https://accounts.google.com", "https://accounts.google.com"),
+    ("https://auth.example.com/tenant/", "https://auth.example.com/tenant/"),  # a path is part of the issuer: kept
+    ("https://auth.example.com/?x=1", "https://auth.example.com/?x=1"),
+])
+def test_an_issuer_given_with_a_bare_trailing_slash_is_spelled_without_it(advertised, used):
+    from zyven.connections.oauth import same_issuer_spelling
+
+    assert same_issuer_spelling(advertised) == used

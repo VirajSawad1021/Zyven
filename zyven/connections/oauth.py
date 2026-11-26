@@ -85,6 +85,22 @@ class _Provider(OAuthClientProvider):
         if isinstance(storage, StoreTokenStorage) and self.context.current_tokens:
             self.context.token_expiry_time = storage.expires_at()
 
+    def _select_authorization_server(self, advertised: list[str]) -> str:
+        return same_issuer_spelling(super()._select_authorization_server(advertised))
+
+
+def same_issuer_spelling(url: str) -> str:
+    """An authorization server given as a bare origin with a trailing slash, spelled the way issuers are.
+
+    Google's Gmail server names its authorization server "https://accounts.google.com/", but Google's own metadata
+    says its issuer is "https://accounts.google.com". The SDK compares the two exactly (RFC 8414 3.3), so signing in
+    stopped with "issuer mismatch". For http(s) an empty path and "/" are the same URL (RFC 3986 6.2.3), so only
+    that one difference is removed; any other difference in the issuer is still refused."""
+    parsed = urlparse(url)
+    if parsed.scheme in ("http", "https") and parsed.path == "/" and not (parsed.params or parsed.query or parsed.fragment):
+        return url[:-1]
+    return url
+
 
 class _SignInProvider(_Provider):
     """For the Sign in button only. The SDK starts a sign-in when the server answers 401, but some servers answer
