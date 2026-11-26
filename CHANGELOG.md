@@ -185,6 +185,11 @@ build, and installs without a clone.
 - Every sandbox container gets the host name `zyven-sandbox`.
 
 ### Fixed
+- **Antigravity on an exhausted quota now stops with that reason instead of hanging** (#107). agy retries silently,
+  so a run used to wait out the 2-minute idle timeout (Control center) or the whole time limit again on every retry
+  (compile role). Each run now writes agy's log (`--log-file`) to a temp file outside the task folder. Zyven reads it
+  every few seconds and stops the run as soon as it shows "Resource has been exhausted". A compile role does not
+  retry that error.
 - **A docstring of only whitespace no longer crashes the repository summary** (found on sympy).
 - **Upstream tests that need a missing package no longer stop the gate when named explicitly.** pytest's `--ignore`
   does not apply to a file passed on the command line, so a chosen test file importing `bs4` stopped the whole run.

@@ -9,6 +9,10 @@ and the parser below is still a guess until an answer is seen. --dangerously-ski
 Because a stuck program would hold the queue, this adapter has a short idle timeout. Re-test with ZYVEN_AGY_LIVE=1
 when the account has quota.
 
+So that an exhausted quota is reported, not waited out: every run writes agy's log (`--log-file`) to a file of its own
+in the system temp folder (outside the task folder, so it never shows up as a change in the repository), and
+`stuck_reason` reads it. When the log says the quota is exhausted, the run is stopped at once with that reason.
+
 Guard rails from its own options: `--mode accept-edits` and `--sandbox`; never `--dangerously-skip-permissions`.
 `--print` is passed last, directly before the prompt, so the prompt is read correctly whether the flag takes a value
 or not. The program is native (no shell in between), so the prompt can safely be an argument.
@@ -17,9 +21,11 @@ Off unless ZYVEN_ENABLE_AGY=1.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
+import tempfile
 from pathlib import Path
 from typing import Any, Callable
 
@@ -27,6 +33,30 @@ from zyven.orchestrator.cli_agent import CLIAgentAdapter, run_quiet
 
 MODEL = re.compile(r"[\w./:#\-]{1,100}")
 TEXT_KEYS = ("text", "result", "content", "message", "delta")
+# What agy 1.5.11 logged on an exhausted account ("Resource has been exhausted (e.g. check quota)"), and the gRPC code
+QUOTA = re.compile(r"resource has been exhausted|resource_exhausted|check quota", re.IGNORECASE)
+LOG_TAIL_BYTES = 64 * 1024
+
+
+def log_path(cwd: Path) -> Path:
+    """agy's log for the run started in `cwd`: one file per task folder, in the system temp folder."""
+    key = hashlib.sha256(str(Path(cwd).resolve()).encode("utf-8")).hexdigest()[:16]
+    return Path(tempfile.gettempdir()) / f"zyven-agy-{key}.log"
+
+
+def quota_message(log: Path) -> str:
+    """The log line that says the quota is exhausted, or ''."""
+    try:
+        with open(log, "rb") as f:
+            f.seek(0, os.SEEK_END)
+            f.seek(max(0, f.tell() - LOG_TAIL_BYTES))
+            tail = f.read().decode("utf-8", errors="replace")
+    except OSError:
+        return ""
+    for line in reversed(tail.splitlines()):
+        if QUOTA.search(line):
+            return " ".join(line.split())[:200]
+    return ""
 
 
 def _find_text(value: Any, depth: int = 0) -> str:
@@ -94,6 +124,10 @@ class AgyAdapter(CLIAgentAdapter):
         exe = self._executable()
         assert exe, "agy is not installed"
         cmd = [*exe, "--output-format", "stream-json", "--mode", "accept-edits", "--sandbox"]
+        if cwd is not None:
+            log = log_path(cwd)
+            log.unlink(missing_ok=True)  # a stale log from an earlier run in the same folder must not count
+            cmd += ["--log-file", str(log)]
         model = self.model()
         if model:
             cmd += ["--model", model]
@@ -104,6 +138,16 @@ class AgyAdapter(CLIAgentAdapter):
 
     def parse(self, line: str, emit: Callable[[str, str], None], totals: dict[str, float]) -> bool:
         return parse_line(line, emit, totals)
+
+    def stuck_reason(self, cwd: Path) -> str:
+        found = quota_message(log_path(cwd))
+        if not found:
+            return ""
+        return ("Antigravity's account quota is exhausted, and agy retries silently instead of answering, so the run "
+                f"was stopped. Try again when the quota resets, or choose another agent or model. agy's log: {found}")
+
+    def cleanup(self, cwd: Path) -> None:
+        log_path(cwd).unlink(missing_ok=True)
 
     def sign_in_state(self) -> tuple[bool | None, str]:
         out = run_quiet([*(self._executable() or []), "models"], timeout=25)
