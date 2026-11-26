@@ -309,21 +309,36 @@ def missing_import(problem: str, a: Analysis, params: frozenset[str] | set[str] 
     return name, f"define `{name}` in the reference's own setup lines before the last line uses it", []
 
 
-_NONE_ATTR = re.compile(r"""AttributeError\(["']'NoneType' object has no attribute '([A-Za-z_][A-Za-z0-9_]*)'""")
+_PLAIN = r"NoneType|str|int|float|bool|bytes|list|tuple|dict"
+_PLAIN_ATTR = re.compile(rf"""AttributeError\(["']'({_PLAIN})' object has no attribute '([A-Za-z_][A-Za-z0-9_]*)'""")
+_PLAIN_INDEX = re.compile(rf"""TypeError\(["']'({_PLAIN})' object is not subscriptable""")
 
 
 def none_chain_hint(problem: str) -> str:
-    """Advice for a reference that chained a call onto a method returning None, or "" for any other problem.
+    """Advice for a reference that used a plain return value (None, a string, a number) as an object, or "" for any
+    other problem. Two cases, told apart by the program in the problem text (after " running: "):
 
-    Gemma 4 E4B wrote every networkx reference as `nx.Graph().add_weighted_edges_from([...]).dijkstra_path_length(...)`:
-    add_weighted_edges_from changes the graph in place and returns None, so no networkx tool ever got a valid case."""
-    m = _NONE_ATTR.search(problem or "")
-    if not m:
+    - a method chained onto an in-place call: Gemma 4 E4B wrote every networkx reference as
+      `nx.Graph().add_weighted_edges_from([...]).dijkstra_path_length(...)`, and add_weighted_edges_from returns None;
+    - a field or an index read from a value: pyluach's festival() returns the festival's name or None, and E4B wrote
+      `festival(d).festival_name` and `holiday(d)[2]`. Telling it to split an in-place call would not help there."""
+    problem = problem or ""
+    program = problem.split(" running: ", 1)[1] if " running: " in problem else ""
+    attr, index = _PLAIN_ATTR.search(problem), _PLAIN_INDEX.search(problem)
+    if not attr and not index:
         return ""
-    return (f"a call before `.{m.group(1)}` returned None: a method that changes an object in place (add_..., append, "
-            "update, sort) returns None, so never chain onto it. Build the object on its own line, call the in-place "
-            "method on its own line, and compute the value on the last line, e.g.\n"
-            "      c = collections.Counter()\n      c.update({words})\n      c.most_common(1)[0][0]")
+    if attr and attr.group(1) == "NoneType" and re.search(rf"\)\s*\.\s*{attr.group(2)}\s*\(", program):
+        return (f"a call before `.{attr.group(2)}` returned None: a method that changes an object in place (add_..., "
+                "append, update, sort) returns None, so never chain onto it. Build the object on its own line, call "
+                "the in-place method on its own line, and compute the value on the last line, e.g.\n"
+                "      c = collections.Counter()\n      c.update({words})\n      c.most_common(1)[0][0]")
+    kind = (attr or index).group(1)
+    what = "None" if kind == "NoneType" else f"a plain {kind}"
+    read = f"`.{attr.group(2)}`" if attr else "an index `[...]`"
+    return (f"a library call returned {what} for these arguments, not an object, so {read} cannot be read from it. "
+            "Make the call's own result the last line (what it returns is noted with its signature below). Where "
+            "the library has no answer for the case's arguments it may return None, and None is then the expected "
+            "value: never read a field or an index of the result")
 
 
 def _reask_unusable(provider, a, spec, diff_tests, check, emit):

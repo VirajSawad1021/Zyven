@@ -294,3 +294,70 @@ def test_a_reference_that_retypes_its_arguments_is_pointed_at_the_placeholders(a
     pl._reask_unusable(None, analysis, _spec(), DiffTests(cases=[typed]), lambda cases: ["syntax error: x"] * len(cases),
                        lambda *a, **k: None)
     assert "it retypes the argument values: write them as placeholders ({date})" in asked["feedback"]
+
+
+@pytest.mark.parametrize("doc, expected", [
+    (("Holiday.\n\nReturns\n-------\nstr or None\n    The name of the holiday or ``None`` if the given date is not\n"
+      "    a holiday.\n\nRaises\n------\nValueError\n"),
+     "str or None: The name of the holiday or `None` if the given date is not a holiday."),  # NumPy (pyluach)
+    ("Count.\n\nArgs:\n    x: a\n\nReturns:\n    int: The count.\n", "int: The count."),  # Google
+    ("Count.\n\n:param x: a\n:returns: the count\n:rtype: int\n", "int: the count"),  # reST
+    ("Tests a number.\n\nArguments:\nnumobj -- the number\n\nReturns a boolean that says so.",
+     "a boolean that says so."),  # a sentence (phonenumbers)
+    ("Just a summary line.", ""),
+    (None, ""),
+])
+def test_what_a_docstring_says_is_returned(doc, expected):
+    from zyven.analysis.miner import documented_return
+    assert documented_return(doc) == expected
+
+
+def test_the_signature_carries_the_documented_return_when_there_is_no_annotation(tmp_path):
+    """pyluach's festival() has no return annotation; its docstring says "str or None". E4B read the result as an
+    object (`festival(d).festival_name`), so the re-ask's signature line now says what comes back."""
+    pkg = tmp_path / "cal"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text("", encoding="utf-8")
+    (pkg / "fest.py").write_text(textwrap.dedent('''
+        def festival(date, israel=False):
+            """Festival on a date.
+
+            Returns
+            -------
+            str or None
+                The name, or None on other days.
+            """
+            return None
+
+
+        def year_of(date) -> int:
+            """Year.
+
+            Returns
+            -------
+            int
+                Never shown: the annotation already says it.
+            """
+            return 1
+        '''), encoding="utf-8")
+    lines = describe_symbols(analyze(tmp_path), ["cal.fest.festival", "cal.fest.year_of"])
+    assert lines == ["cal.fest.festival(date, israel = False)  (returns str or None: The name, or None on other days.)",
+                     "cal.fest.year_of(date) -> int"]
+
+
+@pytest.mark.parametrize("why, expect, avoid", [
+    # pyluach in the after runs: a field read from festival()'s result, which is a name or None
+    (("AttributeError(\"'NoneType' object has no attribute 'festival_name'\") running: "
+      "pyluach.hebrewcal.festival(d).festival_name"), "returned None for these arguments", "in place"),
+    ("TypeError(\"'NoneType' object is not subscriptable\") running: pyluach.hebrewcal.holiday(d)[2]",
+     "an index `[...]` cannot be read", "in place"),
+    ("AttributeError(\"'str' object has no attribute 'name'\") running: cal.festival(d).name",
+     "returned a plain str", "in place"),
+    # networkx: a method chained onto an in-place call keeps the multi-line advice
+    (("AttributeError(\"'NoneType' object has no attribute 'dijkstra_path_length'\") running: "
+      "networkx.Graph().add_weighted_edges_from([]).dijkstra_path_length('A', 'C')"), "never chain onto it", "plain"),
+])
+def test_a_plain_result_read_as_an_object_gets_its_own_advice(why, expect, avoid):
+    import zyven.compiler.pipeline as pl
+    hint = pl.none_chain_hint(why)
+    assert expect in hint and avoid not in hint

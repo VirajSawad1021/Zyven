@@ -27,6 +27,50 @@ def _first_line(doc: str | None) -> str:
     return (doc or "").strip().splitlines()[0][:140] if doc else ""
 
 
+_SECTION = re.compile(r"^[A-Z][A-Za-z ]*:?$")  # a docstring section heading: "Parameters", "Raises:", ...
+
+
+def documented_return(doc: str | None) -> str:
+    """What a docstring says a function returns, as "<type>: <first line>" (or either part), or "".
+
+    For functions without a return annotation: pyluach's festival() is documented as returning "str or None", the
+    name or None on other days. Gemma 4 E4B read it as an object (`festival(d).festival_name`) and every such
+    reference failed. Reads the NumPy ("Returns" over a dashed line), Google ("Returns:") and reST (":returns:",
+    ":rtype:") styles, and a plain sentence that starts with "Returns a ..." (phonenumbers)."""
+    import inspect
+
+    lines = inspect.cleandoc(doc or "").splitlines()
+    rtype = next((ln.split(":rtype:", 1)[1].strip() for ln in lines if ln.strip().startswith(":rtype:")), "")
+    rdesc = next((ln.split(":", 2)[2].strip() for ln in lines if re.match(r"\s*:returns?:", ln)), "")
+    for i, ln in enumerate(lines):
+        head = ln.strip()
+        if head not in ("Returns", "Returns:", "Return", "Return:"):
+            continue
+        body = lines[i + 1:]
+        if body and set(body[0].strip()) == {"-"}:  # NumPy: the type on its own line, the text indented below it
+            body = body[1:]
+            kind = body[0].strip() if body else ""
+            text = []
+            for more in body[1:]:  # the description: indented lines up to a blank or unindented one
+                if not more.strip() or not more.startswith((" ", "\t")):
+                    break
+                text.append(more.strip())
+            rtype, rdesc = kind, " ".join(text)
+        elif body and body[0].strip() and not _SECTION.match(body[0].strip()):  # Google: "str: text" or just text
+            first = body[0].strip()
+            kind, sep, text = first.partition(":")
+            if sep and len(kind) <= 40 and " " not in kind.replace(" or ", "_").replace(", ", "_"):
+                rtype, rdesc = kind.strip(), text.strip()
+            else:
+                rdesc = first
+        break
+    if not rtype and not rdesc:  # a sentence: "Returns a boolean that indicates ..." (phonenumbers)
+        rdesc = next((re.sub(r"^Returns?\s+", "", ln.strip()) for ln in lines if re.match(r"\s*Returns? [a-z`]", ln)),
+                     "")
+    out = ": ".join(x for x in (rtype, rdesc.replace("``", "`")) if x)
+    return out[:160]
+
+
 def signature(sym: Symbol) -> str:
     params = []
     for p in sym.params:
@@ -329,7 +373,8 @@ def describe_symbols(a: Analysis, symbol_ids: list[str]) -> list[str]:
         if s.kind == "class":
             out += construction(a, s)
         else:
-            out.append(_full(s))
+            documented = "" if s.returns else documented_return(s.docstring)
+            out.append(_full(s) + (f"  (returns {documented})" if documented else ""))
             cls = syms.get(sid.rsplit(".", 1)[0]) if s.kind == "method" else None
             if cls is not None and cls.kind == "class":
                 out += construction(a, cls)[:1]
