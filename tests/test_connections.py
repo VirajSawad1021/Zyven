@@ -135,3 +135,14 @@ def test_every_template_label_is_an_acceptable_connection_name(store):
 def test_odd_names_are_still_refused(store, name):
     with pytest.raises(ConnectionError_, match="short name"):
         store.add(name=name, kind="http", url="https://mcp.example.com/mcp")
+
+
+def test_templates_avoid_missing_or_archived_packages():
+    """`@ubie-oss/slack-mcp-server` is not on npm and `@modelcontextprotocol/server-github` is archived (2026-11-26)."""
+    from zyven.connections.templates import TEMPLATES
+
+    by_id = {t["id"]: t for t in TEMPLATES}
+    launched = " ".join(a for t in TEMPLATES for a in t["args"])
+    assert "@ubie-oss/slack-mcp-server" not in launched and "@modelcontextprotocol/server-github" not in launched
+    assert by_id["slack"]["secrets"] == ["SLACK_MCP_XOXB_TOKEN"] and "slack-mcp-server@1.3.0" in by_id["slack"]["args"]
+    assert by_id["github"]["kind"] == "http" and by_id["github"]["secrets"] == ["Authorization"]
