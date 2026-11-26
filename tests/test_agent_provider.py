@@ -109,3 +109,23 @@ def test_a_usage_limit_message_is_reported_as_such(fake_codex, monkeypatch):
     p = AgentProvider("codex", executable=fake_codex, max_retries=1)
     with pytest.raises(ProviderError, match="usage limit"):
         p.chat([{"role": "user", "content": "go"}])
+
+
+FAKE_CLAUDE = r'''
+import json, sys
+sys.stdin.read()
+print(json.dumps({"type": "assistant", "message": {"content": [{"type": "text", "text": "fine"}]}}))
+print(json.dumps({"type": "result", "is_error": False, "result": "fine", "total_cost_usd": 0.0125,
+                  "usage": {"input_tokens": 10, "cache_read_input_tokens": 90, "output_tokens": 20}}))
+'''
+
+
+def test_claude_codes_reported_cost_is_kept_in_the_compile_roles_stats(tmp_path):
+    """#107 asks for the cost of a Claude Code compile; it was reported by Claude Code and then dropped."""
+    script = tmp_path / "fake_claude.py"
+    script.write_text(FAKE_CLAUDE, encoding="utf-8")
+    p = AgentProvider("claude", executable=[sys.executable, str(script)])
+    p.chat([{"role": "user", "content": "reply fine"}])
+    p.chat([{"role": "user", "content": "again"}])
+    assert p.stats.calls == 2 and p.stats.prompt_tokens == 200 and p.stats.completion_tokens == 40
+    assert round(p.stats.cost_usd, 4) == 0.025

@@ -27,8 +27,10 @@ def _short(value: Any, limit: int = 160) -> str:
     return text if len(text) <= limit else text[:limit] + "…"
 
 
-def parse_stream_line(line: str, emit: Callable[[str, str], None]) -> bool:
-    """Turn one Claude Code stream-json line into run events. Returns True when the run reported an error."""
+def parse_stream_line(line: str, emit: Callable[[str, str], None], totals: dict[str, float] | None = None) -> bool:
+    """Turn one Claude Code stream-json line into run events. Returns True when the run reported an error.
+    With `totals`, the final `result` line's tokens and cost are added to it, so a compile role can record what a run
+    cost; before #107 they were only printed, and every Claude Code run counted 0 tokens."""
     line = line.strip()
     if not line:
         return False
@@ -46,7 +48,13 @@ def parse_stream_line(line: str, emit: Callable[[str, str], None]) -> bool:
                 emit("tool", f"{block.get('name')}({_short(block.get('input', {}))})")
     elif kind == "result":
         usage = msg.get("usage") or {}
-        bits = [f"{usage.get('input_tokens', 0)} in / {usage.get('output_tokens', 0)} out tokens"]
+        prompt = sum(usage.get(k, 0) or 0 for k in ("input_tokens", "cache_creation_input_tokens",
+                                                     "cache_read_input_tokens"))  # cached prompt tokens are billed too
+        if totals is not None:
+            totals["in"] += prompt
+            totals["out"] += usage.get("output_tokens", 0) or 0
+            totals["cost"] += msg.get("total_cost_usd") or 0
+        bits = [f"{prompt} in / {usage.get('output_tokens', 0)} out tokens"]
         if msg.get("total_cost_usd") is not None:
             bits.append(f"${msg['total_cost_usd']:.4f}")
         emit("info", "done: " + ", ".join(bits))
@@ -100,7 +108,7 @@ class ClaudeCodeAdapter(CLIAgentAdapter):
                 f"cap ${cmd[-1]}; runs on this machine)")
 
     def parse(self, line: str, emit: Callable[[str, str], None], totals: dict[str, float]) -> bool:
-        return parse_stream_line(line, emit)
+        return parse_stream_line(line, emit, totals)
 
     def sign_in_state(self) -> tuple[bool | None, str]:
         out = run_quiet([*(self._executable() or []), "auth", "status"])

@@ -199,6 +199,7 @@ def compile_capability(
     verified = bool(report and report.passed)
     seconds = round(time.monotonic() - started, 1)
     (skill_dir / "adapter-code.json").write_text(code.model_dump_json(indent=1), encoding="utf-8")
+    providers = list({id(by(r)): by(r) for r in ROLE_NAMES}.values())  # a provider doing several roles counts once
     (skill_dir / "provenance.json").write_text(json.dumps({
         **provenance, "capability": spec.name, "mode": spec.mode, "included_symbols": spec.included_symbols,
         "source_checkout": str((repo / a.source_root).resolve()),  # wrap mode: importable source at runtime
@@ -206,7 +207,12 @@ def compile_capability(
         "network_hosts": list(allow_hosts or []),  # set by a reviewer; enforced at run time by the egress proxy
         "generated_files": ["server.py"], "compile_seconds": seconds, "attempts": attempt,
         "dropped_tools": dropped,  # tools that could not be verified and are NOT in the package
-        "model_calls": sum(p.stats.calls for p in {id(by(r)): by(r) for r in ROLE_NAMES}.values()),
+        "model_calls": sum(p.stats.calls for p in providers),
+        "model_tokens": {"prompt": sum(p.stats.prompt_tokens for p in providers),
+                         "completion": sum(p.stats.completion_tokens for p in providers)},
+        # what the coding agents reported; a chat model's cost is not known here, so it is left out rather than 0
+        **({"cost_usd": round(sum(p.stats.cost_usd for p in providers), 4)}
+           if any(p.stats.cost_usd for p in providers) else {}),
         "lint_warnings": len(lint_interface(spec, a)),  # interface lint warnings on the final spec; use to track quality
     }, indent=1), encoding="utf-8")
     (skill_dir / "validation-report.json").write_text(json.dumps(report.to_dict() if report else {}, indent=1,

@@ -83,6 +83,7 @@ class ProviderStats:
     failures: int = 0
     prompt_tokens: int = 0
     completion_tokens: int = 0
+    cost_usd: float = 0.0  # as reported by a coding agent (Claude Code, OpenCode); 0 when unknown
     latency_s: float = 0.0
     failovers: int = 0  # calls the primary host could not serve and the fallback answered
     errors: list[str] = field(default_factory=list)

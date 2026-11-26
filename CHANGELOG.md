@@ -185,6 +185,10 @@ build, and installs without a clone.
 - Every sandbox container gets the host name `zyven-sandbox`.
 
 ### Fixed
+- **A Claude Code compile records what it cost.** Claude Code reports its tokens and cost at the end of every call;
+  Zyven only printed them, so every Claude Code run counted 0 tokens. They now add up, and `provenance.json` records
+  `model_tokens` and, when a coding agent reported one, `cost_usd` (#107). A first `--agent claude` compile of
+  python-stdnum IBAN verified with 6/6 gates for $0.56.
 - **A docstring of only whitespace no longer crashes the repository summary** (found on sympy).
 - **Upstream tests that need a missing package no longer stop the gate when named explicitly.** pytest's `--ignore`
   does not apply to a file passed on the command line, so a chosen test file importing `bs4` stopped the whole run.

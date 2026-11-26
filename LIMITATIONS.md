@@ -157,7 +157,12 @@ outside-in checks (section 6), which are not the same as the six gates.**
     - Qoder answered a structured question.
     - OpenCode hit its free-usage limit.
     - Antigravity printed nothing: its log showed the account's quota exhausted (agy retries silently).
-    - Claude Code ran live as a Control center runtime, but not yet as a compile role.
+    - Claude Code (2.1.332, its default model, Windows, 2026-11-26) compiled and verified python-stdnum
+      `iban_validation` with `--agent claude` (every role), twice, each on the first attempt with 6/6 gates. The second
+      run, which recorded its cost, took 139.8 s, 3 model calls, 130,288 prompt and 13,987 completion tokens, and
+      **$0.56** as Claude Code reports it. That is the API-price equivalent; on a claude.ai plan it counts against
+      the plan's usage. The Tester was the same model as the Compiler, so a misreading they share could pass the
+      differential gate. The scout's result was cached, so it is not in that cost.
   - One verified compile is an example, not a comparison between agents.
 - **`zyven reassemble` trusts the saved differential cases.** It reruns the six gates with the cases the Tester wrote when the
   skill was first compiled. It does not write new ones. A weak original test set stays weak.
