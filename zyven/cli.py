@@ -210,7 +210,7 @@ def _write_sarif(path: str, reports: list) -> None:
 
 
 def cmd_verify(args) -> None:
-    from zyven.mcpverify import format_markdown, format_report, verify_server, write_lock
+    from zyven.mcpverify import verify_server
     if args.docker:
         from zyven.sandbox.runner import docker_problem
         why = docker_problem(args.docker)

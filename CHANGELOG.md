@@ -190,6 +190,10 @@ build, and installs without a clone.
   (compile role). Each run now writes agy's log (`--log-file`) to a temp file outside the task folder. Zyven reads it
   every few seconds and stops the run as soon as it shows "Resource has been exhausted". A compile role does not
   retry that error.
+- **The Slack (bot token) and GitHub connection templates start again.** `@ubie-oss/slack-mcp-server` is not on npm
+  (404), so the Slack template now runs `slack-mcp-server@1.3.0` (korotovsky, MIT) with `SLACK_MCP_XOXB_TOKEN`. The
+  GitHub template used the archived `@modelcontextprotocol/server-github`; it now connects to GitHub's own hosted server
+  (`https://api.githubcopilot.com/mcp/`) with the token as an `Authorization: Bearer` header. Template names are unchanged.
 - **A docstring of only whitespace no longer crashes the repository summary** (found on sympy).
 - **Upstream tests that need a missing package no longer stop the gate when named explicitly.** pytest's `--ignore`
   does not apply to a file passed on the command line, so a chosen test file importing `bs4` stopped the whole run.

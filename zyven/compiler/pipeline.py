@@ -134,7 +134,7 @@ def compile_capability(
         # coverage of the cases that can actually run: a broken reference covers nothing
         gaps = coverage_gaps(spec, [c for c in diff_tests.cases if reference_problem(c, package_roots) is None])
         emit("tester.done", detail=f"{len(diff_tests.cases)} cases for {len({c.tool for c in diff_tests.cases})} tools"
-             + (f"; still uncovered: " + "; ".join(f"{t}: {len(n)}" for t, n in gaps.items()) if gaps else "; full coverage"),
+             + ("; still uncovered: " + "; ".join(f"{t}: {len(n)}" for t, n in gaps.items()) if gaps else "; full coverage"),
              coverage_gaps=gaps)
     except ProviderError as e:
         diff_tests = None
