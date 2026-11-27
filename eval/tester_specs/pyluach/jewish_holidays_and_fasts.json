@@ -1,0 +1,224 @@
+{
+ "name": "jewish_holidays_and_fasts",
+ "title": "Jewish Holidays and Fasts",
+ "summary": "Identify Jewish holidays and fast days for a given Gregorian date, with options for location-based schedules (Israel vs. Diaspora) and Hebrew/English naming conventions.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "get_holiday_info",
+   "description": "Get the name of a Jewish holiday or fast day for a specific Gregorian date. This includes all religious holidays and fast days.",
+   "params": [
+    {
+     "name": "date_str",
+     "type": "string",
+     "description": "The Gregorian date in 'YYYY-MM-DD' format.",
+     "required": true,
+     "example": "2023-04-05"
+    },
+    {
+     "name": "is_israel",
+     "type": "boolean",
+     "description": "Whether to use the Israel schedule (True) or Diaspora schedule (False).",
+     "required": false,
+     "example": false
+    },
+    {
+     "name": "hebrew_names",
+     "type": "boolean",
+     "description": "Whether to return the holiday name in Hebrew characters.",
+     "required": false,
+     "example": false
+    },
+    {
+     "name": "hebrew_prefix_day",
+     "type": "boolean",
+     "description": "Whether to prefix multi-day holidays with the day number (e.g., '1 Pesach').",
+     "required": false,
+     "example": false
+    }
+   ],
+   "returns": [
+    {
+     "name": "holiday_name",
+     "type": "string",
+     "description": "The name of the holiday or null if no holiday is observed on this date."
+    },
+    {
+     "name": "holiday_display",
+     "type": "string",
+     "description": "A formatted string containing the holiday name and relevant context if applicable."
+    },
+    {
+     "name": "is_holiday",
+     "type": "boolean",
+     "description": "True if the date is a Jewish holiday or fast day."
+    }
+   ],
+   "implementation_symbols": [
+    "pyluach.hebrewcal.holiday",
+    "pyluach.dates.GregorianDate"
+   ],
+   "implementation_notes": "1. Create a GregorianDate instance using GregorianDate(int(date_str[:4]), int(date_str[5:7]), int(date_str[8:10])). 2. Call holiday(greg_date, israel=is_israel, hebrew=hebrew_names, prefix_day=hebrew_prefix_day). 3. Return the results. Note: The library returns None if no holiday is found, library.holiday() returns a None or str. Convert None to null in JSON. 4. If hebrew_names is True, the return value is in Hebrew. If hebrew_names is False, it is transliterated English.",
+   "example_args": {
+    "date_str": "2023-04-05",
+    "is_israel": false,
+    "hebrew_names": false,
+    "hebrew_prefix_day": true
+   }
+  },
+  {
+   "name": "get_festival_info",
+   "description": "Get the name of a Jewish festival for a specific Gregorian date. This excludes fast days and focuses on major and minor religious festivals.",
+   "params": [
+    {
+     "name": "date_str",
+     "type": "string",
+     "description": "The Gregorian date in 'YYYY-MM-DD' format.",
+     "required": true,
+     "example": "2023-04-05"
+    },
+    {
+     "name": "name_is_hebrew",
+     "type": "boolean",
+     "description": "Whether to return the festival name in Hebrew characters.",
+     "required": true,
+     "example": false
+    },
+    {
+     "name": "is_israel",
+     "type": "boolean",
+     "description": "import_path: pyluach.hebrewcal.festival",
+     "required": false,
+     "example": false
+    },
+    {
+     "name": "include_working_days",
+     "type": "boolean",
+     "description": "Whether to include festival days on which melacha (work) is allowed (e.g., Pesach Sheni, Chol Hamoed).",
+     "required": false,
+     "example": false
+    }
+   ],
+   "returns": [
+    {
+     "name": "festival_name",
+     "type": "string",
+     "description": "The name of the festival or null if no holiday is not a festival. "
+    },
+    {
+     "name": "festival_display",
+     "type": "string",
+     "description": "A formatted string containing the festival name."
+    },
+    {
+     "name": "festival_is_festival",
+     "type": "boolean",
+     "description": "True if the date is a Jewish festival."
+    },
+    {
+     "name": "festival_is_hebrew",
+     "type": "boolean",
+     "description": "True if the name was requested in Hebrew. "
+    }
+   ],
+   "implementation_symbols": [
+    "pyluach.hebrewcal.festival",
+    "pyluach.dates.GregorianDate"
+   ],
+   "implementation_notes": "1. Create a GregorianDate. 2. Call festival(greg_date, israel=is_israel, include_working_days=include_working_days, hebrew=name_is_hebrew, prefix_day=False). 3. Return the results. Note: The library returns None if no festival is found. Convert None to null in agent-facing interface. 4. If name_is_hebrew is True, the return value is in Hebrew.",
+   "example_args": {
+    "date_str": "2030-04-23",
+    "is_israel": true,
+    "include_working_days": true,
+    "name_is_hebrew": false
+   }
+  },
+  {
+   "name": "get_today_jewish_date",
+   "description": "Get the current Jewish (Hebrew) date for today's Gregorian date.",
+   "params": [],
+   "returns": [
+    {
+     "name": "hebrew_date_str",
+     "type": "string",
+     "description": "The current Hebrew date in 'YYYY-MM-DD' format (Hebrew year, Hebrew month, Hebrew day)."
+    },
+    {
+     "name": "name_is_hebrew",
+     "type": "boolean",
+     "description": "True if the date was returned in Hebrew characters."
+    },
+    {
+     "name": "display_date",
+     "type": "string",
+     "description": "A human-readable string representing the current Hebrew date (e.g., '1 Tishrei 5784')."
+    }
+   ],
+   "implementation_symbols": [
+    "pyluach.dates.GregorianDate.today"
+   ],
+   "implementation_notes": "1. Call GregorianDate.today(). 2. Convert the resulting GregorianDate to HebrewDate using .to_heb(). 3. Return the components of thehebrew_date.tuple() and format them into a display string. 4. Note: The library provides a GregorianDate.today() method.",
+   "example_args": {}
+  },
+  {
+   "name": "get_hebrew_date_from_gregorian",
+   "description": "Convert a Gregorian date to its corresponding Hebrew date.",
+   "params": [
+    {
+     "name": "date_str",
+     "type": "string",
+     "description": "The Gregorian date in 'YYYY-MM-DD' format.",
+     "required": true,
+     "example": "2023-01-15"
+    },
+    {
+     "name": "name_is_hebrew",
+     "type": "boolean",
+     "description": "Whether to return the Hebrew date in Hebrew characters.",
+     "required": false,
+     "example": false
+    }
+   ],
+   "returns": [
+    {
+     "name": "hebrew_date_tuple",
+     "type": "array",
+     "description": "The Hebrew date components (year, month, day)."
+    },
+    {
+     "name": "conversion_results",
+     "type": "string",
+     "description": "A human-readable string of the Hebrew date (e.g., '15 Shevat 5783')."
+    }
+   ],
+   "implementation_symbols": [
+    "pyluach.dates.GregorianDate.to_heb"
+   ],
+   "implementation_notes": "1. Create a GregorianDate instance from date_str. 2. Call .to_heb() on the GregorianDate instance. 3. Return the components of the HebrewDate.tuple() and a formatted string. 4. Note: The library returns a HebrewDate object.",
+   "example_args": {
+    "date_str": "2023-01-15",
+    "name_is_hebrew": false
+   }
+  }
+ ],
+ "included_symbols": [
+  "pyluach.hebrewcal.holiday",
+  "pyluach.hebrewcal.festival",
+  "pyluach.dates.GregorianDate",
+  "pyluach.dates.GregorianDate.today",
+  "pyluach.dates.GregorianDate.to_heb"
+ ],
+ "excluded_symbols": [],
+ "dependencies": [
+  "pyluach"
+ ],
+ "side_effects": [
+  "time_dependent"
+ ],
+ "relevant_tests": [
+  "tests/test_dates.py"
+ ],
+ "uncertainties": [
+  "B.C.E. dates may return inconsistent results when converting between date types."
+ ]
+}

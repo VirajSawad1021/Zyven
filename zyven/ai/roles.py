@@ -10,6 +10,7 @@ that still cannot be resolved is removed and recorded, never passed downstream.
 
 from __future__ import annotations
 
+import ast
 import keyword
 import logging
 import re
@@ -17,8 +18,8 @@ from dataclasses import dataclass, field
 
 from zyven.ai.provider import ModelProvider, ProviderError
 from zyven.ai.schemas import AdapterCode, CandidateCapability, CapabilitySpec, DiffTests, ScoutResult, ToolImpl
-from zyven.analysis.analyzer import Analysis
-from zyven.analysis.miner import evidence_packet, repo_digest
+from zyven.analysis.analyzer import Analysis, _dotted
+from zyven.analysis.miner import construction_signatures, evidence_packet, repo_digest
 from zyven.analysis.refs import RefResolver
 
 log = logging.getLogger(__name__)
@@ -381,6 +382,17 @@ def _impl_evidence(a: Analysis, spec: CapabilitySpec) -> str:
     return evidence_packet(a, ids or spec.included_symbols, max_chars=14000)
 
 
+def _tester_evidence(a: Analysis, spec: CapabilitySpec) -> str:
+    """The Tester's evidence: first how to build every library object it may need (constructor and factory
+    signatures, each with a real call from the library's tests), then the source evidence. Only the source evidence is
+    ever cut to fit; the signatures are what a reference program must get right."""
+    ids = list(dict.fromkeys(s for t in spec.tools for s in t.implementation_symbols)) or spec.included_symbols
+    build = construction_signatures(a, ids)
+    head = (f"HOW TO BUILD THE LIBRARY'S OBJECTS (exact constructor and factory signatures; call them exactly "
+            f"like this)\n{build}\n\n") if build else ""
+    return head + _impl_evidence(a, spec)
+
+
 def compiler(provider: ModelProvider, a: Analysis, spec: CapabilitySpec) -> AdapterCode:
     system = ("You are the Compiler role of a capability compiler. You write the bodies of MCP tool functions "
               f"that wrap an existing Python library. {UNTRUSTED_NOTE}\n{_CODE_RULES}\n"
@@ -465,6 +477,14 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
               "built first (a graph, a table), write those setup statements on their own lines, each a separate "
               "statement, and make the LAST line one expression that evaluates to the value, with no semicolons, converted to the same JSON "
               "type and format the spec describes (e.g. wrap in str(...), format dates as 'YYYY-MM-DD'). "
+              "For example, with the standard library's collections module (write the same shape with the library "
+              "under test and its own names):\n"
+              "    c = collections.Counter()\n"
+              "    c.update({words})\n"
+              "    c.most_common(1)[0][0]\n"
+              "A method that changes an object in place (add_..., append, extend, update, sort) returns None, so never "
+              "chain another call onto it: `collections.Counter().update({words}).most_common(1)` fails; call it on "
+              "its own line. "
               "Prefer fields with a deterministic, library-computed value. Only import the library and pure stdlib. "
               "COVERAGE (a bug hides wherever no case looks): across a tool's cases, (1) give every optional "
               "parameter a non-default value in at least one case AND leave it out in another; (2) check every "
@@ -474,7 +494,7 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
               "one-element input, zero, and the value right at a threshold. Write more cases than "
               f"{per_tool} if that is what coverage takes. "
               f"{UNTRUSTED_NOTE}")
-    user = f"CAPABILITY SPEC\n{spec.model_dump_json(indent=1)}\n\nLIBRARY EVIDENCE\n{_impl_evidence(a, spec)}"
+    user = f"CAPABILITY SPEC\n{spec.model_dump_json(indent=1)}\n\nLIBRARY EVIDENCE\n{_tester_evidence(a, spec)}"
     if feedback:  # earlier cases for these tools could not be used, and why
         user = f"{feedback}\n\n{user}"
     tests = provider.generate_structured([{"role": "system", "content": system}, {"role": "user", "content": user}],
@@ -495,17 +515,22 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
     tests.cases = [c for c in tests.cases if usable(c)]
     modules = {m.name for m in a.modules}
 
-    def fix_import(line: str) -> str:
-        """`import pkg.mod.Class` is a common slip (a class is not a module): import the module instead."""
+    def fix_import(line: str) -> list[str]:
+        """`import pkg.mod.Class` is a common slip (a class is not a module): import the module, AND bind the name the
+        model meant to import. Models write `hijridate.convert.Hijri` and then use `Hijri`; importing only the module
+        left `Hijri` unbound, and Gemma 4 E4B lost most of its hijridate references to that NameError."""
         line = line.strip()
         if not line.startswith(("import ", "from ")):
             line = f"import {line}"  # models often list bare module paths
         if line.startswith("import ") and " as " not in line and "," not in line:
             target = line[len("import "):].strip()
+            cut = ""
             while "." in target and target not in modules and target.split(".")[0] in {p for p in a.packages}:
-                target = target.rsplit(".", 1)[0]
-            line = f"import {target}"
-        return line
+                target, cut = target.rsplit(".", 1)[0], target.rsplit(".", 1)[1]
+            if cut:  # both spellings then work: pkg.mod.Class(...) and Class(...)
+                return [f"import {target}", f"from {target} import {cut}"]
+            return [f"import {target}"]
+        return [line]
 
     # Cover every tool: a tool without a usable case can never pass the differential gate, so ask once more,
     # for just the tools that are missing.
@@ -514,7 +539,7 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
     if missing and followups:
         sub_spec = spec.model_copy(update={"tools": missing})
         sub_user = (f"CAPABILITY SPEC (WRITE TEST CASES FOR THESE MISSED TOOLS ONLY)\n"
-                    f"{sub_spec.model_dump_json(indent=1)}\n\nLIBRARY EVIDENCE\n{_impl_evidence(a, sub_spec)}")
+                    f"{sub_spec.model_dump_json(indent=1)}\n\nLIBRARY EVIDENCE\n{_tester_evidence(a, sub_spec)}")
         try:
             extra = provider.generate_structured(
                 [{"role": "system", "content": system}, {"role": "user", "content": sub_user}], DiffTests)
@@ -530,7 +555,7 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
         gap_user = ("ADD TEST CASES THAT COVER WHAT THE EXISTING ONES MISS. Write only the new cases.\n"
                     + "\n".join(f"- {tool}: " + "; ".join(need) for tool, need in gaps.items())
                     + f"\n\nCAPABILITY SPEC (THESE TOOLS)\n{gap_spec.model_dump_json(indent=1)}"
-                    f"\n\nLIBRARY EVIDENCE\n{_impl_evidence(a, gap_spec)}")
+                    f"\n\nLIBRARY EVIDENCE\n{_tester_evidence(a, gap_spec)}")
         try:
             extra = provider.generate_structured(
                 [{"role": "system", "content": system}, {"role": "user", "content": gap_user}], DiffTests)
@@ -538,10 +563,36 @@ def tester(provider: ModelProvider, a: Analysis, spec: CapabilitySpec, per_tool:
         except Exception as e:  # best effort: the gaps are reported in the compile log either way
             log.warning("tester coverage re-query for %s failed: %s", sorted(gaps), str(e)[:200])
 
+    roots = {p.split(".")[0] for p in a.packages}
     for c in tests.cases:
-        c.reference_imports = [fix_import(ln) for ln in c.reference_imports if ln.strip()]
-        root = c.reference_expr.strip().split(".")[0].split("(")[0]
-        if root in {p.split(".")[0] for p in a.packages} and not any(
-                ln.startswith(f"import {root}") for ln in c.reference_imports):
-            c.reference_imports.append(f"import {root}")
+        c.reference_imports = list(dict.fromkeys(x for ln in c.reference_imports if ln.strip() for x in fix_import(ln)))
+        for mod in used_modules(c.reference_expr, roots, modules):
+            have = [ln[len("import "):].split(" as ")[0].strip() for ln in c.reference_imports if ln.startswith("import ")]
+            if not any(h == mod or h.startswith(mod + ".") for h in have):  # `import a.b` already binds `a`
+                c.reference_imports.append(f"import {mod}")
     return tests
+
+
+def used_modules(program: str, roots: set[str], modules: set[str]) -> list[str]:
+    """The library modules a reference program reaches by dotted path, e.g. `pyluach.hebrewcal` for
+    `pyluach.hebrewcal.holiday(...)`. Each needs its own import line: `import pyluach` alone does not load
+    `pyluach.hebrewcal`, and Gemma 4 E4B lost pyluach references to that AttributeError. Adding the import changes
+    nothing the program computes. A name the program binds itself (`pyluach = ...`) is left alone."""
+    try:
+        tree = ast.parse(program)
+    except SyntaxError:
+        return []
+    bound = {t.id for n in ast.walk(tree) if isinstance(n, ast.Assign) for t in n.targets if isinstance(t, ast.Name)}
+    out: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Attribute, ast.Name)):
+            continue
+        name = _dotted(node)
+        if not name or name.split(".")[0] not in roots or name.split(".")[0] in bound:
+            continue
+        parts = name.split(".")
+        best = next((".".join(parts[:i]) for i in range(len(parts), 0, -1) if ".".join(parts[:i]) in modules),
+                    parts[0])
+        if best not in out:
+            out.append(best)
+    return out

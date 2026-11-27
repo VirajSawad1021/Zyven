@@ -31,6 +31,7 @@ class DemoProvider(OAuthAuthorizationServerProvider[AuthorizationCode, RefreshTo
         self.refreshes = 0
         self.ttl = 3600  # seconds an access token lives
         self.registrations = 0
+        self.anonymous_listing = False
 
     async def get_client(self, client_id):
         return self.clients.get(client_id)
@@ -69,11 +70,50 @@ class DemoProvider(OAuthAuthorizationServerProvider[AuthorizationCode, RefreshTo
         return self._issue(client.client_id, scopes or refresh_token.scopes)
 
     async def load_access_token(self, token):
+        if token == ANONYMOUS and self.anonymous_listing:
+            return AccessToken(token=token, client_id="anonymous", scopes=["read"], expires_at=None)
         return self.access.get(token)
 
     async def revoke_token(self, token):
         self.access.pop(getattr(token, "token", ""), None)
         self.refresh.pop(getattr(token, "token", ""), None)
+
+
+ANONYMOUS = "anonymous-listing"  # only ever added by the wrapper below, never handed out
+LISTING = {"server/discover", "initialize", "tools/list"}
+
+
+def _anonymous_listing(app):
+    """Like Google's hosted Gmail and Docs servers: starting a session and listing tools need no token; calling a
+    tool does (401). A request without a token whose JSON-RPC method only lists is let through as anonymous."""
+    import json as _json
+
+    async def wrapped(scope, receive, send):
+        if scope["type"] != "http" or any(k == b"authorization" for k, _ in scope["headers"]):
+            return await app(scope, receive, send)
+        body, more = b"", True
+        while more:
+            msg = await receive()
+            body += msg.get("body", b"")
+            more = msg.get("more_body", False)
+        try:
+            method = _json.loads(body or b"{}").get("method", "")
+        except ValueError:
+            method = ""
+        if scope["method"] in ("GET", "DELETE") or method in LISTING or method.startswith("notifications/"):
+            scope = {**scope, "headers": [*scope["headers"], (b"authorization", f"Bearer {ANONYMOUS}".encode())]}
+        replayed = False
+
+        async def replay():
+            nonlocal replayed
+            if not replayed:
+                replayed = True
+                return {"type": "http.request", "body": body, "more_body": False}
+            return await receive()
+
+        return await app(scope, replay, send)
+
+    return wrapped
 
 
 def _free_port() -> int:
@@ -83,11 +123,13 @@ def _free_port() -> int:
 
 
 @contextmanager
-def oauth_mcp_server():
-    """Yields (base_url, provider) for a running OAuth-protected MCP server; the MCP endpoint is {base}/mcp."""
+def oauth_mcp_server(anonymous_listing: bool = False):
+    """Yields (base_url, provider) for a running OAuth-protected MCP server; the MCP endpoint is {base}/mcp.
+    With anonymous_listing, tools can be listed without a token and only calls need one (see _anonymous_listing)."""
     port = _free_port()
     base = f"http://127.0.0.1:{port}"
     provider = DemoProvider()
+    provider.anonymous_listing = anonymous_listing
     server = MCPServer(
         "oauth-demo", auth_server_provider=provider,
         auth=AuthSettings(issuer_url=base, resource_server_url=f"{base}/mcp", required_scopes=["read"],
@@ -105,7 +147,10 @@ def oauth_mcp_server():
         """Send a message."""
         return "sent"
 
-    uv = uvicorn.Server(uvicorn.Config(server.streamable_http_app(), host="127.0.0.1", port=port, log_level="error"))
+    app = server.streamable_http_app()
+    if anonymous_listing:
+        app = _anonymous_listing(app)
+    uv = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error"))
     thread = threading.Thread(target=uv.run, daemon=True)
     thread.start()
     for _ in range(100):

@@ -63,6 +63,7 @@ class Symbol:
     tested_by: list[str] = field(default_factory=list)  # test file paths that reference this symbol
     exported_as: list[str] = field(default_factory=list)  # public import paths, e.g. nepali.datetime.nepalidate
     loc: int = 0
+    bases: list[str] = field(default_factory=list)  # classes: base classes, as symbol ids when internal, else as written
 
 
 @dataclass
@@ -225,6 +226,7 @@ class _Collector(ast.NodeVisitor):
         self.file = file
         self.symbols: list[Symbol] = []
         self.raw_calls: dict[str, list[str]] = defaultdict(list)
+        self.raw_bases: dict[str, list[str]] = {}
         self.stack: list[tuple[str, str]] = []  # (name, kind)
 
     def _add(self, node: ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef, kind: str) -> Symbol:
@@ -248,7 +250,8 @@ class _Collector(ast.NodeVisitor):
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         if any(k == "function" or k == "method" for _, k in self.stack):
             return  # skip classes nested in functions
-        self._add(node, "class")
+        sym = self._add(node, "class")
+        self.raw_bases[sym.id] = [b for b in (_dotted(x) for x in node.bases) if b]
         self.stack.append((node.name, "class"))
         self.generic_visit(node)
         self.stack.pop()
@@ -405,6 +408,13 @@ def analyze(repo_path: str | Path, source_root: str | None = None) -> Analysis:
                 for c in external_calls for p in pats if c == p or c.startswith(p if p.endswith(".") else p + ".")
                 or c == p.rstrip(".")
             })
+        for cls_id, raw in col.raw_bases.items():  # base classes, so an inherited constructor can be found
+            for name in raw:
+                head, _, tail = name.partition(".")
+                fq = (info.imports[head] + (f".{tail}" if tail else "") if head in info.imports
+                      else f"{mod}.{name}" if f"{mod}.{head}" in symbols else name)
+                target = resolve(fq) if is_internal(fq) else None
+                symbols[cls_id].bases.append(target or name)
 
     # Public exports: names re-exported via package __init__ / __all__.
     for mod, info in modules.items():

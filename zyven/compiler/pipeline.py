@@ -6,7 +6,9 @@ validates references, enforces policy, runs the sandbox, and alone decides wheth
 
 from __future__ import annotations
 
+import ast
 import json
+import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -16,10 +18,12 @@ from zyven import __version__
 from zyven.ai.provider import ModelProvider, ProviderError
 from zyven.ai.roles import architect, compiler, coverage_gaps, lint_interface, repair, tester
 from zyven.ai.schemas import AdapterCode, CandidateCapability, CapabilitySpec, DiffTests
-from zyven.analysis.analyzer import Analysis
+from zyven.analysis.analyzer import Analysis, _dotted
+from zyven.analysis.miner import describe_symbols
+from zyven.analysis.refs import RefResolver
 from zyven.compiler.build import assemble
 from zyven.compiler.policy import check_adapter
-from zyven.compiler.verify import VerificationReport, reference_problem
+from zyven.compiler.verify import VerificationReport, reference_problems
 from zyven.compiler.verify import verify as _verify
 
 EventFn = Callable[[str, dict], None]
@@ -65,6 +69,14 @@ def compile_capability(
         from zyven.sandbox.egress import Egress
         with Egress(allow_hosts) as eg:
             return _verify(*args, egress=eg, **kw)
+
+    def check_references(cases: list) -> list[str | None]:  # the Tester's references, run as the gates will run them
+        # references.json lands in the skill folder, next to the smoke.json and diff_tests.json the gates write
+        if not allow_hosts:
+            return reference_problems(cases, spec, repo, a.source_root, package_roots, skill_dir)
+        from zyven.sandbox.egress import Egress
+        with Egress(allow_hosts) as eg:
+            return reference_problems(cases, spec, repo, a.source_root, package_roots, skill_dir, egress=eg)
 
     started = time.monotonic()
     roles = roles or {}
@@ -130,9 +142,9 @@ def compile_capability(
                                 f"{by('tester').label})")
     try:
         diff_tests = tester(by("tester"), a, spec)
-        diff_tests = _reask_unusable(by("tester"), a, spec, diff_tests, package_roots, emit)
-        # coverage of the cases that can actually run: a broken reference covers nothing
-        gaps = coverage_gaps(spec, [c for c in diff_tests.cases if reference_problem(c, package_roots) is None])
+        diff_tests, problems = _reask_unusable(by("tester"), a, spec, diff_tests, check_references, emit)
+        # coverage of the valid reference programs only: a reference that cannot run covers nothing
+        gaps = coverage_gaps(spec, [c for c, why in zip(diff_tests.cases, problems) if why is None])
         emit("tester.done", detail=f"{len(diff_tests.cases)} cases for {len({c.tool for c in diff_tests.cases})} tools"
              + ("; still uncovered: " + "; ".join(f"{t}: {len(n)}" for t, n in gaps.items()) if gaps else "; full coverage"),
              coverage_gaps=gaps)
@@ -218,42 +230,206 @@ def compile_capability(
     return CompileResult(skill_dir, spec, verified, attempt, report, events, seconds)
 
 
-def _reask_unusable(provider, a, spec, diff_tests, package_roots, emit):
-    """Ask the Tester once more for every tool whose cases all fail the sandbox's own reference checks (a syntax
-    error, a last line that is not the value, print(...), a policy violation), quoting why. Without this, such a tool
-    has no differential check at all: a mutation test showed one losing every case to syntax errors."""
-    problems: dict[str, list[str]] = {}
+def reference_names(c, a: Analysis, resolver: RefResolver) -> tuple[list[str], list[str]]:
+    """The library symbols a reference program calls, resolved through its own imports to symbol ids, and the
+    library names it calls that do not exist (e.g. a made-up `GregorianDate.fromisoformat`)."""
+    aliases: dict[str, str] = {}
+    for line in c.reference_imports:
+        try:
+            node = ast.parse(line.strip()).body[0]
+        except (SyntaxError, IndexError):
+            continue
+        if isinstance(node, ast.Import):
+            for n in node.names:
+                aliases[n.asname or n.name.split(".")[0]] = n.name if n.asname else n.name.split(".")[0]
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            for n in node.names:
+                aliases[n.asname or n.name] = f"{node.module}.{n.name}"
+    try:
+        tree = ast.parse(c.reference_expr)
+    except SyntaxError:
+        return [], []
+    roots = {p.split(".")[0] for p in a.packages}
+    found, unknown = [], []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = _dotted(node.func)
+        if not name:
+            continue
+        head, _, tail = name.partition(".")
+        fq = aliases.get(head, head) + (f".{tail}" if tail else "")
+        if fq.split(".")[0] not in roots:
+            continue
+        sid = resolver.resolve(fq)
+        (found if sid else unknown).append(sid or fq)
+    return list(dict.fromkeys(found)), list(dict.fromkeys(unknown))
+
+
+_NAME_ERROR = re.compile(r"""NameError\(["']name '([A-Za-z_][A-Za-z0-9_]*)' is not defined""")
+_JSON_WORDS = {"true": "True", "false": "False", "null": "None"}
+
+
+def missing_import(problem: str, a: Analysis, params: frozenset[str] | set[str] = frozenset()
+                   ) -> tuple[str, str, list[str]]:
+    """What a reference that failed with NameError is missing, as (name, advice, symbol ids to show signatures for).
+
+    - a bare library class or function (`Hijri.fromisoformat(...)` with only `import hijridate.convert`): the import
+      line for each public, non-test symbol with exactly that name (at most three); a symbol in a private module counts
+      only through its public re-export (`pkg._impl.Thing` as `pkg.Thing`)
+    - an alias the library's own code or tests give one of its modules (`nx` for networkx): that import line
+    - one of the tool's own arguments used as a variable (`date_str`): it must be written as the placeholder
+      `{date_str}`, which the harness fills with the case's value
+    - anything else (`G`, a graph the reference never built): it must be defined in the reference's own setup lines
+    ("", "", []) when the problem is not a NameError. The harness only advises; it never edits the reference."""
+    m = _NAME_ERROR.search(problem or "")
+    if not m:
+        return "", "", []
+    name = m.group(1)
+    if name in _JSON_WORDS:  # E4B wrote pyluach's flags as `israel=false`; its date conversion was right
+        return name, (f"`{name}` is how JSON spells it; in Python it is `{_JSON_WORDS[name]}`. Better still, pass the "
+                      "tool's own arguments as their placeholders"), []
+    program = problem.split(" running: ", 1)[1] if " running: " in problem else ""
+    if name in params and re.search(r"\{" + re.escape(name) + r"\s*[\[.(]", program):
+        # E4B wrote `GregorianDate({date_str[0:4]}, ...)`: the placeholder must be the bare name
+        return name, (f"a placeholder is only the bare name `{{{name}}}`, replaced by the value itself, so nothing can "
+                      f"be written inside the braces. Slice or call methods outside them: `{{{name}}}[0:4]`, "
+                      f"`{{{name}}}.split('-')`"), []
+    if name in params:
+        return name, (f"it is the tool's argument: write it as the placeholder {{{name}}} (with the braces, inside the "
+                      "program), which is replaced by the case's value; never as a bare variable"), []
+    tests = {mod.name for mod in a.modules if mod.is_test}
+    homes: list[tuple[str, str]] = []
+    for s in a.symbols:
+        if s.qualname != name or s.kind not in ("class", "function") or not s.is_public or s.module in tests:
+            continue
+        if not any(part.startswith("_") for part in s.module.split(".")):
+            homes.append((s.id, s.id))
+        else:
+            public = [e.split(" ")[0] for e in s.exported_as if not e.endswith("(instance)")]
+            if public:
+                homes.append((public[0], s.id))
+    if 0 < len(homes) <= 3:
+        return name, ("add " + " or ".join(f"`from {path.rsplit('.', 1)[0]} import {name}`" for path, _ in homes)
+                      + " to reference_imports"), [sid for _, sid in homes]
+    library = {mod.name for mod in a.modules if not mod.is_test}
+    aliased = sorted({mod.imports[name] for mod in a.modules if mod.imports.get(name) in library
+                      and mod.imports[name] != name and "." not in name})
+    if len(aliased) == 1:
+        return name, f"add `import {aliased[0]} as {name}` to reference_imports", []
+    return name, f"define `{name}` in the reference's own setup lines before the last line uses it", []
+
+
+_PLAIN = r"NoneType|str|int|float|bool|bytes|list|tuple|dict"
+_PLAIN_ATTR = re.compile(rf"""AttributeError\(["']'({_PLAIN})' object has no attribute '([A-Za-z_][A-Za-z0-9_]*)'""")
+_PLAIN_INDEX = re.compile(rf"""TypeError\(["']'({_PLAIN})' object is not subscriptable""")
+
+
+def none_chain_hint(problem: str) -> str:
+    """Advice for a reference that used a plain return value (None, a string, a number) as an object, or "" for any
+    other problem. Two cases, told apart by the program in the problem text (after " running: "):
+
+    - a method chained onto an in-place call: Gemma 4 E4B wrote every networkx reference as
+      `nx.Graph().add_weighted_edges_from([...]).dijkstra_path_length(...)`, and add_weighted_edges_from returns None;
+    - a field or an index read from a value: pyluach's festival() returns the festival's name or None, and E4B wrote
+      `festival(d).festival_name` and `holiday(d)[2]`. Telling it to split an in-place call would not help there."""
+    problem = problem or ""
+    program = problem.split(" running: ", 1)[1] if " running: " in problem else ""
+    attr, index = _PLAIN_ATTR.search(problem), _PLAIN_INDEX.search(problem)
+    if not attr and not index:
+        return ""
+    if attr and attr.group(1) == "NoneType" and re.search(rf"\)\s*\.\s*{attr.group(2)}\s*\(", program):
+        return (f"a call before `.{attr.group(2)}` returned None: a method that changes an object in place (add_..., "
+                "append, update, sort) returns None, so never chain onto it. Build the object on its own line, call "
+                "the in-place method on its own line, and compute the value on the last line, e.g.\n"
+                "      c = collections.Counter()\n      c.update({words})\n      c.most_common(1)[0][0]")
+    kind = (attr or index).group(1)
+    what = "None" if kind == "NoneType" else f"a plain {kind}"
+    read = f"`.{attr.group(2)}`" if attr else "an index `[...]`"
+    return (f"a library call returned {what} for these arguments, not an object, so {read} cannot be read from it. "
+            "Make the call's own result the last line (what it returns is noted with its signature below). Where "
+            "the library has no answer for the case's arguments it may return None, and None is then the expected "
+            "value: never read a field or an index of the result")
+
+
+def _reask_unusable(provider, a, spec, diff_tests, check, emit):
+    """Ask the Tester once more for every tool its valid reference programs leave with a coverage gap, quoting why
+    each rejected reference could not be used. `check(cases)` gives each case's problem or None: the static checks
+    (a syntax error, a last line that is not the value, print(...), a policy violation), then a run of the program in
+    the sandbox on its own arguments (the exception the library raised). A rejected reference is quoted with the exact
+    signatures of the library symbols it called, resolved against the analysis, so a constructor misuse such as
+    GregorianDate("2024-09-02") comes back with GregorianDate(year, month, day). The harness never rewrites a
+    reference itself: that would stop it being an independent check of the library.
+
+    One re-ask round, whatever the reason, with one request per tool that still lacks coverage: a compile keeps a fixed
+    upper bound of model calls (at most one per tool). Without it a tool whose
+    references all fail has no differential check at all (a mutation test showed one losing every case to syntax
+    errors; a small model lost all 18 pyluach cases to constructor misuse).
+
+    Returns the cases (the Tester's, then the valid ones the re-ask added) and each one's problem (None = valid)."""
+    problems = check(diff_tests.cases)
+    rejected: dict[str, list] = {}
     usable = []
-    for c in diff_tests.cases:
-        why = reference_problem(c, package_roots)
+    for c, why in zip(diff_tests.cases, problems):
         if why is None:
             usable.append(c)
         else:
-            problems.setdefault(c.tool, []).append(why)
+            rejected.setdefault(c.tool, []).append((c, why))
     # Gaps are judged on the cases that can run: a case that set an optional parameter but has a syntax error covers
     # nothing (a mutation in sort_versions' optional branch survived exactly that way).
     gaps = coverage_gaps(spec, usable)
     lacking = [t for t in spec.tools if t.name in gaps]
     if not lacking:
-        return diff_tests
-    emit("tester.retry", detail=f"{len(lacking)} tool(s) need more runnable cases: {', '.join(t.name for t in lacking)}")
-    lines = []
-    for t in lacking:
-        why = "; ".join(sorted(set(problems.get(t.name, []))))[:400]
-        lines.append(f"- {t.name}: still needed: {'; '.join(gaps[t.name])}"
-                     + (f". Earlier cases were rejected: {why}" if why else ""))
-    feedback = ("WRITE NEW TEST CASES FOR THESE TOOLS. Earlier cases left these gaps or could not be used:\n"
-                + "\n".join(lines))
-    try:
-        extra = tester(provider, a, spec.model_copy(update={"tools": lacking}), feedback=feedback, followups=False)
-    except ProviderError as e:
-        emit("tester.error", detail=f"re-ask failed: {str(e)[:200]}")
-        return diff_tests
-    names = {t.name for t in lacking}
-    added = [c for c in extra.cases if c.tool in names and reference_problem(c, package_roots) is None]
-    emit("tester.retry.done", detail=f"{len(added)} usable case(s) added for "
-         f"{len({c.tool for c in added})}/{len(lacking)} tool(s)")
-    return DiffTests(cases=list(diff_tests.cases) + added)
+        return diff_tests, problems
+    # A tool without parameters can never get a case (a reference must be tied to the tool's inputs), so asking again
+    # only costs a model call.
+    askable = [t for t in lacking if t.params]
+    if not askable:
+        return diff_tests, problems
+    emit("tester.retry", detail=f"{len(askable)} tool(s) need more valid cases: {', '.join(t.name for t in askable)}")
+    resolver = RefResolver(a)
+    added: list = []
+    for t in askable:  # one short, focused request per tool: a small model returned nothing for four tools at once
+        lines = [f"- {t.name}: still needed: {'; '.join(gaps[t.name])}"]
+        params = {p.name for p in t.params}
+        seen: set[str] = set()
+        for c, why in rejected.get(t.name, []):
+            if why in seen or len(seen) >= 3:  # a few distinct reasons say it; more only cost a small model context
+                continue
+            seen.add(why)
+            lines.append(f"  - this reference could not be used: {why[:400]}")
+            ids, unknown = reference_names(c, a, resolver)
+            name, advice, homes = missing_import(why, a, params)
+            if name:
+                lines.append(f"    `{name}` is not defined in that reference: {advice}")
+                ids = list(dict.fromkeys(ids + homes))
+            hint = none_chain_hint(why)
+            if hint:
+                lines.append(f"    {hint}")
+            if params and not any("{" + p + "}" in c.reference_expr for p in params):
+                # E4B retyped networkx edge lists as literals and broke the brackets in every run
+                lines.append("    it retypes the argument values: write them as placeholders ("
+                             + ", ".join("{" + p + "}" for p in sorted(params))
+                             + "), which the harness fills with the case's exact values, so no list or string is "
+                               "ever typed by hand")
+            sigs = describe_symbols(a, ids)
+            if sigs:
+                lines.append("    the library's exact signatures for what it calls:\n"
+                             + "\n".join(f"      {x}" for x in sigs[:8]))
+            if unknown:
+                lines.append(f"    not in the library: {', '.join(unknown[:4])}")
+        feedback = ("WRITE NEW TEST CASES FOR THIS TOOL. Earlier cases left these gaps or could not be used. Call the "
+                    "library exactly as its signatures below say:\n" + "\n".join(lines))
+        try:
+            extra = tester(provider, a, spec.model_copy(update={"tools": [t]}), feedback=feedback, followups=False)
+        except ProviderError as e:
+            emit("tester.error", detail=f"re-ask for {t.name} failed: {str(e)[:200]}")
+            continue
+        mine = [c for c in extra.cases if c.tool == t.name]
+        added += [c for c, why in zip(mine, check(mine)) if why is None]
+    emit("tester.retry.done", detail=f"{len(added)} valid case(s) added for "
+         f"{len({c.tool for c in added})}/{len(askable)} tool(s)")
+    return DiffTests(cases=list(diff_tests.cases) + added), list(problems) + [None] * len(added)
 
 
 def _failed(emit, events, started, reason: str, name: str, skills_root: Path,
