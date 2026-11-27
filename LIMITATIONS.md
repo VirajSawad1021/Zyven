@@ -191,11 +191,29 @@ outside-in checks (section 6), which are not the same as the six gates.**
   - **For compiled skills, only a reviewer sets it** (`zyven compile --allow-host`). A model never can. The gates
     run under it and so does the skill at run time, except with `ZYVEN_SKILL_RUNTIME=host`, which is for
     development only and logs that the allowlist is not enforced.
-- **`--srt-settings` was checked under srt 0.0.83 on macOS and Linux in CI, not on Windows.** On GitHub's Linux
-  runners srt's seccomp helper cannot create its nested user namespace, so the Linux run adds
+- **`--srt-settings` was checked under srt 0.0.83 on macOS and Linux in CI, and once by hand on Windows.** On GitHub's
+  Linux runners srt's seccomp helper cannot create its nested user namespace, so the Linux run adds
   `network.allowAllUnixSockets` (CI only; it lifts unix-socket filtering, which the check does not test). On macOS,
   programs using Apple's TLS stack cannot verify certificates inside the sandbox even for an allowed host. A server
   launched with `npx` or `uvx` also needs its package registry and a writable cache added by hand.
+  - **Windows** (Windows 11 Home, srt 0.0.83, 2026-11-26): `scripts/check_srt.py` passed all six checks, using the
+    file exactly as Zyven writes it. This was after srt's one-time `windows-install --skip-profile-grant`, which needs
+    administrator rights. It adds a local `srt-sandbox` account and machine-wide firewall (WFP) filters that apply
+    only to that account. Windows is not in CI.
+  - **srt must not run from inside the user's profile.** Through `npx`, srt fails with
+    `CreateProcessWithLogonW(srt-sandbox): Access is denied`, because its bundled `srt-win.exe` sits in npx's cache
+    under the profile, which the sandbox account cannot read. Install srt somewhere else, for example
+    `npm install --prefix C:\tools\srt @anthropic-ai/sandbox-runtime`. The check does this in `workspace/srt`, so the
+    repository must also be outside the profile.
+  - **The credential check proves little here.** Without the profile grant, the sandbox account can read nothing in
+    the profile, so `~/.ssh` was unreadable anyway. srt's log showed it applied all 11 of Zyven's `denyRead` entries.
+    Whether they hold with the grant was not checked; srt documents that the grant makes `~/.npmrc` readable.
+  - **Programs that use Windows' TLS stack cannot do HTTPS under srt**, even to an allowed host. This includes
+    `System32\curl.exe`, PowerShell's `Invoke-WebRequest`, .NET, and the `ucrt64` curl in Git for Windows. Node,
+    Python and other programs with their own TLS work. A Python or Node installed in the profile cannot start without
+    the grant.
+  - **Commands are passed as one line** (`srt -c "..."`). Given as separate arguments, srt 0.0.83 dropped `cmd`'s `/c`
+    and started an interactive `cmd`.
 - **`zyven export` copies the evidence; it does not re-verify.** The exported Docker image installs the library from git
   at the verified commit. If that commit or repository disappears upstream, the image cannot be rebuilt.
 - **`zyven outdated` maps symbols to files by module path.** A symbol re-exported from another module, or code moved
