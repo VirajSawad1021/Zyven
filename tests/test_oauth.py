@@ -198,3 +198,41 @@ def test_a_service_that_refuses_automatic_registration_gets_a_plain_instruction_
         msg = friendly_error(err)
         assert "client id and secret" in msg and "<html" not in msg.lower() and "DOCTYPE" not in msg
     assert friendly_error(ValueError("boom")) == "ValueError: boom"
+
+
+def test_signing_in_to_a_server_that_lists_tools_anonymously_still_gets_a_token(tmp_path):
+    """Google's Gmail and Docs servers list their tools without a token and refuse only tool calls. Sign in used to
+    finish at once (tools listed, no token kept, 'Not signed in'), and every call then failed."""
+    from zyven.connections.probe import server_for
+
+    store = ConnectionStore(tmp_path)
+
+    async def go(base, provider):
+        from mcp import Client
+
+        async with Client(base + "/mcp", read_timeout_seconds=30) as anon:  # the stand-in really is like Google's
+            assert {t.name for t in (await anon.list_tools()).tools} == {"lookup", "send_message"}
+        c = store.add(name="Listed anonymously", kind="http", url=base + "/mcp", oauth=True)
+        await _sign_in(store, OAuthCoordinator(store), c["id"])  # asserts that a browser step was asked for
+        done = store.get(c["id"])
+        assert done["signed_in"] is True and done["error"] is None
+        assert {t["name"] for t in done["tools"]} == {"lookup", "send_message"}
+        async with Client(server_for(store, c["id"]), read_timeout_seconds=30) as client:  # runtime: no browser
+            r = await client.call_tool("lookup", {"q": "x"})
+        assert not r.is_error and "found x" in " ".join(getattr(x, "text", "") for x in r.content)
+        assert await OAuthCoordinator(store).start(c["id"], REDIRECT) is None  # signed in now: no browser step again
+
+    with oauth_mcp_server(anonymous_listing=True) as (base, provider):
+        asyncio.run(go(base, provider))
+
+
+@pytest.mark.parametrize("advertised, used", [
+    ("https://accounts.google.com/", "https://accounts.google.com"),  # Google's Gmail server vs Google's own issuer
+    ("https://accounts.google.com", "https://accounts.google.com"),
+    ("https://auth.example.com/tenant/", "https://auth.example.com/tenant/"),  # a path is part of the issuer: kept
+    ("https://auth.example.com/?x=1", "https://auth.example.com/?x=1"),
+])
+def test_an_issuer_given_with_a_bare_trailing_slash_is_spelled_without_it(advertised, used):
+    from zyven.connections.oauth import same_issuer_spelling
+
+    assert same_issuer_spelling(advertised) == used

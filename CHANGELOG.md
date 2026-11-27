@@ -185,6 +185,13 @@ build, and installs without a clone.
 - Every sandbox container gets the host name `zyven-sandbox`.
 
 ### Fixed
+- **Signing in to Gmail or Google Docs now keeps a token.** Google's hosted servers list their tools without a sign-in
+  and refuse only tool calls, so Sign in used to finish at once: the tools were listed, no token was kept, the card
+  said "Not signed in", and every call failed. Sign in now runs the OAuth step whenever there is no valid token, even
+  if the server answers without one. Found by the live Gmail test (#106).
+  Google's server also names its authorization server "https://accounts.google.com/" while Google's issuer is
+  "https://accounts.google.com"; that trailing slash alone (the same URL) no longer stops the sign-in with "issuer
+  mismatch". Any other difference is still refused.
 - **The Slack (bot token) and GitHub connection templates start again.** `@ubie-oss/slack-mcp-server` is not on npm
   (404), so the Slack template now runs `slack-mcp-server@1.3.0` (korotovsky, MIT) with `SLACK_MCP_XOXB_TOKEN`. The
   GitHub template used the archived `@modelcontextprotocol/server-github`; it now connects to GitHub's own hosted server
