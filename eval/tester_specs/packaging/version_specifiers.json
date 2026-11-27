@@ -1,0 +1,185 @@
+{
+ "name": "version_specifiers",
+ "title": "Python Version and Specifier Management",
+ "summary": "A capability to parse, compare, and validate PEP 440 compliant Python versions and requirement specifiers.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "parse_version",
+   "description": "Parses a version string into a structured Version object. Useful for normalizing and inspecting version components.",
+   "params": [
+    {
+     "name": "version_string",
+     "type": "string",
+     "description": "A PEP 440 compliant version string (e.g., '1.2.3', '1.0a5', '2.0.dev1').",
+     "required": true,
+     "example": "1.2.3"
+    }
+   ],
+   "returns": [
+    {
+     "name": "normalized_version",
+     "type": "string",
+     "description": "The normalized string representation of the version."
+    },
+    {
+     "name": "epoch",
+     "type": "integer",
+     "description": "The epoch component of the version."
+    },
+    {
+     "name": "release",
+     "type": "array",
+     "description": "An array of integers representing the release part (e.0.g., [1, 2, 3])."
+    },
+    {
+     "name": "is_prerelease",
+     "type": "boolean",
+     "description": "Whether the version is a pre-release."
+    },
+    {
+     "name": "is_postrelease",
+     "type": "boolean",
+     "description": "Whether the version is a post-release."
+    },
+    {
+     "name": "is_devrelease",
+     "type": "boolean",
+     "description": "Whether the version is a development release."
+    },
+    {
+     "name": "is_local",
+     "type": "boolean",
+     "description": "Whether the version has a local identifier."
+    }
+   ],
+   "implementation_symbols": [
+    "packaging.version.Version"
+   ],
+   "implementation_notes": "Instantiate `packaging.version.Version(version_string)`. Return the attributes `v.epoch`, `v.release`, `v.pre`, `v.post`, `v.dev`, `v.local` and `str(v)`. Note that `v.pre` is a tuple of (str, int) or None.",
+   "example_args": {
+    "version_string": "1.2.3a1"
+   }
+  },
+  {
+   "name": "compare_versions",
+   "description": "Compares two PEP 440 versions to determine their relative order.",
+   "params": [
+    {
+     "name": "version_a",
+     "type": "string",
+     "description": "The first version string to compare.",
+     "required": true,
+     "example": "1.0.0"
+    },
+    {
+     "name": "version_b",
+     "type": "string",
+     "description": "The second version string to compare.",
+     "required": true,
+     "example": "2.0.0"
+    }
+   ],
+   "returns": [
+    {
+     "name": "comparison_result",
+     "type": "string",
+     "description": "A string describing the comparison result: 'less_than', 'less_than_or_equal', 'equal', 'equal_or_greater', 'equal_or_greater', 'greater_than', 'greater_than_or_equal', 'greater_than_or_equal' (Note: the agent should derive this from the boolean results of the comparison operators)."
+    },
+    {
+     "name": "comparison_details",
+     "type": "string",
+     "description": "A human-readable string describing the comparison result."
+    }
+   ],
+   "implementation_symbols": [
+    "packaging.version.Version"
+   ],
+   "implementation_notes": "Instantiate `packaging.version.Version(version_a)` and `packaging.version.Version(version_b)`. Use standard Python comparison operators: `v_a < v_b`, `v_a <= v_b`, `v_a == v_b`, `v_a >= v_b`, `v_a > v_b`. Return a string representation of the comparison outcome.",
+   "example_args": {
+    "version_a": "1.0.0",
+    "version_b": "1.1.0"
+   }
+  },
+  {
+   "name": "check_version_matches_specifier",
+   "description": "Checks if a specific version satisfies a given requirement specifier (e.g., '>=1.0, <2.0').",
+   "params": [
+    {
+     "name": "version_string",
+     "type": "string",
+     "description": "The version to check.",
+     "required": true,
+     "example": "1.5.0"
+    },
+    {
+     "name": "specifier_string",
+     "type": "string",
+     "description": "A PEP 440 specifier string (e.g., '>=1.0, <2.0', '==1.2.*', '!=2.0').",
+     "required": true,
+     "example": ">=1.0, <2.0"
+    }
+   ],
+   "returns": [
+    {
+     "name": "matches",
+     "type": "boolean",
+     "description": "Whether the version satisfies the specifier."
+    },
+    {
+     "name": "version_display",
+     "type": "string",
+     "description": "The normalized version string used for comparison."
+    },
+    {
+     "name": "specifier_display",
+     "type": "string",
+     "description": "The specifier string used for comparison."
+    }
+   ],
+   "implementation_symbols": [
+    "packaging.specifiers.SpecifierSet"
+   ],
+   "implementation_notes": "Instantiate `packaging.specifiers.SpecifierSet(specifier_string)` and `packaging.version.Version(version_string)`. Use the `contains` method of the SpecifierSet (e.g., `specifier_set.contains(version_object)`).",
+   "example_args": {
+    "version_string": "1.5.0",
+    "specifier_string": ">=1.0, <2.0"
+   }
+  }
+ ],
+ "included_symbols": [
+  "packaging.version.Version",
+  "packaging.specifiers.SpecifierSet",
+  "packaging.version.InvalidVersion"
+ ],
+ "excluded_symbols": [
+  {
+   "symbol": "packaging.version._parse_letter_version",
+   "reason": "Internal helper function; not intended for direct agent use."
+  },
+  {
+   "symbol": "packaging.version._validate_dev",
+   "reason": "Internal validation logic; encapsulated within the Version class."
+  },
+  {
+   "symbol": "packaging.version._cmpkey",
+   "reason": "Internal comparison key generator; encapsulated within the Version class."
+  },
+  {
+   "symbol": "packaging.version._validate_epoch",
+   "reason": "Internal validation logic; encapsulated within the Version class."
+  }
+ ],
+ "dependencies": [
+  "packaging"
+ ],
+ "side_effects": [],
+ "relevant_tests": [
+  "tests/test_specifiers.py",
+  "tests/property/test_version_normalization.py",
+  "tests/property/test_version_ordering.py"
+ ],
+ "uncertainties": [
+  "The exact behavior of pre-release matching in SpecifierSet depends on the PEP 440 rules, which the agent should be aware of (e.g., pre-releases are only matched if the specifier explicitly includes a pre-release component)."
+ ]
+}

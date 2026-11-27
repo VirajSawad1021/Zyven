@@ -1,0 +1,139 @@
+{
+ "name": "iban_validation",
+ "title": "IBAN Validation and Formatting",
+ "summary": "A capability to validate, normalize, and format International Bank Account Numbers (IBAN) and calculate missing check digits.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "validate_iban",
+   "description": "Validates an IBAN string. It checks the checksum and the country-specific structure. Returns the compact (no spaces) version of the IBAN if valid.",
+   "params": [
+    {
+     "name": "iban_string",
+     "type": "string",
+     "description": "The IBAN to validate. Can include spaces or separators.",
+     "required": true,
+     "example": "GR16 0110 1050 0000 1054 7023 795"
+    },
+    {
+     "name": "check_country",
+     "type": "boolean",
+     "description": "Whether to perform country-specific structure validation. Defaults to true.",
+     "required": false,
+     "example": true
+    }
+   ],
+   "returns": [
+    {
+     "name": "is_valid",
+     "type": "boolean",
+     "description": "True if the IBAN is valid according to checksum and country rules."
+    },
+    {
+     "name": "compact_iban",
+     "type": "string",
+     "description": "The normalized, compact IBAN (no spaces, uppercase)."
+    },
+    {
+     "name": "error_message",
+     "type": "string",
+     "description": "A description of the error if validation fails (e.g., 'InvalidFormat', 'InvalidComponent')."
+    }
+   ],
+   "implementation_symbols": [
+    "stdnum.iban.validate",
+    "stdnum.iban.is_valid"
+   ],
+   "implementation_notes": "To validate, first call `stdnum.iban.is_valid(iban_string, check_country=check_country)`. If it returns True, call `stdnum.iban.validate(iban_string, check_country=check_country)` to get the compact string. If `is_valid` is False, the `validate` call will raise a `ValidationError` (or its subclasses `InvalidFormat` or `InvalidComponent`); catch these to provide the `error_message`.",
+   "example_args": {
+    "iban_string": "GR16 0110 1050 0000 1054 7023 795",
+    "check_country": true
+   }
+  },
+  {
+   "name": "format_iban",
+   "description": "Formats a compact IBAN into a human-readable, space-separated string.",
+   "params": [
+    {
+     "name": "iban_string",
+     "type": "string",
+     "description": "The IBAN to validate or format. It will be automatically compacted first.",
+     "required": true,
+     "example": "GR1601101050000010547023795"
+    }
+   ],
+   "returns": [
+    {
+     "name": "formatted_iban",
+     "type": "string",
+     "description": "The IBAN formatted with spaces every 4 characters (e.g., 'GR16 0110 ...')."
+    }
+   ],
+   "implementation_symbols": [
+    "stdnum.iban.format"
+   ],
+   "implementation_notes": "Call `stdnum.iban.format(iban_string)`. The function internally calls `compact` first.",
+   "example_args": {
+    "iban_string": "GR1601101050000010547023795"
+   }
+  },
+  {
+   "name": "calculate_iban_check_digits",
+   "description": "Calculates the two-digit check digits required to make an IBAN valid. Use this when you have an IBAN with 'xx' in the check digit position.",
+   "params": [
+    {
+     "name": "iban_string",
+     "type": "string",
+     "description": "The IBAN with 'xx' or placeholders in the check digit position (e.g., 'BExx435411161155').",
+     "required": true,
+     "example": "BExx435411161155"
+    }
+   ],
+   "returns": [
+    {
+     "name": "check_digits",
+     "type": "string",
+     "description": "The two-digit string representing the calculated check digits."
+    }
+   ],
+   "implementation_symbols": [
+    "stdnum.iban.calc_check_digits"
+   ],
+   "implementation_notes": "Call `stdnum.iban.calc_check_digits(iban_string)`. The function handles the compaction and the checksum calculation.",
+   "example_args": {
+    "iban_string": "BExx435411161155"
+   }
+  }
+ ],
+ "included_symbols": [
+  "stdnum.iban.validate",
+  "stdnum.iban.is_valid",
+  "stdnum.iban.compact",
+  "stdnum.iban.format",
+  "stdnum.iban.calc_check_digits"
+ ],
+ "excluded_symbols": [
+  {
+   "symbol": "stdnum.util.clean",
+   "reason": "Low-level utility not relevant to the IBAN specific interface."
+  },
+  {
+   "symbol": "stdnum.iso7064.mod_97_10.validate",
+   "reason": "Checksum logic is internal to the IBAN implementation."
+  },
+  {
+   "symbol": "stdnum.iso7064.mod_97_10.calc_check_digits",
+   "reason": "Checksum logic is internal to the IBAN implementation."
+  }
+ ],
+ "dependencies": [
+  "stdnum"
+ ],
+ "side_effects": [],
+ "relevant_tests": [
+  "tests/test_iban.doctest"
+ ],
+ "uncertainties": [
+  "The exact error types (InvalidFormat, InvalidComponent) are part of the ValidationError hierarchy but are not explicitly detailed in the full library structure in the evidence; the tool returns a string description of the error if validation fails."
+ ]
+}

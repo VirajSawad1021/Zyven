@@ -244,8 +244,8 @@ def reference_problem(c, package_roots: set[str]) -> str | None:
     this too, right after the Tester answers, so a tool left without a usable case is asked about again."""
     try:
         body = ast.parse(c.reference_expr).body
-    except SyntaxError as e:
-        return f"syntax error: {e.msg}"
+    except SyntaxError as e:  # quote the program: the re-ask and the eval results then show what did not parse
+        return f"syntax error: {e.msg} (line {e.lineno}) in: {c.reference_expr[:300]}"
     last = body[-1] if body else None
     if not isinstance(last, ast.Expr):
         return "the last line must be the expression that computes the value"
@@ -255,6 +255,44 @@ def reference_problem(c, package_roots: set[str]) -> str | None:
     program = [ast.unparse(st) for st in body[:-1]] + [f"_ = ({ast.unparse(last.value)})"]
     res = check_adapter("\n".join(c.reference_imports + program), package_roots)
     return None if res.ok else "; ".join(res.violations)[:110]
+
+
+def reference_problems(cases: list, spec: CapabilitySpec, repo: Path, source_root: str, package_roots: set[str],
+                       workdir: Path, egress=None) -> list[str | None]:
+    """Why each case's reference program cannot be used, or None for a valid reference program: one that passes the
+    static checks (`reference_problem`) and then evaluates, in the sandbox, on its own case's arguments. Whether it
+    matches any tool is not looked at; no tool is involved. A runtime problem is the exception the library raised and
+    the program as it ran, e.g. `TypeError(...) running: pyluach.dates.GregorianDate('2024-09-02')...`.
+
+    `workdir` is a host folder the sandbox can mount (it receives references.json)."""
+    out: list[str | None] = [reference_problem(c, package_roots) for c in cases]
+    runnable = [i for i, why in enumerate(out) if why is None]
+    if not runnable:
+        return out
+    workdir.mkdir(parents=True, exist_ok=True)
+    tools = {t.name: t for t in spec.tools}
+    payload = [{**cases[i].model_dump(), "args": typed_args(tools[cases[i].tool].params, cases[i].args)
+                if cases[i].tool in tools else cases[i].args} for i in runnable]  # typed as the gate types them
+    (workdir / "references.json").write_text(json.dumps({"cases": payload}, ensure_ascii=False), encoding="utf-8")
+    net = {"network_name": egress.network} if egress is not None else {}
+    pythonpath = "/src" if source_root in ("", ".") else f"/src/{source_root}"
+    policy = SandboxPolicy(image=SANDBOX_IMAGE, timeout_s=120,
+                           extra_env={"PYTHONPATH": pythonpath, **(egress.env() if egress is not None else {})}, **net)
+    res = run(["python", "/opt/zyven/diff_check.py", "--references", "/work/references.json"],
+              {repo: "/src", workdir: "/work"}, policy, workdir="/work")
+    line = next((ln for ln in res.stdout.splitlines() if ln.startswith("ZYVEN_DIFF_REPORT=")), None)
+    report = json.loads(line.split("=", 1)[1]) if line else {"fatal": (res.stderr or res.stdout)[-300:]}
+    results = report.get("references")
+    if not isinstance(results, list) or len(results) != len(runnable):
+        # the sandbox itself failed (no image, a timeout): say so for every case rather than guess which are valid
+        why = "the sandbox could not run the reference programs: " + str(report.get("fatal", ""))[:200]
+        for i in runnable:
+            out[i] = why
+        return out
+    for i, r in zip(runnable, results):
+        if not r.get("ok"):
+            out[i] = f"{r.get('error')} running: {r.get('expr')}"
+    return out
 
 
 def _differential_gate(skill_dir, spec, diff_tests, mounts, env_policy, package_roots, failing,
