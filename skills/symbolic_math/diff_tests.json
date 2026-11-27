@@ -1,0 +1,253 @@
+{
+ "cases": [
+  {
+   "tool": "evaluate_limit",
+   "args": {
+    "expression": "sin(x)/x",
+    "variable": "x",
+    "point": "0",
+    "direction": "+-"
+   },
+   "field": "result",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "expr = sympy.sympify({expression})\nvar = sympy.sympify({variable})\npt = sympy.sympify({point})\nstr(sympy.limit(expr, var, pt, dir={direction}))"
+  },
+  {
+   "tool": "evaluate_limit",
+   "args": {
+    "expression": "1/x",
+    "variable": "x",
+    "point": "0"
+   },
+   "field": "result",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "expr = sympy.sympify({expression})\nvar = sympy.sympify({variable})\npt = sympy.sympify({point})\nstr(sympy.limit(expr, var, pt, dir='+'))"
+  },
+  {
+   "tool": "evaluate_limit",
+   "args": {
+    "expression": "1/x",
+    "variable": "x",
+    "point": "0",
+    "direction": "-"
+   },
+   "field": "result",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "expr = sympy.sympify({expression})\nvar = sympy.sympify({variable})\npt = sympy.sympify({point})\nstr(sympy.limit(expr, var, pt, dir={direction}))"
+  },
+  {
+   "tool": "evaluate_limit",
+   "args": {
+    "expression": "1/x",
+    "variable": "x",
+    "point": "0",
+    "direction": "+-"
+   },
+   "field": "result",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "expr = sympy.sympify({expression})\nvar = sympy.sympify({variable})\npt = sympy.sympify({point})\nstr(sympy.limit(expr, var, pt, dir={direction}))"
+  },
+  {
+   "tool": "evaluate_limit",
+   "args": {
+    "expression": "(1 - cos(x))/x**2",
+    "variable": "x",
+    "point": "0",
+    "direction": "+"
+   },
+   "field": "result",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "expr = sympy.sympify({expression})\nvar = sympy.sympify({variable})\npt = sympy.sympify({point})\nstr(sympy.limit(expr, var, pt, dir={direction}))"
+  },
+  {
+   "tool": "evaluate_limit",
+   "args": {
+    "expression": "1/x",
+    "variable": "x",
+    "point": "oo"
+   },
+   "field": "result",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "expr = sympy.sympify({expression})\nvar = sympy.sympify({variable})\npt = sympy.sympify({point})\nstr(sympy.limit(expr, var, pt, dir='+'))"
+  },
+  {
+   "tool": "evaluate_limit",
+   "args": {
+    "expression": "tan(x)",
+    "variable": "x",
+    "point": "pi/2"
+   },
+   "field": "result",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "expr = sympy.sympify({expression})\nvar = sympy.sympify({variable})\npt = sympy.sympify({point})\nstr(sympy.limit(expr, var, pt, dir='+'))"
+  },
+  {
+   "tool": "evaluate_limit",
+   "args": {
+    "expression": "1/x",
+    "variable": "x",
+    "point": "0",
+    "direction": "-"
+   },
+   "field": "direction",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "{direction}"
+  },
+  {
+   "tool": "evaluate_limit",
+   "args": {
+    "expression": "x",
+    "variable": "x",
+    "point": "oo"
+   },
+   "field": "point",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "{point}"
+  },
+  {
+   "tool": "evaluate_limit",
+   "args": {
+    "expression": "exp(-x)",
+    "variable": "x",
+    "point": "oo",
+    "direction": "+"
+   },
+   "field": "expression",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "{expression}"
+  },
+  {
+   "tool": "evaluate_limit",
+   "args": {
+    "expression": "log(x)/x",
+    "variable": "x",
+    "point": "oo"
+   },
+   "field": "variable",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "{variable}"
+  },
+  {
+   "tool": "simplify_or_factor_expression",
+   "args": {
+    "expression": "(x**2 - 1)/(x - 1)"
+   },
+   "field": "result",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "str(sympy.simplify(sympy.sympify({expression})))"
+  },
+  {
+   "tool": "simplify_or_factor_expression",
+   "args": {
+    "expression": "x**2 - 4",
+    "operation": "factor"
+   },
+   "field": "result",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "str(sympy.factor(sympy.sympify({expression})))"
+  },
+  {
+   "tool": "simplify_or_factor_expression",
+   "args": {
+    "expression": "sin(x**2 - 1)",
+    "operation": "factor",
+    "deep": true
+   },
+   "field": "result",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "str(sympy.factor(sympy.sympify({expression}), deep={deep}))"
+  },
+  {
+   "tool": "simplify_or_factor_expression",
+   "args": {
+    "expression": "sin(x**2 - 1)",
+    "operation": "factor",
+    "deep": false
+   },
+   "field": "result",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "str(sympy.factor(sympy.sympify({expression}), deep={deep}))"
+  },
+  {
+   "tool": "simplify_or_factor_expression",
+   "args": {
+    "expression": "(x**2 - 1)/(x - 1)",
+    "operation": "simplify",
+    "ratio": 2.0
+   },
+   "field": "result",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "str(sympy.simplify(sympy.sympify({expression}), ratio={ratio}))"
+  },
+  {
+   "tool": "simplify_or_factor_expression",
+   "args": {
+    "expression": "sin(x)**2 + cos(x)**2",
+    "operation": "simplify"
+   },
+   "field": "result",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "str(sympy.simplify(sympy.sympify({expression})))"
+  },
+  {
+   "tool": "simplify_or_factor_expression",
+   "args": {
+    "expression": "x**3 - x",
+    "operation": "factor",
+    "deep": false
+   },
+   "field": "operation",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "{operation}"
+  },
+  {
+   "tool": "simplify_or_factor_expression",
+   "args": {
+    "expression": "(x + 1)*(x - 1)",
+    "operation": "simplify",
+    "ratio": 1.7
+   },
+   "field": "expression",
+   "reference_imports": [
+    "import sympy"
+   ],
+   "reference_expr": "{expression}"
+  }
+ ]
+}

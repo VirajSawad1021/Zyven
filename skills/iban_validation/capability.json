@@ -1,0 +1,100 @@
+{
+ "name": "iban_validation",
+ "title": "IBAN Validation and Formatting",
+ "summary": "A capability to validate, normalize, and format International Bank Account Numbers (IBAN) and calculate missing check digits.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "validate_iban",
+   "description": "Validates an IBAN string. It checks the checksum and the country-specific structure. If the IBAN is invalid, it returns false.",
+   "params": [
+    {
+     "name": "iban_string",
+     "type": "string",
+     "description": "The IBAN to validate (can include spaces or separators).",
+     "required": true,
+     "example": "GR16 0110 1050 0000 1054 7023 795"
+    }
+   ],
+   "returns": [
+    {
+     "name": "is_valid",
+     "type": "boolean",
+     "description": "Whether the IBAN is valid according to checksum and country rules."
+    },
+    {
+     "name": "compact_iban",
+     "type": "string",
+     "description": "The normalized, compact IBAN (no spaces)."
+    },
+    {
+     "name": "formatted_iban",
+     "type": "string",
+     "description": "The IBAN formatted with spaces every 4 characters for readability."
+    }
+   ],
+   "implementation_symbols": [
+    "stdnum.iban.is_valid",
+    "stdnum.iban.validate",
+    "stdnum.iban.compact",
+    "stdnum.iban.format"
+   ],
+   "implementation_notes": "To implement 'validate_iban', first call 'stdnum.iban.compact(iban_string)' to get the compact version. Then, use 'stdnum.iban.is_valid(iban_string)' to check validity. If valid, return the compact version and the formatted version using 'stdnum.iban.format(compact_iban)'. If invalid, return is_valid=False and the compact version (if possible) or the original string.",
+   "example_args": {
+    "iban_string": "GR16 0110 1050 0000 1054 7023 795"
+   }
+  },
+  {
+   "name": "calculate_iban_check_digits",
+   "description": "Calculates the two-digit check digits required to make an IBAN valid. Use this when you have an IBAN with 'xx' in the check digit position.",
+   "params": [
+    {
+     "name": "iban_with_placeholders",
+     "type": "string",
+     "description": "The IBAN with placeholders (e.g., 'xx') in the check digit position.",
+     "required": true,
+     "example": "BExx435411161155"
+    }
+   ],
+   "returns": [
+    {
+     "name": "check_digits",
+     "type": "string",
+     "description": "The two-digit check digits that should be inserted into the IBAN."
+    },
+    {
+     "name": "formatted_iban_with_digits",
+     "type": "string",
+     "description": "The complete, valid IBAN with the calculated digits inserted."
+    }
+   ],
+   "implementation_symbols": [
+    "stdnum.iban.calc_check_digits",
+    "stdnum.iban.compact",
+    "stdnum.iban.format"
+   ],
+   "implementation_notes": "Call 'stdnum.iban.calc_check_digits(iban_with_placeholders)' to get the check digits. Then, use string replacement to insert these digits into the 'xx' position of the compact version of the IBAN. Finally, return the formatted version using 'stdnum.iban.format()'.",
+   "example_args": {
+    "iban_with_placeholders": "BExx435411161155"
+   }
+  }
+ ],
+ "included_symbols": [
+  "stdnum.iban.validate",
+  "stdnum.iban.is_valid",
+  "stdnum.iban.compact",
+  "stdnum.iban.format",
+  "stdnum.iban.calc_check_digits"
+ ],
+ "excluded_symbols": [],
+ "dependencies": [
+  "stdnum"
+ ],
+ "side_effects": [],
+ "relevant_tests": [
+  "tests/test_iban.doctest"
+ ],
+ "uncertainties": [
+  "The 'validate' method might raise 'ValidationError' or 'InvalidComponent' or 'InvalidFormat' if the IBAN is invalid, which the 'is_valid' wrapper handles by returning False."
+ ]
+}

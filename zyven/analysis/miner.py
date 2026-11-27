@@ -24,7 +24,8 @@ class BaselineCandidate:
 
 
 def _first_line(doc: str | None) -> str:
-    return (doc or "").strip().splitlines()[0][:140] if doc else ""
+    lines = (doc or "").strip().splitlines()  # a docstring of only whitespace (sympy has some) has no first line
+    return lines[0][:140] if lines else ""
 
 
 _SECTION = re.compile(r"^[A-Z][A-Za-z ]*:?$")  # a docstring section heading: "Parameters", "Raises:", ...

@@ -1,0 +1,514 @@
+{
+ "cases": [
+  {
+   "tool": "get_jewish_holiday",
+   "args": {
+    "date": "2023-04-06",
+    "israel": false,
+    "hebrew": false,
+    "prefix_day": true
+   },
+   "field": "festival",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import festival"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, israel={israel}, hebrew={hebrew}, include_working_days=True, prefix_day={prefix_day})"
+  },
+  {
+   "tool": "get_jewish_holiday",
+   "args": {
+    "date": "2023-04-07",
+    "israel": false,
+    "hebrew": false,
+    "prefix_day": true
+   },
+   "field": "is_festival",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import festival"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, israel={israel}, hebrew={hebrew}, include_working_days=True, prefix_day={prefix_day}) is not None"
+  },
+  {
+   "tool": "get_jewish_holiday",
+   "args": {
+    "date": "2023-12-21",
+    "hebrew": true
+   },
+   "field": "fast_day",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import fast_day"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew={hebrew})"
+  },
+  {
+   "tool": "get_jewish_holiday",
+   "args": {
+    "date": "2023-12-21",
+    "hebrew": true
+   },
+   "field": "is_fast_day",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import fast_day"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew={hebrew}) is not None"
+  },
+  {
+   "tool": "get_jewish_holiday",
+   "args": {
+    "date": "2023-12-21",
+    "hebrew": true
+   },
+   "field": "kind",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import fast_day",
+    "from pyluach.hebrewcal import festival"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\n'fast_day' if fast_day(date_obj, hebrew={hebrew}) is not None else 'festival' if festival(date_obj, hebrew={hebrew}) is not None else None"
+  },
+  {
+   "tool": "get_jewish_holiday",
+   "args": {
+    "date": "2024-01-01"
+   },
+   "field": "date",
+   "reference_imports": [],
+   "reference_expr": "{date}"
+  },
+  {
+   "tool": "get_jewish_holiday",
+   "args": {
+    "date": "2024-01-01"
+   },
+   "field": "holiday",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import holiday"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj)"
+  },
+  {
+   "tool": "get_jewish_holiday",
+   "args": {
+    "date": "2024-01-01"
+   },
+   "field": "is_holiday",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import holiday"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj) is not None"
+  },
+  {
+   "tool": "get_jewish_holiday",
+   "args": {
+    "date": "2024-01-01"
+   },
+   "field": "is_festival",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import festival"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj) is not None"
+  },
+  {
+   "tool": "get_jewish_holiday",
+   "args": {
+    "date": "2023-04-06",
+    "israel": true,
+    "hebrew": true,
+    "prefix_day": false
+   },
+   "field": "holiday",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import holiday"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj, israel={israel}, hebrew={hebrew}, prefix_day={prefix_day})"
+  },
+  {
+   "tool": "get_jewish_holiday",
+   "args": {
+    "date": "2023-04-06",
+    "israel": true,
+    "hebrew": true,
+    "prefix_day": false
+   },
+   "field": "kind",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import fast_day",
+    "from pyluach.hebrewcal import festival"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\n'fast_day' if fast_day(date_obj, hebrew={hebrew}) is not None else 'festival' if festival(date_obj, israel={israel}, hebrew={hebrew}, prefix_day={prefix_day}) is not None else None"
+  },
+  {
+   "tool": "get_jewish_holiday",
+   "args": {
+    "date": "2023-04-06",
+    "israel": true,
+    "hebrew": true,
+    "prefix_day": false
+   },
+   "field": "is_holiday",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import holiday"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj, israel={israel}, hebrew={hebrew}, prefix_day={prefix_day}) is not None"
+  },
+  {
+   "tool": "get_jewish_festival",
+   "args": {
+    "date": "2023-04-06",
+    "israel": true,
+    "include_working_days": false,
+    "prefix_day": true
+   },
+   "field": "festival",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import festival"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, israel={israel}, include_working_days={include_working_days}, prefix_day={prefix_day})"
+  },
+  {
+   "tool": "get_jewish_festival",
+   "args": {
+    "date": "2023-04-09",
+    "hebrew": true
+   },
+   "field": "festival",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import festival"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, hebrew={hebrew})"
+  },
+  {
+   "tool": "get_jewish_festival",
+   "args": {
+    "date": "2024-01-01"
+   },
+   "field": "date",
+   "reference_imports": [],
+   "reference_expr": "{date}"
+  },
+  {
+   "tool": "get_jewish_festival",
+   "args": {
+    "date": "2024-01-01"
+   },
+   "field": "holiday",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import holiday"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj)"
+  },
+  {
+   "tool": "get_jewish_festival",
+   "args": {
+    "date": "2024-01-01"
+   },
+   "field": "is_holiday",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import holiday"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj) is not None"
+  },
+  {
+   "tool": "get_jewish_festival",
+   "args": {
+    "date": "2024-01-01"
+   },
+   "field": "is_festival",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import festival"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj) is not None"
+  },
+  {
+   "tool": "get_jewish_festival",
+   "args": {
+    "date": "2023-12-21",
+    "hebrew": true
+   },
+   "field": "fast_day",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import fast_day"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew={hebrew})"
+  },
+  {
+   "tool": "get_jewish_festival",
+   "args": {
+    "date": "2023-12-21",
+    "hebrew": true
+   },
+   "field": "is_fast_day",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import fast_day"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew={hebrew}) is not None"
+  },
+  {
+   "tool": "get_jewish_festival",
+   "args": {
+    "date": "2023-04-06",
+    "israel": true,
+    "include_working_days": false,
+    "prefix_day": true
+   },
+   "field": "is_festival",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import festival"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, israel={israel}, include_working_days={include_working_days}, prefix_day={prefix_day}) is not None"
+  },
+  {
+   "tool": "get_jewish_festival",
+   "args": {
+    "date": "2023-04-06",
+    "israel": true,
+    "include_working_days": false,
+    "prefix_day": true
+   },
+   "field": "holiday",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import holiday"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj, israel={israel}, prefix_day={prefix_day})"
+  },
+  {
+   "tool": "get_jewish_festival",
+   "args": {
+    "date": "2023-04-06",
+    "israel": true,
+    "include_working_days": false,
+    "prefix_day": true
+   },
+   "field": "is_holiday",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import holiday"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj, israel={israel}, prefix_day={prefix_day}) is not None"
+  },
+  {
+   "tool": "get_fast_day",
+   "args": {
+    "date": "2023-12-21",
+    "hebrew": true
+   },
+   "field": "fast_day",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import fast_day"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew={hebrew})"
+  },
+  {
+   "tool": "get_fast_day",
+   "args": {
+    "date": "2023-12-21",
+    "hebrew": true
+   },
+   "field": "is_fast_day",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import fast_day"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew={hebrew}) is not None"
+  },
+  {
+   "tool": "get_fast_day",
+   "args": {
+    "date": "2023-12-21"
+   },
+   "field": "fast_day",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import fast_day"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj)"
+  },
+  {
+   "tool": "get_fast_day",
+   "args": {
+    "date": "2024-01-01"
+   },
+   "field": "date",
+   "reference_imports": [],
+   "reference_expr": "{date}"
+  },
+  {
+   "tool": "get_fast_day",
+   "args": {
+    "date": "2024-01-01"
+   },
+   "field": "fast_day",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import fast_day"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj)"
+  },
+  {
+   "tool": "get_fast_day",
+   "args": {
+    "date": "2024-01-01"
+   },
+   "field": "is_fast_day",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import fast_day"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj) is not None"
+  },
+  {
+   "tool": "get_fast_day",
+   "args": {
+    "date": "2023-04-06"
+   },
+   "field": "holiday",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import holiday"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj)"
+  },
+  {
+   "tool": "get_fast_day",
+   "args": {
+    "date": "2023-04-06"
+   },
+   "field": "is_holiday",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import holiday"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj) is not None"
+  },
+  {
+   "tool": "get_fast_day",
+   "args": {
+    "date": "2023-04-06"
+   },
+   "field": "festival",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import festival"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj)"
+  },
+  {
+   "tool": "get_fast_day",
+   "args": {
+    "date": "2023-04-06"
+   },
+   "field": "is_festival",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate",
+    "from pyluach.hebrewcal import festival"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj) is not None"
+  },
+  {
+   "tool": "get_shabbat_for_date",
+   "args": {
+    "date": "2024-01-06"
+   },
+   "field": "shabbat_date",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nf\"{shabbat_obj.year:04d}-{shabbat_obj.month:02d}-{shabbat_obj.day:02d}\""
+  },
+  {
+   "tool": "get_shabbat_for_date",
+   "args": {
+    "date": "2024-01-06"
+   },
+   "field": "is_shabbat",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\n(shabbat_obj - date_obj) == 0"
+  },
+  {
+   "tool": "get_shabbat_for_date",
+   "args": {
+    "date": "2024-01-06"
+   },
+   "field": "days_until_shabbat",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nshabbat_obj - date_obj"
+  },
+  {
+   "tool": "get_shabbat_for_date",
+   "args": {
+    "date": "2024-01-05"
+   },
+   "field": "days_until_shabbat",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nshabbat_obj - date_obj"
+  },
+  {
+   "tool": "get_shabbat_for_date",
+   "args": {
+    "date": "2024-01-07"
+   },
+   "field": "days_until_shabbat",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nshabbat_obj - date_obj"
+  },
+  {
+   "tool": "get_shabbat_for_date",
+   "args": {
+    "date": "2024-01-05"
+   },
+   "field": "is_shabbat",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\n(shabbat_obj - date_obj) == 0"
+  },
+  {
+   "tool": "get_shabbat_for_date",
+   "args": {
+    "date": "2024-01-01"
+   },
+   "field": "date",
+   "reference_imports": [],
+   "reference_expr": "{date}"
+  },
+  {
+   "tool": "get_shabbat_for_date",
+   "args": {
+    "date": "2024-01-07"
+   },
+   "field": "shabbat_date",
+   "reference_imports": [
+    "from pyluach.dates import GregorianDate"
+   ],
+   "reference_expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, {date}.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nf\"{shabbat_obj.year:04d}-{shabbat_obj.month:02d}-{shabbat_obj.day:02d}\""
+  }
+ ]
+}

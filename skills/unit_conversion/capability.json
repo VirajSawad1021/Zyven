@@ -1,0 +1,224 @@
+{
+ "name": "unit_conversion",
+ "title": "Unit Conversion",
+ "summary": "Convert values between physical units using pint, including offset units such as Celsius/Fahrenheit and logarithmic units, test whether units are dimensionally compatible, and express a quantity in base SI units.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "convert_units",
+   "description": "Convert a numeric value from one unit to another. Use this for exact physical conversions, including compound units (km/h, N*m), offset temperatures, and logarithmic units. Returns the converted value plus normalized units and dimensionality.",
+   "params": [
+    {
+     "name": "value",
+     "type": "number",
+     "description": "Numeric quantity to convert.",
+     "required": true,
+     "example": 100
+    },
+    {
+     "name": "from_unit",
+     "type": "string",
+     "description": "Source unit expression, such as 'degC', 'km/h', or 'N*m'.",
+     "required": true,
+     "example": "degC"
+    },
+    {
+     "name": "to_unit",
+     "type": "string",
+     "description": "Destination unit expression, such as 'degF', 'm/s', or 'J'.",
+     "required": true,
+     "example": "degF"
+    }
+   ],
+   "returns": [
+    {
+     "name": "converted_value",
+     "type": "number",
+     "description": "Value expressed in the destination units."
+    },
+    {
+     "name": "from_unit",
+     "type": "string",
+     "description": "Normalized source unit."
+    },
+    {
+     "name": "to_unit",
+     "type": "string",
+     "description": "Normalized destination unit."
+    },
+    {
+     "name": "dimensionality",
+     "type": "string",
+     "description": "Pint dimensionality of the quantity, such as '[temperature]' or '[length] / [time]'."
+    },
+    {
+     "name": "display",
+     "type": "string",
+     "description": "Human-readable conversion, such as '100 degC = 212 degF'."
+    }
+   ],
+   "implementation_symbols": [
+    "pint.registry.UnitRegistry",
+    "pint.registry.UnitRegistry.__init__",
+    "pint.facets.plain.registry.GenericPlainRegistry.convert"
+   ],
+   "implementation_notes": "Create one shared registry with `import pint; _ureg = pint.UnitRegistry()`. Call `_ureg.convert(value, from_unit, to_unit)` and coerce its result to a Python number. Normalize units for display with `str(_ureg.Unit(from_unit))` and `str(_ureg.Unit(to_unit))`. Obtain dimensionality from the source unit, for example `str(_ureg.Quantity(1, from_unit).dimensionality)` or an equivalent registry attribute. Build `display` as `f\"{value} {from_unit} = {converted_value} {to_unit}\"`.",
+   "example_args": {
+    "value": 100,
+    "from_unit": "degC",
+    "to_unit": "degF"
+   }
+  },
+  {
+   "name": "check_unit_compatibility",
+   "description": "Check whether two unit expressions are dimensionally compatible and can be converted between each other by pint.",
+   "params": [
+    {
+     "name": "unit_a",
+     "type": "string",
+     "description": "First unit expression.",
+     "required": true,
+     "example": "km/h"
+    },
+    {
+     "name": "unit_b",
+     "type": "string",
+     "description": "Second unit expression.",
+     "required": true,
+     "example": "m/s"
+    }
+   ],
+   "returns": [
+    {
+     "name": "compatible",
+     "type": "boolean",
+     "description": "True if pint can convert between the two units."
+    },
+    {
+     "name": "dimensionality_a",
+     "type": "string",
+     "description": "Dimensionality of the first unit."
+    },
+    {
+     "name": "dimensionality_b",
+     "type": "string",
+     "description": "Dimensionality of the second unit."
+    },
+    {
+     "name": "normalized_a",
+     "type": "string",
+     "description": "Normalized form of the first unit."
+    },
+    {
+     "name": "normalized_b",
+     "type": "string",
+     "description": "Normalized form of the second unit."
+    },
+    {
+     "name": "reason",
+     "type": "string",
+     "description": "Empty when compatible; otherwise the pint error or dimensionality mismatch explanation."
+    }
+   ],
+   "implementation_symbols": [
+    "pint.registry.UnitRegistry",
+    "pint.registry.UnitRegistry.__init__",
+    "pint.facets.plain.registry.GenericPlainRegistry.convert"
+   ],
+   "implementation_notes": "Use the same shared `_ureg = pint.UnitRegistry()`. First normalize each unit with `str(_ureg.Unit(unit))` and get dimensionalities. Then attempt `_ureg.convert(1.0, unit_a, unit_b)`; if it succeeds, set `compatible = True` and `reason = \"\"`. If it raises, set `compatible = False` and `reason = str(exception)`. Do not reimplement dimensional analysis separately from this conversion attempt.",
+   "example_args": {
+    "unit_a": "km/h",
+    "unit_b": "m/s"
+   }
+  },
+  {
+   "name": "convert_to_base_si_units",
+   "description": "Convert a quantity to the base SI units selected by pint's registry. Useful when an agent needs a canonical SI representation for further reasoning.",
+   "params": [
+    {
+     "name": "value",
+     "type": "number",
+     "description": "Numeric quantity to convert.",
+     "required": true,
+     "example": 1
+    },
+    {
+     "name": "unit",
+     "type": "string",
+     "description": "Source unit expression, such as 'N*m' or 'km/h'.",
+     "required": true,
+     "example": "N*m"
+    }
+   ],
+   "returns": [
+    {
+     "name": "base_value",
+     "type": "number",
+     "description": "Value expressed in base SI units."
+    },
+    {
+     "name": "base_unit",
+     "type": "string",
+     "description": "Base SI unit expression selected by pint."
+    },
+    {
+     "name": "original_unit",
+     "type": "string",
+     "description": "Normalized source unit."
+    },
+    {
+     "name": "dimensionality",
+     "type": "string",
+     "description": "Dimensionality of the quantity."
+    },
+    {
+     "name": "display",
+     "type": "string",
+     "description": "Human-readable conversion, such as '1 N*m = 1.0 kg*m**2/s**2'."
+    }
+   ],
+   "implementation_symbols": [
+    "pint.registry.UnitRegistry",
+    "pint.registry.UnitRegistry.__init__",
+    "pint.facets.plain.quantity.PlainQuantity.to"
+   ],
+   "implementation_notes": "Use the same shared `_ureg = pint.UnitRegistry()`. Create `quantity = _ureg.Quantity(value, unit)`, then call `base_quantity = quantity.to_base_units()` (the PlainQuantity conversion path). Return `base_value = float(base_quantity.magnitude)` when scalar, `base_unit = str(base_quantity.units)`, and `original_unit = str(quantity.units)`. Build `display` from the original and base representations. If pint returns a non-scalar magnitude, convert it to a JSON-compatible list of numbers.",
+   "example_args": {
+    "value": 1,
+    "unit": "N*m"
+   }
+  }
+ ],
+ "included_symbols": [
+  "pint.registry.UnitRegistry",
+  "pint.registry.UnitRegistry.__init__",
+  "pint.facets.plain.quantity.PlainQuantity.to",
+  "pint.facets.plain.registry.GenericPlainRegistry.convert"
+ ],
+ "excluded_symbols": [
+  {
+   "symbol": "pint.registry.UnitRegistry.pi_theorem",
+   "reason": "Implements Buckingham pi theorem for dimensionless groups, not unit conversion."
+  },
+  {
+   "symbol": "pint.registry.UnitRegistry.setup_matplotlib",
+   "reason": "Configures matplotlib integration and is unrelated to unit conversion."
+  }
+ ],
+ "dependencies": [
+  "pint"
+ ],
+ "side_effects": [
+  "No persistent side effects; creates an in-memory UnitRegistry and reads pint's unit definitions."
+ ],
+ "relevant_tests": [
+  "pint/testsuite/test_converters.py"
+ ],
+ "uncertainties": [
+  "Unknown or malformed unit strings cause pint to raise UndefinedUnitError; incompatible units cause DimensionalityError. The wrapper should surface these as tool errors rather than returning partial results.",
+  "Offset and logarithmic conversions follow pint's registry behavior, including its default_as_delta=True configuration.",
+  "Pint may return numpy scalar magnitudes; implementations must coerce them to JSON-compatible Python numbers.",
+  "Base SI unit selection is determined by pint's registry and may use derived base units rather than only the seven SI base units.",
+  "Compatibility is tested by attempting conversion, so conversions requiring an additional pint context are reported as incompatible unless context support is added."
+ ]
+}

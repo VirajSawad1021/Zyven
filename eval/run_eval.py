@@ -157,7 +157,7 @@ async def main() -> None:
     ap.add_argument("--skip-baseline", action="store_true")
     ap.add_argument("--max-tokens", type=int, default=MAX_TOKENS, help="output budget per model call, same in every condition")
     ap.add_argument("--baseline-only", action="store_true", help="run only the model alone (no skill condition)")
-    ap.add_argument("--suite", choices=["nepali", "stdnum", "global", "packaging", "networkx"], default="nepali")
+    ap.add_argument("--suite", choices=["nepali", "stdnum", "global", "packaging", "networkx", "dateutil", "pint"], default="nepali")
     args = ap.parse_args()
     MAX_TOKENS = args.max_tokens
 
@@ -174,6 +174,10 @@ async def main() -> None:
         from eval import tasks_packaging
         SUITE.update(system=SYSTEM_BASE + " " + tasks_packaging.SYSTEM_HINT, score=tasks_packaging.score,
                      generate=tasks_packaging.generate)
+    if args.suite in ("dateutil", "pint"):
+        import importlib
+        mod = importlib.import_module(f"eval.tasks_{args.suite}")
+        SUITE.update(system=SYSTEM_BASE + " " + mod.SYSTEM_HINT, score=mod.score, generate=mod.generate)
     if args.suite == "stdnum":
         from eval import tasks_stdnum
         SUITE.update(system=SYSTEM_BASE + " " + tasks_stdnum.SYSTEM_HINT, score=tasks_stdnum.score,

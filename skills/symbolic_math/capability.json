@@ -1,0 +1,175 @@
+{
+ "name": "symbolic_math",
+ "title": "Symbolic Math",
+ "summary": "Exact symbolic mathematics using SymPy: differentiate, integrate (indefinite and definite), evaluate limits, solve equations, and simplify or factor expressions. All inputs and results are exchanged as strings and JSON-friendly values.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "evaluate_limit",
+   "description": "Evaluate the exact limit of an expression as a variable approaches a point, optionally from one side or both sides.",
+   "params": [
+    {
+     "name": "expression",
+     "type": "string",
+     "description": "SymPy/Python expression string, for example 'sin(x)/x'.",
+     "required": true,
+     "example": "sin(x)/x"
+    },
+    {
+     "name": "variable",
+     "type": "string",
+     "description": "Limit variable, for example 'x'.",
+     "required": true,
+     "example": "x"
+    },
+    {
+     "name": "point",
+     "type": "string",
+     "description": "Value approached by the variable, such as '0', 'oo', '-oo', or 'pi/2'.",
+     "required": true,
+     "example": "0"
+    },
+    {
+     "name": "direction",
+     "type": "string",
+     "description": "Limit direction: '+' for right, '-' for left, or '+-' for two-sided. Defaults to '+'.",
+     "required": false,
+     "example": "+-"
+    }
+   ],
+   "returns": [
+    {
+     "name": "expression",
+     "type": "string",
+     "description": "The input expression."
+    },
+    {
+     "name": "variable",
+     "type": "string",
+     "description": "The limit variable."
+    },
+    {
+     "name": "point",
+     "type": "string",
+     "description": "The point approached."
+    },
+    {
+     "name": "direction",
+     "type": "string",
+     "description": "The direction used."
+    },
+    {
+     "name": "result",
+     "type": "string",
+     "description": "The evaluated limit as a string."
+    }
+   ],
+   "implementation_symbols": [
+    "sympy.core.sympify.sympify",
+    "sympy.series.limits.limit"
+   ],
+   "implementation_notes": "Import sympy. Convert expression, variable, and point with sympy.sympify. Call sympy.limit(expr, var, point, dir=direction or '+'). Convert the returned SymPy object to a string with str(result).",
+   "example_args": {
+    "expression": "sin(x)/x",
+    "variable": "x",
+    "point": "0",
+    "direction": "+-"
+   }
+  },
+  {
+   "name": "simplify_or_factor_expression",
+   "description": "Simplify an expression heuristically or factor it into irreducible factors over the rationals.",
+   "params": [
+    {
+     "name": "expression",
+     "type": "string",
+     "description": "SymPy/Python expression string, for example '(x**2 - 1)/(x - 1)'.",
+     "required": true,
+     "example": "(x**2 - 1)/(x - 1)"
+    },
+    {
+     "name": "operation",
+     "type": "string",
+     "description": "One of 'simplify' or 'factor'. Defaults to 'simplify'.",
+     "required": false,
+     "example": "simplify"
+    },
+    {
+     "name": "deep",
+     "type": "boolean",
+     "description": "When operation is 'factor', whether to factor subexpressions. Defaults to false.",
+     "required": false,
+     "example": false
+    },
+    {
+     "name": "ratio",
+     "type": "number",
+     "description": "When operation is 'simplify', maximum allowed growth ratio of result complexity. Defaults to 1.7.",
+     "required": false,
+     "example": 1.7
+    }
+   ],
+   "returns": [
+    {
+     "name": "operation",
+     "type": "string",
+     "description": "The operation that was performed."
+    },
+    {
+     "name": "expression",
+     "type": "string",
+     "description": "The input expression."
+    },
+    {
+     "name": "result",
+     "type": "string",
+     "description": "The simplified or factored expression as a string."
+    }
+   ],
+   "implementation_symbols": [
+    "sympy.core.sympify.sympify",
+    "sympy.simplify.simplify.simplify",
+    "sympy.polys.polytools.factor"
+   ],
+   "implementation_notes": "Import sympy. Convert expression with sympy.sympify. If operation is 'factor', call sympy.factor(expr, deep=deep). Otherwise call sympy.simplify(expr, ratio=ratio). Convert the returned SymPy object to a string with str(result).",
+   "example_args": {
+    "expression": "(x**2 - 1)/(x - 1)",
+    "operation": "simplify"
+   }
+  }
+ ],
+ "included_symbols": [
+  "sympy.core.sympify.sympify",
+  "sympy.core.function.diff",
+  "sympy.integrals.integrals.integrate",
+  "sympy.series.limits.limit",
+  "sympy.solvers.solvers.solve",
+  "sympy.simplify.simplify.simplify",
+  "sympy.polys.polytools.factor"
+ ],
+ "excluded_symbols": [],
+ "dependencies": [
+  "sympy"
+ ],
+ "side_effects": [
+  "No persistent side effects in normal use.",
+  "sympy.sympify uses eval internally, so unsanitized or untrusted expression strings should not be passed."
+ ],
+ "relevant_tests": [
+  "sympy/core/tests/test_diff.py",
+  "sympy/integrals/tests/test_integrals.py",
+  "sympy/series/tests/test_limits.py",
+  "sympy/solvers/tests/test_solvers.py",
+  "sympy/simplify/tests/test_simplify.py",
+  "sympy/polys/tests/test_polytools.py"
+ ],
+ "uncertainties": [
+  "Expression strings must use SymPy/Python syntax; implicit multiplication such as '2x' is not accepted by sympify.",
+  "Variable inference for solve is delegated to SymPy and may fail for some expressions.",
+  "solve output can vary by input form; this interface normalizes dict=True output to a list of variable-to-string mappings.",
+  "Integration may return unevaluated Integral, Piecewise, or conditional expressions.",
+  "Limits may return special values such as oo, -oo, zoo, or nan.",
+  "simplify uses heuristics and may leave an expression unchanged or make it longer; factor defaults to factorization over the rationals.",
+  "Bounds, points, and variables are converted with sympify, so symbolic bounds such as 'oo' and 'pi' are supported but invalid strings raise SympifyError."
+ ]
+}

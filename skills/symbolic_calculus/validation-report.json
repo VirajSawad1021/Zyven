@@ -1,0 +1,939 @@
+{
+ "passed": true,
+ "verified_for": [
+  "policy",
+  "import",
+  "upstream_tests",
+  "input_robustness",
+  "mcp_smoke",
+  "differential"
+ ],
+ "gates": [
+  {
+   "name": "policy",
+   "passed": true,
+   "detail": "imports and builtins within policy",
+   "data": {}
+  },
+  {
+   "name": "import",
+   "passed": true,
+   "detail": "server module imports cleanly",
+   "data": {}
+  },
+  {
+   "name": "upstream_tests",
+   "passed": true,
+   "detail": "528 tests ran, 0 failures, 0 errors (sympy/integrals/tests/test_integrals.py, sympy/core/tests/test_function.py, sympy/series/tests/test_limits.py, sympy/series/tests/test_series.py, sympy/concrete/tests/test_products.py)",
+   "data": {
+    "ran": 528,
+    "failures": 0,
+    "errors": 0
+   }
+  },
+  {
+   "name": "input_robustness",
+   "passed": true,
+   "detail": "6/6 equivalent-input probes gave identical results",
+   "data": {
+    "probes": [
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "  sin(x)*exp(x) ",
+       "variable": "x",
+       "order": 2
+      },
+      "ok": true,
+      "output": {
+       "expression": "  sin(x)*exp(x) ",
+       "variable": "x",
+       "order": 2,
+       "derivative": "2*exp(x)*cos(x)"
+      }
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "sin(x)*exp(x)",
+       "variable": "  x ",
+       "order": 2
+      },
+      "ok": true,
+      "output": {
+       "expression": "sin(x)*exp(x)",
+       "variable": "  x ",
+       "order": 2,
+       "derivative": "2*exp(x)*cos(x)"
+      }
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "  x**2 ",
+       "variable": "x",
+       "lower_limit": "0",
+       "upper_limit": "1"
+      },
+      "ok": true,
+      "output": {
+       "expression": "  x**2 ",
+       "variable": "x",
+       "definite": true,
+       "limits": [
+        "0",
+        "1"
+       ],
+       "integral": "1/3",
+       "evaluated": true
+      }
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "x**2",
+       "variable": "  x ",
+       "lower_limit": "0",
+       "upper_limit": "1"
+      },
+      "ok": true,
+      "output": {
+       "expression": "x**2",
+       "variable": "  x ",
+       "definite": true,
+       "limits": [
+        "0",
+        "1"
+       ],
+       "integral": "1/3",
+       "evaluated": true
+      }
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "x**2",
+       "variable": "x",
+       "lower_limit": "  0 ",
+       "upper_limit": "1"
+      },
+      "ok": true,
+      "output": {
+       "expression": "x**2",
+       "variable": "x",
+       "definite": true,
+       "limits": [
+        "  0 ",
+        "1"
+       ],
+       "integral": "1/3",
+       "evaluated": true
+      }
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "x**2",
+       "variable": "x",
+       "lower_limit": "0",
+       "upper_limit": "  1 "
+      },
+      "ok": true,
+      "output": {
+       "expression": "x**2",
+       "variable": "x",
+       "definite": true,
+       "limits": [
+        "0",
+        "  1 "
+       ],
+       "integral": "1/3",
+       "evaluated": true
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "mcp_smoke",
+   "passed": true,
+   "detail": "2 tools called with example args; invalid input rejected",
+   "data": {
+    "server_started": true,
+    "listed_tools": [
+     "differentiate",
+     "integrate"
+    ],
+    "missing_tools": [],
+    "calls": [
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "sin(x)*exp(x)",
+       "variable": "x",
+       "order": 2
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "expression": "sin(x)*exp(x)",
+       "variable": "x",
+       "order": 2,
+       "derivative": "2*exp(x)*cos(x)"
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "x**2",
+       "variable": "x",
+       "lower_limit": "0",
+       "upper_limit": "1"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "expression": "x**2",
+       "variable": "x",
+       "definite": true,
+       "limits": [
+        "0",
+        "1"
+       ],
+       "integral": "1/3",
+       "evaluated": true
+      },
+      "missing_fields": []
+     }
+    ],
+    "invalid_calls": [
+     {
+      "ok": true,
+      "tool": "differentiate",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "integrate",
+      "detail": "rejected cleanly"
+     }
+    ],
+    "robustness": [
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "  sin(x)*exp(x) ",
+       "variable": "x",
+       "order": 2
+      },
+      "ok": true,
+      "output": {
+       "expression": "  sin(x)*exp(x) ",
+       "variable": "x",
+       "order": 2,
+       "derivative": "2*exp(x)*cos(x)"
+      }
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "sin(x)*exp(x)",
+       "variable": "  x ",
+       "order": 2
+      },
+      "ok": true,
+      "output": {
+       "expression": "sin(x)*exp(x)",
+       "variable": "  x ",
+       "order": 2,
+       "derivative": "2*exp(x)*cos(x)"
+      }
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "  x**2 ",
+       "variable": "x",
+       "lower_limit": "0",
+       "upper_limit": "1"
+      },
+      "ok": true,
+      "output": {
+       "expression": "  x**2 ",
+       "variable": "x",
+       "definite": true,
+       "limits": [
+        "0",
+        "1"
+       ],
+       "integral": "1/3",
+       "evaluated": true
+      }
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "x**2",
+       "variable": "  x ",
+       "lower_limit": "0",
+       "upper_limit": "1"
+      },
+      "ok": true,
+      "output": {
+       "expression": "x**2",
+       "variable": "  x ",
+       "definite": true,
+       "limits": [
+        "0",
+        "1"
+       ],
+       "integral": "1/3",
+       "evaluated": true
+      }
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "x**2",
+       "variable": "x",
+       "lower_limit": "  0 ",
+       "upper_limit": "1"
+      },
+      "ok": true,
+      "output": {
+       "expression": "x**2",
+       "variable": "x",
+       "definite": true,
+       "limits": [
+        "  0 ",
+        "1"
+       ],
+       "integral": "1/3",
+       "evaluated": true
+      }
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "x**2",
+       "variable": "x",
+       "lower_limit": "0",
+       "upper_limit": "  1 "
+      },
+      "ok": true,
+      "output": {
+       "expression": "x**2",
+       "variable": "x",
+       "definite": true,
+       "limits": [
+        "0",
+        "  1 "
+       ],
+       "integral": "1/3",
+       "evaluated": true
+      }
+     }
+    ],
+    "still_alive_after_calls": true
+   }
+  },
+  {
+   "name": "differential",
+   "passed": true,
+   "detail": "18/18 Tester cases + 7/7 generated cases match the library (17 generated not scored: the library or the tool rejected the input)",
+   "data": {
+    "results": [
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "sin(x)*exp(x)",
+       "variable": "x",
+       "order": 2
+      },
+      "field": "derivative",
+      "expr": "expr = sympify('sin(x)*exp(x)')\nvar = sympify('x')\nstr(diff(expr, var, 2))",
+      "expected": "2*exp(x)*cos(x)",
+      "got": "2*exp(x)*cos(x)",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "exp(-x**2)",
+       "variable": "x"
+      },
+      "field": "derivative",
+      "expr": "expr = sympify('exp(-x**2)')\nvar = sympify('x')\nstr(diff(expr, var))",
+      "expected": "-2*x*exp(-x**2)",
+      "got": "-2*x*exp(-x**2)",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "x**3 + 2*x",
+       "variable": "x",
+       "order": 0
+      },
+      "field": "derivative",
+      "expr": "expr = sympify('x**3 + 2*x')\nvar = sympify('x')\nstr(diff(expr, var, 0))",
+      "expected": "x**3 + 2*x",
+      "got": "x**3 + 2*x",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "sin(x)",
+       "variable": "x",
+       "order": 3
+      },
+      "field": "order",
+      "expr": "expr = sympify('sin(x)')\nvar = sympify('x')\nresult = diff(expr, var, 3)\nint(3)",
+      "expected": 3,
+      "got": 3,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "1/x",
+       "variable": "x",
+       "order": 1
+      },
+      "field": "expression",
+      "expr": "expr = sympify('1/x')\nvar = sympify('x')\nresult = diff(expr, var, 1)\n'1/x'",
+      "expected": "1/x",
+      "got": "1/x",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "t**2",
+       "variable": "t",
+       "order": 1
+      },
+      "field": "variable",
+      "expr": "expr = sympify('t**2')\nvar = sympify('t')\nresult = diff(expr, var, 1)\n't'",
+      "expected": "t",
+      "got": "t",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "x**2",
+       "variable": "x",
+       "lower_limit": "0",
+       "upper_limit": "1"
+      },
+      "field": "integral",
+      "expr": "expr = sympify('x**2')\nvar = sympify('x')\nlower = sympify('0')\nupper = sympify('1')\nstr(integrate(expr, (var, lower, upper)))",
+      "expected": "1/3",
+      "got": "1/3",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "sin(x)",
+       "variable": "x"
+      },
+      "field": "integral",
+      "expr": "expr = sympify('sin(x)')\nvar = sympify('x')\nstr(integrate(expr, var))",
+      "expected": "-cos(x)",
+      "got": "-cos(x)",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "x**2",
+       "variable": "x",
+       "lower_limit": "0",
+       "upper_limit": "1"
+      },
+      "field": "definite",
+      "expr": "expr = sympify('x**2')\nvar = sympify('x')\nlower = sympify('0')\nupper = sympify('1')\nresult = integrate(expr, (var, lower, upper))\nlower is not None and upper is not None",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "sin(x)",
+       "variable": "x",
+       "lower_limit": "0",
+       "upper_limit": "pi"
+      },
+      "field": "limits",
+      "expr": "expr = sympify('sin(x)')\nvar = sympify('x')\nlower = sympify('0')\nupper = sympify('pi')\nresult = integrate(expr, (var, lower, upper))\n[str(lower), str(upper)]",
+      "expected": "['0', 'pi']",
+      "got": "['0', 'pi']",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "exp(sin(x))",
+       "variable": "x"
+      },
+      "field": "evaluated",
+      "expr": "expr = sympify('exp(sin(x))')\nvar = sympify('x')\nnot isinstance(integrate(expr, var), Integral)",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "x**2",
+       "variable": "x"
+      },
+      "field": "evaluated",
+      "expr": "expr = sympify('x**2')\nvar = sympify('x')\nnot isinstance(integrate(expr, var), Integral)",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "sin(x)",
+       "variable": "x"
+      },
+      "field": "limits",
+      "expr": "expr = sympify('sin(x)')\nvar = sympify('x')\nresult = integrate(expr, var)\n[]",
+      "expected": "[]",
+      "got": "[]",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "sin(x)",
+       "variable": "x"
+      },
+      "field": "definite",
+      "expr": "expr = sympify('sin(x)')\nvar = sympify('x')\nresult = integrate(expr, var)\nFalse",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "exp(-x)",
+       "variable": "x",
+       "lower_limit": "0",
+       "upper_limit": "oo"
+      },
+      "field": "integral",
+      "expr": "expr = sympify('exp(-x)')\nvar = sympify('x')\nlower = sympify('0')\nupper = sympify('oo')\nstr(integrate(expr, (var, lower, upper)))",
+      "expected": "1",
+      "got": "1",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "sin(x)",
+       "variable": "x",
+       "lower_limit": "1",
+       "upper_limit": "1"
+      },
+      "field": "integral",
+      "expr": "expr = sympify('sin(x)')\nvar = sympify('x')\nlower = sympify('1')\nupper = sympify('1')\nstr(integrate(expr, (var, lower, upper)))",
+      "expected": "0",
+      "got": "0",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "cos(x)",
+       "variable": "x"
+      },
+      "field": "expression",
+      "expr": "expr = sympify('cos(x)')\nvar = sympify('x')\nresult = integrate(expr, var)\n'cos(x)'",
+      "expected": "cos(x)",
+      "got": "cos(x)",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "t**2",
+       "variable": "t"
+      },
+      "field": "variable",
+      "expr": "expr = sympify('t**2')\nvar = sympify('t')\nresult = integrate(expr, var)\n't'",
+      "expected": "t",
+      "got": "t",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "**3 + 2*x",
+       "variable": "t",
+       "order": 1
+      },
+      "field": "derivative",
+      "expr": "expr = sympify('**3 + 2*x')\nvar = sympify('t')\nstr(diff(expr, var, 1))",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse '**3 + 2*x'\", SyntaxError('invalid syntax', ('<string>', 1, 1, \"**Integer (3 )+Integer (2 )*Symbol ('x' )\", 1, 3)))",
+      "generated": true
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "sin(x)*exp(x",
+       "variable": "x",
+       "order": 0
+      },
+      "field": "derivative",
+      "expr": "expr = sympify('sin(x)*exp(x')\nvar = sympify('x')\nstr(diff(expr, var))",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse 'sin(x)*exp(x'\", TokenError('unexpected EOF in multi-line statement', (1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "1/x",
+       "variable": "t",
+       "order": 4
+      },
+      "field": "derivative",
+      "expr": "expr = sympify('1/x')\nvar = sympify('t')\nstr(diff(expr, var, 4))",
+      "expected": "0",
+      "got": "0",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "1/",
+       "variable": "x",
+       "order": 0
+      },
+      "field": "order",
+      "expr": "expr = sympify('1/')\nvar = sympify('x')\nresult = diff(expr, var, 0)\nint(0)",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse '1/'\", SyntaxError('invalid syntax', ('<string>', 1, 0, 'Integer (1 )/', 1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "sin(x)*exp(x)",
+       "variable": "x",
+       "order": -3
+      },
+      "field": "expression",
+      "expr": "expr = sympify('sin(x)*exp(x)')\nvar = sympify('x')\nresult = diff(expr, var, -3)\n'sin(x)*exp(x)'",
+      "status": "inconclusive",
+      "detail": "ValueError('order of differentiation must be nonnegative')",
+      "generated": true
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "sin(x)*exp(x",
+       "variable": "t",
+       "order": 2
+      },
+      "field": "variable",
+      "expr": "expr = sympify('sin(x)*exp(x')\nvar = sympify('t')\nresult = diff(expr, var, 2)\n't'",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse 'sin(x)*exp(x'\", TokenError('unexpected EOF in multi-line statement', (1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "**3 + 2*x",
+       "variable": "t",
+       "order": 20
+      },
+      "field": "derivative",
+      "expr": "expr = sympify('**3 + 2*x')\nvar = sympify('t')\nstr(diff(expr, var, 20))",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse '**3 + 2*x'\", SyntaxError('invalid syntax', ('<string>', 1, 1, \"**Integer (3 )+Integer (2 )*Symbol ('x' )\", 1, 3)))",
+      "generated": true
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": ")x(pxe*)x(nis",
+       "variable": "x",
+       "order": -1
+      },
+      "field": "derivative",
+      "expr": "expr = sympify(')x(pxe*)x(nis')\nvar = sympify('x')\nstr(diff(expr, var))",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse ')x(pxe*)x(nis'\", TokenError('unexpected EOF in multi-line statement', (1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "x**3 + 2*x",
+       "variable": "x",
+       "order": 30
+      },
+      "field": "derivative",
+      "expr": "expr = sympify('x**3 + 2*x')\nvar = sympify('x')\nstr(diff(expr, var, 30))",
+      "expected": "0",
+      "got": "0",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "x*2 + 3**x",
+       "variable": "x",
+       "order": 4
+      },
+      "field": "order",
+      "expr": "expr = sympify('x*2 + 3**x')\nvar = sympify('x')\nresult = diff(expr, var, 4)\nint(4)",
+      "expected": 4,
+      "got": 4,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "1/",
+       "variable": "x",
+       "order": 2
+      },
+      "field": "expression",
+      "expr": "expr = sympify('1/')\nvar = sympify('x')\nresult = diff(expr, var, 2)\n'1/'",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse '1/'\", SyntaxError('invalid syntax', ('<string>', 1, 0, 'Integer (1 )/', 1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "differentiate",
+      "args": {
+       "expression": "/x",
+       "variable": "x",
+       "order": -3
+      },
+      "field": "variable",
+      "expr": "expr = sympify('/x')\nvar = sympify('x')\nresult = diff(expr, var, -3)\n'x'",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse '/x'\", SyntaxError('invalid syntax', ('<string>', 1, 1, \"/Symbol ('x' )\", 1, 2)))",
+      "generated": true
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "sin(x)",
+       "variable": "x",
+       "lower_limit": "1",
+       "upper_limit": "o"
+      },
+      "field": "integral",
+      "expr": "expr = sympify('sin(x)')\nvar = sympify('x')\nlower = sympify('1')\nupper = sympify('o')\nstr(integrate(expr, (var, lower, upper)))",
+      "expected": "-cos(o) + cos(1)",
+      "got": "-cos(o) + cos(1)",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "in(x)",
+       "variable": "x",
+       "lower_limit": "0",
+       "upper_limit": "1"
+      },
+      "field": "integral",
+      "expr": "expr = sympify('in(x)')\nvar = sympify('x')\nstr(integrate(expr, var))",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse 'in(x)'\", SyntaxError('invalid syntax', ('<string>', 1, 1, \"in (Symbol ('x' ))\", 1, 3)))",
+      "generated": true
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": ")x-(pxe",
+       "variable": "x",
+       "lower_limit": "1",
+       "upper_limit": "ip"
+      },
+      "field": "definite",
+      "expr": "expr = sympify(')x-(pxe')\nvar = sympify('x')\nlower = sympify('1')\nupper = sympify('ip')\nresult = integrate(expr, (var, lower, upper))\nlower is not None and upper is not None",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse ')x-(pxe'\", TokenError('unexpected EOF in multi-line statement', (1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "xp(-x)",
+       "variable": "x",
+       "lower_limit": "0",
+       "upper_limit": "i"
+      },
+      "field": "limits",
+      "expr": "expr = sympify('xp(-x)')\nvar = sympify('x')\nlower = sympify('0')\nupper = sympify('i')\nresult = integrate(expr, (var, lower, upper))\n[str(lower), str(upper)]",
+      "expected": "['0', 'i']",
+      "got": "['0', 'i']",
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": ")x-(pxe",
+       "variable": "x",
+       "lower_limit": "1",
+       "upper_limit": "o"
+      },
+      "field": "evaluated",
+      "expr": "expr = sympify(')x-(pxe')\nvar = sympify('x')\nnot isinstance(integrate(expr, var), Integral)",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse ')x-(pxe'\", TokenError('unexpected EOF in multi-line statement', (1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "xp(-x)",
+       "variable": "x",
+       "lower_limit": "0",
+       "upper_limit": "o"
+      },
+      "field": "evaluated",
+      "expr": "expr = sympify('xp(-x)')\nvar = sympify('x')\nnot isinstance(integrate(expr, var), Integral)",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "exp(-x",
+       "variable": "x",
+       "lower_limit": "1",
+       "upper_limit": "i"
+      },
+      "field": "limits",
+      "expr": "expr = sympify('exp(-x')\nvar = sympify('x')\nresult = integrate(expr, var)\n[]",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse 'exp(-x'\", TokenError('unexpected EOF in multi-line statement', (1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "xp(-x)",
+       "variable": "x",
+       "lower_limit": "0",
+       "upper_limit": "1"
+      },
+      "field": "definite",
+      "expr": "expr = sympify('xp(-x)')\nvar = sympify('x')\nresult = integrate(expr, var)\nFalse",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": ")x-(pxe",
+       "variable": "x",
+       "lower_limit": "1",
+       "upper_limit": "i"
+      },
+      "field": "integral",
+      "expr": "expr = sympify(')x-(pxe')\nvar = sympify('x')\nlower = sympify('1')\nupper = sympify('i')\nstr(integrate(expr, (var, lower, upper)))",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse ')x-(pxe'\", TokenError('unexpected EOF in multi-line statement', (1, 0)))",
+      "generated": true
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "in(x)",
+       "variable": "x",
+       "lower_limit": "1",
+       "upper_limit": "o"
+      },
+      "field": "integral",
+      "expr": "expr = sympify('in(x)')\nvar = sympify('x')\nlower = sympify('1')\nupper = sympify('o')\nstr(integrate(expr, (var, lower, upper)))",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse 'in(x)'\", SyntaxError('invalid syntax', ('<string>', 1, 1, \"in (Symbol ('x' ))\", 1, 3)))",
+      "generated": true
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": "in(x)",
+       "variable": "x",
+       "lower_limit": "0",
+       "upper_limit": "o"
+      },
+      "field": "expression",
+      "expr": "expr = sympify('in(x)')\nvar = sympify('x')\nresult = integrate(expr, var)\n'in(x)'",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse 'in(x)'\", SyntaxError('invalid syntax', ('<string>', 1, 1, \"in (Symbol ('x' ))\", 1, 3)))",
+      "generated": true
+     },
+     {
+      "tool": "integrate",
+      "args": {
+       "expression": ")x(nis",
+       "variable": "x",
+       "lower_limit": "1",
+       "upper_limit": "i"
+      },
+      "field": "variable",
+      "expr": "expr = sympify(')x(nis')\nvar = sympify('x')\nresult = integrate(expr, var)\n'x'",
+      "status": "inconclusive",
+      "detail": "SympifyError(\"could not parse ')x(nis'\", TokenError('unexpected EOF in multi-line statement', (1, 0)))",
+      "generated": true
+     }
+    ]
+   }
+  }
+ ],
+ "failing_tools": {}
+}

@@ -6,6 +6,45 @@ The first release after Frogtoberfest 2026. Zyven now works with any model or co
 build, and installs without a clone.
 
 ### Added
+- **sympy calculus and equation solving verify.** `skills/symbolic_calculus` (differentiate, integrate; 528 upstream
+  tests, differential 18/18 plus generated) and `skills/equation_solving` (one equation or a system; 335 upstream tests,
+  differential 15/15 plus generated), compiled through OpenCode by Reflection Beam 1.0 (501B, open weights) with
+  DeepSeek V4.1 Flash as the Tester. Every tool passed all six gates; none was dropped.
+- **sympy verifies: limits, simplify and factor.** `skills/symbolic_math` (sympy `16fa855`), compiled through OpenCode by
+  Reflection Beam 1.0 (501B, open weights) with DeepSeek V4.1 Flash as the Tester. Two tools pass all six gates: 762
+  upstream tests, differential 19/19 plus generated cases. Two more tools (equation solving, calculus) did not verify
+  and were left out, as the compiler does with any tool it cannot verify.
+- **The upstream-test gate counts only failures that concern the wrapped code.** The analyzer records which library
+  functions each test calls, and pytest reports which tests failed. A failing test that is known not to call any wrapped
+  function is listed in the gate's detail instead of failing it; a file that does not load, a test that cannot be
+  mapped, or a test that calls wrapped code still fails it, and at least one test must reach the wrapped functions.
+  One unrelated failing test is what kept sympy from verifying.
+- **Verified dateutil and pint skills, and a small model gets 101 of 102 across four suites.** `date_arithmetic`
+  (python-dateutil 4.0.0) and `unit_conversion` (pint 0.26.2), compiled through OpenCode by Reflection Beam 1.0 (501B,
+  open weights) with DeepSeek V4.1 Flash as the Tester, all six gates. With the verified skills, Gemma 4 E4B answered
+  24/24 date questions (11/24 alone), 29/30 unit conversions (22/30), 18/18 IBAN and Luhn checks (6/18) and 30/30
+  calendar and phone questions (10/30) (`eval/results/e4b-four-suites-20261124.md`). New suites:
+  `run_eval --suite dateutil|pint`. The stdnum skills are now in `skills/`. Closes #100.
+- **Verified Jewish holidays and fast days skill (pyluach).** Four tools (holiday, festival, fast day, Shabbat for a
+  date), compiled through OpenCode by Reflection Beam 1.0, a 501B open-weight model, and verified by all six gates:
+  45 upstream tests, differential 41/41 Tester cases plus generated ones. Closes #99.
+- **Coding-agent compiles can count as open-weight.** When OpenCode's model catalogue marks the chosen model as open
+  weights, provenance names it (`opencode/beam-free = reflection/beam-1.0-501b-a23b`) and the open-model check accepts
+  it; any other agent run is still labelled a plain coding agent.
+- **Checked on 23 popular community MCP servers.** 22 started in the sandbox, 21 passed (348 tools, 119 called);
+  the archived Slack reference server accepts invalid input (`eval/results/verify-community-20261124.md`).
+- **`zyven verify --call read-only|all`: check what tools do, not only what they say.** Each tool is called four times
+  with valid sample input from its schema. The results are scanned like descriptions (now including instructions in
+  HTML comments), credentials in output are reported masked (tokens, API keys, passwords), and the tools are listed
+  again afterwards to catch a rug pull that waits for a few uses. `read-only` calls only tools that declare
+  `readOnlyHint`; `all` calls every tool and runs only in the sandbox. On Damn Vulnerable MCP Server, 7 of 15
+  challenges fail and 3 more show their risky capability; the seven official servers still pass with every tool called
+  (`eval/results/verify-dvmcp-20261124.md`).
+- **`zyven verify` lists what each tool can do from its name and parameters.** Runs shell commands, runs code it is
+  given, reads or writes files at a path the caller chooses, contacts a host the caller chooses, takes a password or
+  token, runs database queries. These are listed as capabilities, not failures. A tool marked read-only whose name and
+  parameters say it runs commands or writes files fails the annotations check. The seven official reference servers
+  still pass, and their listed capabilities match what they do (filesystem reads and writes files, fetch contacts URLs).
 - **`zyven verify` names tool shadowing and message redirection.** A description that tells the model how to use
   another tool ("when send_message is invoked ...") or sends messages to a fixed address or number is now reported
   by name, and "don't notify the user" counts as hiding. On the three published Invariant Labs proof-of-concept
@@ -146,6 +185,17 @@ build, and installs without a clone.
 - Every sandbox container gets the host name `zyven-sandbox`.
 
 ### Fixed
+- **The Slack (bot token) and GitHub connection templates start again.** `@ubie-oss/slack-mcp-server` is not on npm
+  (404), so the Slack template now runs `slack-mcp-server@1.3.0` (korotovsky, MIT) with `SLACK_MCP_XOXB_TOKEN`. The
+  GitHub template used the archived `@modelcontextprotocol/server-github`; it now connects to GitHub's own hosted server
+  (`https://api.githubcopilot.com/mcp/`) with the token as an `Authorization: Bearer` header. Template names are unchanged.
+- **A docstring of only whitespace no longer crashes the repository summary** (found on sympy).
+- **Upstream tests that need a missing package no longer stop the gate when named explicitly.** pytest's `--ignore`
+  does not apply to a file passed on the command line, so a chosen test file importing `bs4` stopped the whole run.
+  Such files are now left out of the named list.
+- **No false alarm for read-only query tools with a `command` parameter.** "Marked read-only but runs commands" now
+  needs the tool's name to say it runs or writes something (`run_command`, `write_file`). Firecrawl's library search,
+  which takes shell-style commands over a read-only file system, keeps the capability listed but no longer fails.
 - **Docker not running is now said in words.** A sandboxed skill served through `zyven mcp` or the hub used to fail
   with "Connection closed" when Docker was stopped, and the agent saw only that. It now says that Docker is not
   installed, not running, or that the sandbox image needs `zyven setup`. `zyven verify --docker` stops early with the

@@ -1,0 +1,34 @@
+{
+ "tools": [
+  {
+   "tool": "adjust_date",
+   "imports": [
+    "from dateutil.parser import parse",
+    "from dateutil.relativedelta import relativedelta, MO, TU, WE, TH, FR, SA, SU"
+   ],
+   "body": "weekday_map = {\n    'Monday': MO,\n    'Tuesday': TU,\n    'Wednesday': WE,\n    'Thursday': TH,\n    'Friday': FR,\n    'Saturday': SA,\n    'Sunday': SU,\n}\n\ndef _to_int(value, name):\n    if value is None:\n        return 0\n    try:\n        return int(value)\n    except (TypeError, ValueError):\n        raise ValueError(f'{name} must be an integer')\n\ntry:\n    base = parse(base_date).date()\nexcept Exception as exc:\n    raise ValueError(f'Invalid base_date: {exc}')\n\nyears_i = _to_int(years, 'years')\nmonths_i = _to_int(months, 'months')\ndays_i = _to_int(days, 'days')\nweeks_i = _to_int(weeks, 'weeks')\n\nif weekday is None or (isinstance(weekday, str) and weekday.strip() == ''):\n    weekday_name = ''\n    weekday_value = None\n    occurrence_applied = 0\nelse:\n    if not isinstance(weekday, str):\n        raise ValueError('weekday must be a string')\n    weekday_key = weekday.strip().capitalize()\n    if weekday_key not in weekday_map:\n        raise ValueError(f'Unsupported weekday: {weekday}')\n    occurrence = 1 if weekday_occurrence is None else weekday_occurrence\n    try:\n        occurrence = int(occurrence)\n    except (TypeError, ValueError):\n        raise ValueError('weekday_occurrence must be an integer')\n    if occurrence == 0:\n        occurrence = 1\n    weekday_value = weekday_map[weekday_key](occurrence)\n    weekday_name = weekday_key\n    occurrence_applied = occurrence\n\nrd = relativedelta(years=years_i, months=months_i, days=days_i, weeks=weeks_i, weekday=weekday_value)\nresult = base + rd\n\nreturn {\n    'original_date': base.isoformat(),\n    'result_date': result.isoformat(),\n    'result_weekday': result.strftime('%A'),\n    'years_applied': years_i,\n    'months_applied': months_i,\n    'days_applied': rd.days,\n    'weeks_applied': weeks_i,\n    'weekday_applied': weekday_name,\n    'weekday_occurrence_applied': occurrence_applied,\n}"
+  },
+  {
+   "tool": "date_difference",
+   "imports": [
+    "from dateutil.parser import parse",
+    "from dateutil.relativedelta import relativedelta"
+   ],
+   "body": "try:\n    start = parse(start_date).date()\nexcept Exception as exc:\n    raise ValueError(f'Invalid start_date: {exc}')\n\ntry:\n    end = parse(end_date).date()\nexcept Exception as exc:\n    raise ValueError(f'Invalid end_date: {exc}')\n\nrd = relativedelta(end, start)\n\nreturn {\n    'start_date': start.isoformat(),\n    'end_date': end.isoformat(),\n    'years': rd.years,\n    'months': rd.months,\n    'days': rd.days,\n    'total_days': (end - start).days,\n    'start_weekday': start.strftime('%A'),\n    'end_weekday': end.strftime('%A'),\n}"
+  },
+  {
+   "tool": "easter_date",
+   "imports": [
+    "from dateutil.easter import easter, EASTER_WESTERN, EASTER_ORTHODOX, EASTER_JULIAN"
+   ],
+   "body": "try:\n    year_i = int(year)\nexcept (TypeError, ValueError):\n    raise ValueError('year must be an integer')\n\nmethod_map = {\n    'western': EASTER_WESTERN,\n    'orthodox': EASTER_ORTHODOX,\n    'julian': EASTER_JULIAN,\n}\nmethod_key = 'western' if method is None else str(method).strip().lower()\nif method_key not in method_map:\n    raise ValueError(f'Unsupported Easter method: {method}')\n\nresult = easter(year_i, method=method_map[method_key])\n\nreturn {\n    'year': year_i,\n    'method': method_key,\n    'date': result.isoformat(),\n    'weekday': result.strftime('%A'),\n}"
+  },
+  {
+   "tool": "parse_date",
+   "imports": [
+    "from dateutil.parser import parse"
+   ],
+   "body": "if not isinstance(text, str):\n    raise ValueError('text must be a string')\n\ntry:\n    dt = parse(text)\nexcept Exception as exc:\n    raise ValueError(f'Invalid date string: {exc}')\n\nreturn {\n    'input': text,\n    'iso_date': dt.date().isoformat(),\n    'iso_datetime': dt.isoformat(),\n    'year': dt.year,\n    'month': dt.month,\n    'day': dt.day,\n    'weekday': dt.strftime('%A'),\n    'day_of_year': dt.timetuple().tm_yday,\n}"
+  }
+ ]
+}

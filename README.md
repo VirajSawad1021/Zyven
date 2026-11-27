@@ -60,12 +60,16 @@ truth is computed by the source library itself, and the raw records are in `eval
 **With a small model.** Gemma 4 E4B is a 4-billion-parameter model that runs on one free Kaggle GPU. It gains the most from
 verified skills:
 
-| Suite (Gemma 4 E4B) | Model alone | Model + Zyven-compiled skills |
-|---|---|---|
-| Hijri ↔ Gregorian, phone validity and E.164 | **8 / 24** | **24 / 24** |
-| Graph algorithms (networkx) | **22 / 24** at 77.8 s per question | **24 / 24** at 12.9 s per question |
+| Suite (Gemma 4 E4B) | Source | Model alone | Model + Zyven-compiled skills |
+|---|---|---|---|
+| Calendar arithmetic: month ends, nth weekday, Orthodox Easter | [python-dateutil](https://github.com/dateutil/dateutil) | **11 / 24** | **24 / 24** |
+| Unit conversion: speed, temperature, energy, pressure, data | [pint](https://github.com/hgrecco/pint) | **22 / 30** | **29 / 30** |
+| IBAN validity, IBAN check digits, Luhn | python-stdnum | **6 / 18** | **18 / 18** |
+| Hijri ↔ Gregorian, Jewish holidays, phone validity and E.164 | hijridate, pyluach, phonenumbers | **10 / 30** | **30 / 30** |
+| Graph algorithms | networkx | **22 / 24** at 77.8 s per question | **24 / 24** at 12.9 s per question |
 
-Details: `eval/results/e4b-global-20261122.md` and `eval/results/e4b-networkx-20261122.md`.
+The dateutil, pint and Jewish-holiday skills were compiled through OpenCode by Reflection Beam 1.0, a 501B
+open-weight model. Details: `eval/results/e4b-four-suites-20261124.md` and `eval/results/e4b-networkx-20261122.md`.
 
 <details>
 <summary>Per-category breakdown</summary>
@@ -409,10 +413,20 @@ It catches all three published tool-poisoning proof-of-concept servers from Inva
 pull through its lock file, and passes all seven official reference servers (55 tools) with no failed check. See
 `eval/results/verify-real-world-20261123.md`.
 
+With `--call`, it also calls the tools with valid sample input, four times each, and reads what they return: hidden
+instructions in results, leaked tokens and keys (masked in the report), and tools that change after a few uses. On
+Damn Vulnerable MCP Server this fails 7 of the 15 challenges and lists the risky capability for 3 more, while the
+official servers still pass with all 55 tools called (`eval/results/verify-dvmcp-20261124.md`).
+
+On 23 popular community servers (Playwright, Sentry, Firecrawl, Notion, Heroku, Kubernetes, Brave, Exa, arXiv and
+more), 22 started in the sandbox and 21 passed, with 348 tools checked and 119 called
+(`eval/results/verify-community-20261124.md`).
+
 ```bash
 uv run zyven verify -- npx -y @modelcontextprotocol/server-everything      # a command (runs on this machine)
 uv run zyven verify --url https://example.com/mcp --header "Authorization: Bearer ..."
 uv run zyven verify --probe --lock mcp-lock.json -- python my_server.py    # also send invalid input; pin definitions
+uv run zyven verify --docker IMAGE --call all -- python my_server.py  # call every tool with valid input, in the sandbox
 uv run zyven verify --docker zyven-sandbox:py312 --mount ./skill:/skill -- python /skill/server.py   # in the sandbox
 uv run zyven verify --docker node:22-slim --mount ./srv:/work --allow-host api.example.com -- node /work/index.js
                                                   # in the sandbox, reaching only api.example.com

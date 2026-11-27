@@ -1,0 +1,1365 @@
+{
+ "passed": true,
+ "verified_for": [
+  "policy",
+  "import",
+  "upstream_tests",
+  "input_robustness",
+  "mcp_smoke",
+  "differential"
+ ],
+ "gates": [
+  {
+   "name": "policy",
+   "passed": true,
+   "detail": "imports and builtins within policy",
+   "data": {}
+  },
+  {
+   "name": "import",
+   "passed": true,
+   "detail": "server module imports cleanly",
+   "data": {}
+  },
+  {
+   "name": "upstream_tests",
+   "passed": true,
+   "detail": "45 tests ran, 0 failures, 0 errors (tests/test_dates.py, tests/test_hebrewcal.py)",
+   "data": {
+    "ran": 45,
+    "failures": 0,
+    "errors": 0
+   }
+  },
+  {
+   "name": "input_robustness",
+   "passed": true,
+   "detail": "4/4 equivalent-input probes gave identical results",
+   "data": {
+    "probes": [
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "  2023-04-06 ",
+       "israel": false,
+       "hebrew": false,
+       "prefix_day": true
+      },
+      "ok": true,
+      "output": {
+       "date": "2023-04-06",
+       "holiday": "1 Pesach",
+       "is_holiday": true,
+       "kind": "festival",
+       "fast_day": null,
+       "is_fast_day": false,
+       "festival": "1 Pesach",
+       "is_festival": true
+      }
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "  2023-04-06 ",
+       "israel": true,
+       "include_working_days": false,
+       "prefix_day": true
+      },
+      "ok": true,
+      "output": {
+       "date": "2023-04-06",
+       "festival": "1 Pesach",
+       "is_festival": true,
+       "holiday": "1 Pesach",
+       "is_holiday": true,
+       "fast_day": null,
+       "is_fast_day": false
+      }
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "  2023-12-21 ",
+       "hebrew": true
+      },
+      "ok": true,
+      "output": {
+       "date": "2023-12-21",
+       "fast_day": null,
+       "is_fast_day": false,
+       "holiday": null,
+       "is_holiday": false,
+       "festival": null,
+       "is_festival": false
+      }
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "  2024-01-01 "
+      },
+      "ok": true,
+      "output": {
+       "date": "2024-01-01",
+       "shabbat_date": "2024-01-06",
+       "is_shabbat": false,
+       "days_until_shabbat": 5
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "mcp_smoke",
+   "passed": true,
+   "detail": "4 tools called with example args; invalid input rejected",
+   "data": {
+    "server_started": true,
+    "listed_tools": [
+     "get_jewish_holiday",
+     "get_jewish_festival",
+     "get_fast_day",
+     "get_shabbat_for_date"
+    ],
+    "missing_tools": [],
+    "calls": [
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2023-04-06",
+       "israel": false,
+       "hebrew": false,
+       "prefix_day": true
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "date": "2023-04-06",
+       "holiday": "1 Pesach",
+       "is_holiday": true,
+       "kind": "festival",
+       "fast_day": null,
+       "is_fast_day": false,
+       "festival": "1 Pesach",
+       "is_festival": true
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2023-04-06",
+       "israel": true,
+       "include_working_days": false,
+       "prefix_day": true
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "date": "2023-04-06",
+       "festival": "1 Pesach",
+       "is_festival": true,
+       "holiday": "1 Pesach",
+       "is_holiday": true,
+       "fast_day": null,
+       "is_fast_day": false
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "2023-12-21",
+       "hebrew": true
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "date": "2023-12-21",
+       "fast_day": null,
+       "is_fast_day": false,
+       "holiday": null,
+       "is_holiday": false,
+       "festival": null,
+       "is_festival": false
+      },
+      "missing_fields": []
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "2024-01-01"
+      },
+      "ok": true,
+      "is_error": false,
+      "output": {
+       "date": "2024-01-01",
+       "shabbat_date": "2024-01-06",
+       "is_shabbat": false,
+       "days_until_shabbat": 5
+      },
+      "missing_fields": []
+     }
+    ],
+    "invalid_calls": [
+     {
+      "ok": true,
+      "tool": "get_jewish_holiday",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "get_jewish_festival",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "get_fast_day",
+      "detail": "rejected cleanly"
+     },
+     {
+      "ok": true,
+      "tool": "get_shabbat_for_date",
+      "detail": "rejected cleanly"
+     }
+    ],
+    "robustness": [
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "  2023-04-06 ",
+       "israel": false,
+       "hebrew": false,
+       "prefix_day": true
+      },
+      "ok": true,
+      "output": {
+       "date": "2023-04-06",
+       "holiday": "1 Pesach",
+       "is_holiday": true,
+       "kind": "festival",
+       "fast_day": null,
+       "is_fast_day": false,
+       "festival": "1 Pesach",
+       "is_festival": true
+      }
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "  2023-04-06 ",
+       "israel": true,
+       "include_working_days": false,
+       "prefix_day": true
+      },
+      "ok": true,
+      "output": {
+       "date": "2023-04-06",
+       "festival": "1 Pesach",
+       "is_festival": true,
+       "holiday": "1 Pesach",
+       "is_holiday": true,
+       "fast_day": null,
+       "is_fast_day": false
+      }
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "  2023-12-21 ",
+       "hebrew": true
+      },
+      "ok": true,
+      "output": {
+       "date": "2023-12-21",
+       "fast_day": null,
+       "is_fast_day": false,
+       "holiday": null,
+       "is_holiday": false,
+       "festival": null,
+       "is_festival": false
+      }
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "  2024-01-01 "
+      },
+      "ok": true,
+      "output": {
+       "date": "2024-01-01",
+       "shabbat_date": "2024-01-06",
+       "is_shabbat": false,
+       "days_until_shabbat": 5
+      }
+     }
+    ],
+    "still_alive_after_calls": true
+   }
+  },
+  {
+   "name": "differential",
+   "passed": true,
+   "detail": "41/41 Tester cases + 4/4 generated cases match the library (36 generated not scored: the library or the tool rejected the input)",
+   "data": {
+    "results": [
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2023-04-06",
+       "israel": false,
+       "hebrew": false,
+       "prefix_day": true
+      },
+      "field": "festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, israel=False, hebrew=False, include_working_days=True, prefix_day=True)",
+      "expected": "1 Pesach",
+      "got": "1 Pesach",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2023-04-07",
+       "israel": false,
+       "hebrew": false,
+       "prefix_day": true
+      },
+      "field": "is_festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2023-04-07'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, israel=False, hebrew=False, include_working_days=True, prefix_day=True) is not None",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2023-12-21",
+       "hebrew": true
+      },
+      "field": "fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '2023-12-21'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew=True)",
+      "expected": null,
+      "got": null,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2023-12-21",
+       "hebrew": true
+      },
+      "field": "is_fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '2023-12-21'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew=True) is not None",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2023-12-21",
+       "hebrew": true
+      },
+      "field": "kind",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2023-12-21'.split('-'))\ndate_obj = GregorianDate(y, m, d)\n'fast_day' if fast_day(date_obj, hebrew=True) is not None else 'festival' if festival(date_obj, hebrew=True) is not None else None",
+      "expected": null,
+      "got": null,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2024-01-01"
+      },
+      "field": "date",
+      "expr": "'2024-01-01'",
+      "expected": "2024-01-01",
+      "got": "2024-01-01",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2024-01-01"
+      },
+      "field": "holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '2024-01-01'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj)",
+      "expected": null,
+      "got": null,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2024-01-01"
+      },
+      "field": "is_holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '2024-01-01'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj) is not None",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2024-01-01"
+      },
+      "field": "is_festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2024-01-01'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj) is not None",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2023-04-06",
+       "israel": true,
+       "hebrew": true,
+       "prefix_day": false
+      },
+      "field": "holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '2023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj, israel=True, hebrew=True, prefix_day=False)",
+      "expected": "פסח",
+      "got": "פסח",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2023-04-06",
+       "israel": true,
+       "hebrew": true,
+       "prefix_day": false
+      },
+      "field": "kind",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\n'fast_day' if fast_day(date_obj, hebrew=True) is not None else 'festival' if festival(date_obj, israel=True, hebrew=True, prefix_day=False) is not None else None",
+      "expected": "festival",
+      "got": "festival",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2023-04-06",
+       "israel": true,
+       "hebrew": true,
+       "prefix_day": false
+      },
+      "field": "is_holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '2023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj, israel=True, hebrew=True, prefix_day=False) is not None",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2023-04-06",
+       "israel": true,
+       "include_working_days": false,
+       "prefix_day": true
+      },
+      "field": "festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, israel=True, include_working_days=False, prefix_day=True)",
+      "expected": "1 Pesach",
+      "got": "1 Pesach",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2023-04-09",
+       "hebrew": true
+      },
+      "field": "festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2023-04-09'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, hebrew=True)",
+      "expected": "פסח",
+      "got": "פסח",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2024-01-01"
+      },
+      "field": "date",
+      "expr": "'2024-01-01'",
+      "expected": "2024-01-01",
+      "got": "2024-01-01",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2024-01-01"
+      },
+      "field": "holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '2024-01-01'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj)",
+      "expected": null,
+      "got": null,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2024-01-01"
+      },
+      "field": "is_holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '2024-01-01'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj) is not None",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2024-01-01"
+      },
+      "field": "is_festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2024-01-01'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj) is not None",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2023-12-21",
+       "hebrew": true
+      },
+      "field": "fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '2023-12-21'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew=True)",
+      "expected": null,
+      "got": null,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2023-12-21",
+       "hebrew": true
+      },
+      "field": "is_fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '2023-12-21'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew=True) is not None",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2023-04-06",
+       "israel": true,
+       "include_working_days": false,
+       "prefix_day": true
+      },
+      "field": "is_festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, israel=True, include_working_days=False, prefix_day=True) is not None",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2023-04-06",
+       "israel": true,
+       "include_working_days": false,
+       "prefix_day": true
+      },
+      "field": "holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '2023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj, israel=True, prefix_day=True)",
+      "expected": "1 Pesach",
+      "got": "1 Pesach",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2023-04-06",
+       "israel": true,
+       "include_working_days": false,
+       "prefix_day": true
+      },
+      "field": "is_holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '2023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj, israel=True, prefix_day=True) is not None",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "2023-12-21",
+       "hebrew": true
+      },
+      "field": "fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '2023-12-21'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew=True)",
+      "expected": null,
+      "got": null,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "2023-12-21",
+       "hebrew": true
+      },
+      "field": "is_fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '2023-12-21'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew=True) is not None",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "2023-12-21"
+      },
+      "field": "fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '2023-12-21'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj)",
+      "expected": null,
+      "got": null,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "2024-01-01"
+      },
+      "field": "date",
+      "expr": "'2024-01-01'",
+      "expected": "2024-01-01",
+      "got": "2024-01-01",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "2024-01-01"
+      },
+      "field": "fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '2024-01-01'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj)",
+      "expected": null,
+      "got": null,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "2024-01-01"
+      },
+      "field": "is_fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '2024-01-01'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj) is not None",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "2023-04-06"
+      },
+      "field": "holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '2023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj)",
+      "expected": "Pesach",
+      "got": "Pesach",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "2023-04-06"
+      },
+      "field": "is_holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '2023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj) is not None",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "2023-04-06"
+      },
+      "field": "festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj)",
+      "expected": "Pesach",
+      "got": "Pesach",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "2023-04-06"
+      },
+      "field": "is_festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj) is not None",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "2024-01-06"
+      },
+      "field": "shabbat_date",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '2024-01-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nf\"{shabbat_obj.year:04d}-{shabbat_obj.month:02d}-{shabbat_obj.day:02d}\"",
+      "expected": "2024-01-06",
+      "got": "2024-01-06",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "2024-01-06"
+      },
+      "field": "is_shabbat",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '2024-01-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\n(shabbat_obj - date_obj) == 0",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "2024-01-06"
+      },
+      "field": "days_until_shabbat",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '2024-01-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nshabbat_obj - date_obj",
+      "expected": 0,
+      "got": 0,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "2024-01-05"
+      },
+      "field": "days_until_shabbat",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '2024-01-05'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nshabbat_obj - date_obj",
+      "expected": 1,
+      "got": 1,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "2024-01-07"
+      },
+      "field": "days_until_shabbat",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '2024-01-07'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nshabbat_obj - date_obj",
+      "expected": 6,
+      "got": 6,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "2024-01-05"
+      },
+      "field": "is_shabbat",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '2024-01-05'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\n(shabbat_obj - date_obj) == 0",
+      "expected": false,
+      "got": false,
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "2024-01-01"
+      },
+      "field": "date",
+      "expr": "'2024-01-01'",
+      "expected": "2024-01-01",
+      "got": "2024-01-01",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "2024-01-07"
+      },
+      "field": "shabbat_date",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '2024-01-07'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nf\"{shabbat_obj.year:04d}-{shabbat_obj.month:02d}-{shabbat_obj.day:02d}\"",
+      "expected": "2024-01-13",
+      "got": "2024-01-13",
+      "status": "match",
+      "tool_declined": false
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "023-04-07",
+       "israel": false,
+       "hebrew": true,
+       "prefix_day": true
+      },
+      "field": "festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '023-04-07'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, israel=False, hebrew=True, include_working_days=True, prefix_day=True)",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2023-04-06",
+       "israel": false,
+       "hebrew": false,
+       "prefix_day": false
+      },
+      "field": "is_festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, israel=False, hebrew=False, include_working_days=True, prefix_day=False) is not None",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "023-04-06",
+       "israel": true,
+       "hebrew": true,
+       "prefix_day": true
+      },
+      "field": "fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew=True)",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2023-04-0",
+       "israel": false,
+       "hebrew": false,
+       "prefix_day": true
+      },
+      "field": "is_fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '2023-04-0'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew=False) is not None",
+      "status": "inconclusive",
+      "detail": "ValueError('Given month has 30 days.')",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "023-04-06",
+       "israel": false,
+       "hebrew": false,
+       "prefix_day": false
+      },
+      "field": "kind",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\n'fast_day' if fast_day(date_obj, hebrew=False) is not None else 'festival' if festival(date_obj, hebrew=False) is not None else None",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "60-40-3202",
+       "israel": true,
+       "hebrew": false,
+       "prefix_day": true
+      },
+      "field": "date",
+      "expr": "'60-40-3202'",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "70-40-3202",
+       "israel": true,
+       "hebrew": false,
+       "prefix_day": false
+      },
+      "field": "holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '70-40-3202'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj)",
+      "status": "inconclusive",
+      "detail": "ValueError('40 is an invalid month.')",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "2023-04-07",
+       "israel": false,
+       "hebrew": true,
+       "prefix_day": false
+      },
+      "field": "is_holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '2023-04-07'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj) is not None",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "70-40-3202",
+       "israel": true,
+       "hebrew": false,
+       "prefix_day": true
+      },
+      "field": "is_festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '70-40-3202'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj) is not None",
+      "status": "inconclusive",
+      "detail": "ValueError('40 is an invalid month.')",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "023-04-07",
+       "israel": true,
+       "hebrew": true,
+       "prefix_day": false
+      },
+      "field": "holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '023-04-07'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj, israel=True, hebrew=True, prefix_day=False)",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "023-04-07",
+       "israel": false,
+       "hebrew": true,
+       "prefix_day": false
+      },
+      "field": "kind",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '023-04-07'.split('-'))\ndate_obj = GregorianDate(y, m, d)\n'fast_day' if fast_day(date_obj, hebrew=True) is not None else 'festival' if festival(date_obj, israel=False, hebrew=True, prefix_day=False) is not None else None",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_holiday",
+      "args": {
+       "date": "023-04-07",
+       "israel": true,
+       "hebrew": false,
+       "prefix_day": true
+      },
+      "field": "is_holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '023-04-07'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj, israel=True, hebrew=False, prefix_day=True) is not None",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "023-04-06",
+       "israel": false,
+       "include_working_days": true,
+       "prefix_day": true
+      },
+      "field": "festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, israel=False, include_working_days=True, prefix_day=True)",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2023-04-0",
+       "israel": true,
+       "include_working_days": false,
+       "prefix_day": false
+      },
+      "field": "festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2023-04-0'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, hebrew={hebrew})",
+      "status": "inconclusive",
+      "detail": "ValueError('Given month has 30 days.')",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "60-40-3202",
+       "israel": false,
+       "include_working_days": false,
+       "prefix_day": false
+      },
+      "field": "date",
+      "expr": "'60-40-3202'",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "60-40-3202",
+       "israel": true,
+       "include_working_days": false,
+       "prefix_day": true
+      },
+      "field": "holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '60-40-3202'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj)",
+      "status": "inconclusive",
+      "detail": "ValueError('40 is an invalid month.')",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "023-04-06",
+       "israel": true,
+       "include_working_days": false,
+       "prefix_day": false
+      },
+      "field": "is_holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj) is not None",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2023-04-06",
+       "israel": false,
+       "include_working_days": false,
+       "prefix_day": true
+      },
+      "field": "is_festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj) is not None",
+      "expected": true,
+      "got": true,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2023-04-0",
+       "israel": true,
+       "include_working_days": true,
+       "prefix_day": true
+      },
+      "field": "fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '2023-04-0'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew={hebrew})",
+      "status": "inconclusive",
+      "detail": "ValueError('Given month has 30 days.')",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "023-04-06",
+       "israel": false,
+       "include_working_days": true,
+       "prefix_day": false
+      },
+      "field": "is_fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew={hebrew}) is not None",
+      "status": "inconclusive",
+      "detail": "NameError(\"name 'hebrew' is not defined\")",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2023-04-0",
+       "israel": false,
+       "include_working_days": true,
+       "prefix_day": true
+      },
+      "field": "is_festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2023-04-0'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, israel=False, include_working_days=True, prefix_day=True) is not None",
+      "status": "inconclusive",
+      "detail": "ValueError('Given month has 30 days.')",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "023-04-06",
+       "israel": false,
+       "include_working_days": false,
+       "prefix_day": false
+      },
+      "field": "festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '023-04-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, israel=False, include_working_days=False, prefix_day=False)",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "2023-04-0",
+       "israel": true,
+       "include_working_days": false,
+       "prefix_day": true
+      },
+      "field": "festival",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import festival\ny, m, d = map(int, '2023-04-0'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfestival(date_obj, hebrew={hebrew})",
+      "status": "inconclusive",
+      "detail": "ValueError('Given month has 30 days.')",
+      "generated": true
+     },
+     {
+      "tool": "get_jewish_festival",
+      "args": {
+       "date": "60-40-3202",
+       "israel": false,
+       "include_working_days": true,
+       "prefix_day": false
+      },
+      "field": "date",
+      "expr": "'60-40-3202'",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "023-12-21",
+       "hebrew": true
+      },
+      "field": "fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '023-12-21'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew=True)",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "12-21-3202",
+       "hebrew": false
+      },
+      "field": "is_fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '12-21-3202'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj, hebrew=False) is not None",
+      "status": "inconclusive",
+      "detail": "ValueError('21 is an invalid month.')",
+      "generated": true
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "2023-12-21",
+       "hebrew": false
+      },
+      "field": "fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '2023-12-21'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj)",
+      "expected": null,
+      "got": null,
+      "status": "match",
+      "tool_declined": false,
+      "generated": true
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "2023-12-2",
+       "hebrew": true
+      },
+      "field": "date",
+      "expr": "'2023-12-2'",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "12-21-3202",
+       "hebrew": true
+      },
+      "field": "fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '12-21-3202'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj)",
+      "status": "inconclusive",
+      "detail": "ValueError('21 is an invalid month.')",
+      "generated": true
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "2023-12-2",
+       "hebrew": false
+      },
+      "field": "is_fast_day",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import fast_day\ny, m, d = map(int, '2023-12-2'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nfast_day(date_obj) is not None",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_fast_day",
+      "args": {
+       "date": "023-12-21",
+       "hebrew": false
+      },
+      "field": "holiday",
+      "expr": "from pyluach.dates import GregorianDate\nfrom pyluach.hebrewcal import holiday\ny, m, d = map(int, '023-12-21'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nholiday(date_obj)",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "2024-01-0"
+      },
+      "field": "shabbat_date",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '2024-01-0'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nf\"{shabbat_obj.year:04d}-{shabbat_obj.month:02d}-{shabbat_obj.day:02d}\"",
+      "status": "inconclusive",
+      "detail": "ValueError('Given month has 31 days.')",
+      "generated": true
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "60-10-4202"
+      },
+      "field": "is_shabbat",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '60-10-4202'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\n(shabbat_obj - date_obj) == 0",
+      "status": "inconclusive",
+      "detail": "ValueError('Given month has 31 days.')",
+      "generated": true
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "024-01-06"
+      },
+      "field": "days_until_shabbat",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '024-01-06'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nshabbat_obj - date_obj",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "70-10-4202"
+      },
+      "field": "days_until_shabbat",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '70-10-4202'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nshabbat_obj - date_obj",
+      "status": "inconclusive",
+      "detail": "ValueError('Given month has 31 days.')",
+      "generated": true
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "024-01-07"
+      },
+      "field": "days_until_shabbat",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '024-01-07'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nshabbat_obj - date_obj",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "024-01-05"
+      },
+      "field": "is_shabbat",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '024-01-05'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\n(shabbat_obj - date_obj) == 0",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "10-10-4202"
+      },
+      "field": "date",
+      "expr": "'10-10-4202'",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "024-01-01"
+      },
+      "field": "shabbat_date",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '024-01-01'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nf\"{shabbat_obj.year:04d}-{shabbat_obj.month:02d}-{shabbat_obj.day:02d}\"",
+      "status": "tool_rejected",
+      "detail": "  File \"/opt/zyven/diff_check.py\", line 126, in _check\n    out = ns[c[\"tool\"]](**args)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/skill/server.py\", line 31, in tool\n    raise ToolError(f\"{type(e).__name__}: {e}\") from e\nmcp.server.mcpserver.exceptions.ToolError: ValueError: date must be in YYYY-MM-DD format\n",
+      "generated": true
+     },
+     {
+      "tool": "get_shabbat_for_date",
+      "args": {
+       "date": "50-10-4202"
+      },
+      "field": "shabbat_date",
+      "expr": "from pyluach.dates import GregorianDate\ny, m, d = map(int, '50-10-4202'.split('-'))\ndate_obj = GregorianDate(y, m, d)\nshabbat_obj = date_obj.shabbos()\nf\"{shabbat_obj.year:04d}-{shabbat_obj.month:02d}-{shabbat_obj.day:02d}\"",
+      "status": "inconclusive",
+      "detail": "ValueError('Given month has 31 days.')",
+      "generated": true
+     }
+    ]
+   }
+  }
+ ],
+ "failing_tools": {}
+}

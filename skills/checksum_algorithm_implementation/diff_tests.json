@@ -1,0 +1,126 @@
+{
+ "cases": [
+  {
+   "tool": "calculate_luhn_checksum",
+   "args": {
+    "number": "4992739871"
+   },
+   "field": "checksum_value",
+   "reference_imports": [
+    "import stdnum.luhn"
+   ],
+   "reference_expr": "stdnum.luhn.checksum('4992739871')"
+  },
+  {
+   "tool": "calculate_luhn_checksum",
+   "args": {
+    "number": "abcdefe",
+    "alphabet": "abcdef"
+   },
+   "field": "is_valid",
+   "reference_imports": [
+    "import stdnum.luhn"
+   ],
+   "reference_expr": "stdnum.luhn.checksum('abcdefe', alphabet='abcdef') == 0"
+  },
+  {
+   "tool": "calculate_luhn_checksum",
+   "args": {
+    "number": "4992739871"
+   },
+   "field": "display_result",
+   "reference_imports": [
+    "import stdnum.luhn"
+   ],
+   "reference_expr": "'Valid (checksum: 0)' if stdnum.luhn.checksum('4992739871') == 0 else 'Invalid (checksum: ' + str(stdnum.luhn.checksum('4992739871')) + ')'"
+  },
+  {
+   "tool": "calculate_verhoeff_checksum",
+   "args": {
+    "number": "654"
+   },
+   "field": "checksum_value",
+   "reference_imports": [
+    "import stdnum.verhoeff"
+   ],
+   "reference_expr": "stdnum.verhoeff.checksum('654')"
+  },
+  {
+   "tool": "calculate_verhoeff_checksum",
+   "args": {
+    "number": "1428570"
+   },
+   "field": "is_valid",
+   "reference_imports": [
+    "import stdnum.verhoeff"
+   ],
+   "reference_expr": "stdnum.verhoeff.checksum('1428570') == 0"
+  },
+  {
+   "tool": "calculate_verhoeff_checksum",
+   "args": {
+    "number": "654"
+   },
+   "field": "display_result",
+   "reference_imports": [
+    "import stdnum.verhoeff"
+   ],
+   "reference_expr": "'Valid (checksum: 0)' if stdnum.verhoeff.checksum('654') == 0 else 'Invalid (checksum: ' + str(stdnum.verhoeff.checksum('654')) + ')'"
+  },
+  {
+   "tool": "calculate_iso7064_mod_97_10_checksum",
+   "args": {
+    "number": "123456789"
+   },
+   "field": "checksum_value",
+   "reference_imports": [
+    "import stdnum.iso7064.mod_97_10"
+   ],
+   "reference_expr": "stdnum.iso7064.mod_97_10.checksum('123456789')"
+  },
+  {
+   "tool": "calculate_iso7064_mod_97_10_checksum",
+   "args": {
+    "number": "123456789"
+   },
+   "field": "is_valid",
+   "reference_imports": [
+    "import stdnum.iso7064.mod_97_10"
+   ],
+   "reference_expr": "stdnum.iso7064.mod_97_10.checksum('123456789') == 1"
+  },
+  {
+   "tool": "calculate_iso7064_mod_97_10_checksum",
+   "args": {
+    "number": "123456789"
+   },
+   "field": "display_result",
+   "reference_imports": [
+    "import stdnum.iso7064.mod_97_10"
+   ],
+   "reference_expr": "'Valid (checksum: 1)' if stdnum.iso7064.mod_97_10.checksum('123456789') == 1 else 'Invalid (checksum: ' + str(stdnum.iso7064.mod_97_10.checksum('123456789')) + ')'"
+  },
+  {
+   "tool": "calculate_iso7064_mod_37_2_checksum",
+   "args": {
+    "number": "G123489654321Y"
+   },
+   "field": "checksum_value",
+   "reference_imports": [
+    "import stdnum.iso7064.mod_37_2"
+   ],
+   "reference_expr": "stdnum.iso7064.mod_37_2.checksum('G123489654321Y')"
+  },
+  {
+   "tool": "calculate_iso7064_mod_37_2_checksum",
+   "args": {
+    "number": "G123489654321Y"
+   },
+   "field": "display_result",
+   "reference_imports": [
+    "import stdnum.iso7064.mod_37_2"
+   ],
+   "reference_expr": "'Valid (checksum: 1)' if stdnum.iso7064.mod_37_2.checksum('G123489654321Y') == 1 else 'Invalid (checksum: ' + str(stdnum.iso7064.mod_37_2.checksum('G123489654321Y')) + ')'"
+  }
+ ]
+}

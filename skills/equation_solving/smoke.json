@@ -1,0 +1,58 @@
+{
+ "tools": {
+  "solve_equation": {
+   "args": {
+    "equation": "x**2 - 4 = 0",
+    "variable": "x"
+   },
+   "returns": [
+    "equation",
+    "variable",
+    "solutions",
+    "solution_count",
+    "solutions_display"
+   ],
+   "required": [
+    "equation",
+    "variable"
+   ],
+   "variants": [
+    {
+     "equation": "  x**2 - 4 = 0 ",
+     "variable": "x"
+    },
+    {
+     "equation": "x**2 - 4 = 0",
+     "variable": "  x "
+    }
+   ]
+  },
+  "solve_system": {
+   "args": {
+    "equations": "x + y - 3\nx - y - 1",
+    "variables": "x, y"
+   },
+   "returns": [
+    "equations",
+    "variables",
+    "solutions",
+    "solution_count",
+    "solutions_display"
+   ],
+   "required": [
+    "equations",
+    "variables"
+   ],
+   "variants": [
+    {
+     "equations": "  x + y - 3\nx - y - 1 ",
+     "variables": "x, y"
+    },
+    {
+     "equations": "x + y - 3\nx - y - 1",
+     "variables": "  x, y "
+    }
+   ]
+  }
+ }
+}

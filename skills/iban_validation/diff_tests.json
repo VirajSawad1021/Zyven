@@ -1,0 +1,70 @@
+{
+ "cases": [
+  {
+   "tool": "validate_iban",
+   "args": {
+    "iban_string": "GR16 0110 1050 0000 1054 7023 795"
+   },
+   "field": "is_valid",
+   "reference_imports": [
+    "import stdnum.iban"
+   ],
+   "reference_expr": "stdnum.iban.is_valid('GR16 0110 1050 0000 1054 7023 795')"
+  },
+  {
+   "tool": "validate_iban",
+   "args": {
+    "iban_string": "BE31 4354 1116 1155"
+   },
+   "field": "compact_iban",
+   "reference_imports": [
+    "import stdnum.iban"
+   ],
+   "reference_expr": "stdnum.iban.compact('BE31 4354 1116 1155')"
+  },
+  {
+   "tool": "validate_iban",
+   "args": {
+    "iban_string": "INVALID_IBAN_123"
+   },
+   "field": "is_valid",
+   "reference_imports": [
+    "import stdnum.iban"
+   ],
+   "reference_expr": "stdnum.iban.is_valid('INVALID_IBAN_123')"
+  },
+  {
+   "tool": "calculate_iban_check_digits",
+   "args": {
+    "iban_with_placeholders": "BExx435411161155"
+   },
+   "field": "check_digits",
+   "reference_imports": [
+    "import stdnum.iban"
+   ],
+   "reference_expr": "stdnum.iban.calc_check_digits('BExx435411161155')"
+  },
+  {
+   "tool": "calculate_iban_check_digits",
+   "args": {
+    "iban_with_placeholders": "GRxx01101050000010547023795"
+   },
+   "field": "formatted_iban_with_digits",
+   "reference_imports": [
+    "import stdnum.iban"
+   ],
+   "reference_expr": "stdnum.iban.format(stdnum.iban.calc_check_digits('GRxx01101050000010547023795') + 'GR' + 'GRxx01101050000010547023795'[2:] if False else 'GR' + stdnum.iban.calc_check_digits('GRxx01101050000010547023795') + '01101050000010547023795')"
+  },
+  {
+   "tool": "calculate_iban_check_digits",
+   "args": {
+    "iban_with_placeholders": "BExx435411161155"
+   },
+   "field": "check_digits",
+   "reference_imports": [
+    "import stdnum.iban"
+   ],
+   "reference_expr": "stdnum.iban.calc_check_digits('BExx435411161155')"
+  }
+ ]
+}

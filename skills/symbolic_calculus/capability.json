@@ -1,0 +1,171 @@
+{
+ "name": "symbolic_calculus",
+ "title": "Symbolic Calculus",
+ "summary": "Exact symbolic differentiation and integration of a single expression provided as a string, returning SymPy expression strings.",
+ "mode": "wrap",
+ "tools": [
+  {
+   "name": "differentiate",
+   "description": "Compute the nth derivative of a symbolic expression with respect to one variable.",
+   "params": [
+    {
+     "name": "expression",
+     "type": "string",
+     "description": "The expression to differentiate, in SymPy/Python syntax.",
+     "required": true,
+     "example": "sin(x)*exp(x)"
+    },
+    {
+     "name": "variable",
+     "type": "string",
+     "description": "The differentiation variable, such as x.",
+     "required": true,
+     "example": "x"
+    },
+    {
+     "name": "order",
+     "type": "integer",
+     "description": "The derivative order. Defaults to 1; 0 returns the original expression.",
+     "required": false,
+     "example": 2
+    }
+   ],
+   "returns": [
+    {
+     "name": "expression",
+     "type": "string",
+     "description": "The original expression string."
+    },
+    {
+     "name": "variable",
+     "type": "string",
+     "description": "The differentiation variable."
+    },
+    {
+     "name": "order",
+     "type": "integer",
+     "description": "The derivative order used."
+    },
+    {
+     "name": "derivative",
+     "type": "string",
+     "description": "The resulting derivative as a SymPy expression string."
+    }
+   ],
+   "implementation_symbols": [
+    "sympy.core.sympify.sympify",
+    "sympy.core.function.diff"
+   ],
+   "implementation_notes": "Import sympify from sympy (or sympy.core.sympify) and diff from sympy (or sympy.core.function). Convert expression and variable with sympify(...). Default order to 1, then call diff(expr, var, order); this is equivalent to expr.diff(var, order) and supports order 0. Return str(result) as derivative, echoing the original expression, variable, and order.",
+   "example_args": {
+    "expression": "sin(x)*exp(x)",
+    "variable": "x",
+    "order": 2
+   }
+  },
+  {
+   "name": "integrate",
+   "description": "Compute the indefinite or definite integral of a symbolic expression with respect to one variable.",
+   "params": [
+    {
+     "name": "expression",
+     "type": "string",
+     "description": "The integrand, in SymPy/Python syntax.",
+     "required": true,
+     "example": "x**2"
+    },
+    {
+     "name": "variable",
+     "type": "string",
+     "description": "The integration variable, such as x.",
+     "required": true,
+     "example": "x"
+    },
+    {
+     "name": "lower_limit",
+     "type": "string",
+     "description": "Optional lower limit for definite integration. Provide together with upper_limit; may be numeric or symbolic, such as 0 or pi.",
+     "required": false,
+     "example": "0"
+    },
+    {
+     "name": "upper_limit",
+     "type": "string",
+     "description": "Optional upper limit for definite integration. Provide together with lower_limit; may be numeric or symbolic, such as 1 or oo.",
+     "required": false,
+     "example": "1"
+    }
+   ],
+   "returns": [
+    {
+     "name": "expression",
+     "type": "string",
+     "description": "The original integrand string."
+    },
+    {
+     "name": "variable",
+     "type": "string",
+     "description": "The integration variable."
+    },
+    {
+     "name": "definite",
+     "type": "boolean",
+     "description": "Whether a definite integral was computed."
+    },
+    {
+     "name": "limits",
+     "type": "array",
+     "description": "For definite integrals, [lower_limit, upper_limit] as strings; otherwise an empty array."
+    },
+    {
+     "name": "integral",
+     "type": "string",
+     "description": "The resulting integral as a SymPy expression string. An unevaluated Integral(...) string is returned when SymPy cannot evaluate it."
+    },
+    {
+     "name": "evaluated",
+     "type": "boolean",
+     "description": "Whether SymPy returned an evaluated expression rather than an unevaluated Integral object."
+    }
+   ],
+   "implementation_symbols": [
+    "sympy.core.sympify.sympify",
+    "sympy.integrals.integrals.integrate"
+   ],
+   "implementation_notes": "Import sympify from sympy (or sympy.core.sympify) and integrate from sympy (or sympy.integrals.integrals). Convert expression and variable with sympify(...). If both lower_limit and upper_limit are provided, convert each with sympify(...) and call integrate(expr, (var, lower, upper)); otherwise call integrate(expr, var). Require both limits or neither, raising ValueError if only one is provided. Set definite true only when both limits are provided, and limits to [str(lower_limit), str(upper_limit)] or []. Return str(result) as integral. Set evaluated by checking that result is not an instance of sympy.integrals.integrals.Integral.",
+   "example_args": {
+    "expression": "x**2",
+    "variable": "x",
+    "lower_limit": "0",
+    "upper_limit": "1"
+   }
+  }
+ ],
+ "included_symbols": [
+  "sympy.core.sympify.sympify",
+  "sympy.core.function.diff",
+  "sympy.integrals.integrals.integrate"
+ ],
+ "excluded_symbols": [],
+ "dependencies": [
+  "sympy"
+ ],
+ "side_effects": [
+  "none"
+ ],
+ "relevant_tests": [
+  "sympy/integrals/tests/test_integrals.py",
+  "sympy/core/tests/test_function.py",
+  "sympy/series/tests/test_limits.py",
+  "sympy/series/tests/test_series.py",
+  "sympy/concrete/tests/test_products.py"
+ ],
+ "uncertainties": [
+  "Expression and variable strings are parsed with sympy.sympify; invalid syntax raises SympifyError.",
+  "The derivative order must be a non-negative integer; sympy.diff semantics apply, including order 0 returning the original expression.",
+  "Definite integration requires both lower_limit and upper_limit; providing only one should raise ValueError.",
+  "Limits may be numeric or symbolic strings such as 0, pi, or oo and are sympified before integration.",
+  "If SymPy cannot evaluate an integral, integrate returns an unevaluated Integral object whose string representation is returned.",
+  "Indefinite integrals omit the arbitrary constant of integration."
+ ]
+}

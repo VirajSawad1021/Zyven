@@ -1,0 +1,160 @@
+[
+ {
+  "t": 0.0,
+  "event": "tester.not_independent",
+  "detail": "the Tester is the same model as the Compiler; a misreading they share can pass the differential gate (give --tester a model from another family to reduce that)"
+ },
+ {
+  "t": 0.0,
+  "event": "architect.start",
+  "detail": "Look up Jewish holidays, festivals, fast days, and Shabbat (OpenCode (opencode/beam-free) [coding agent])"
+ },
+ {
+  "t": 92.23,
+  "event": "architect.done",
+  "detail": "4 tools: get_jewish_holiday, get_jewish_festival, get_fast_day, get_shabbat_for_date",
+  "resolved": {},
+  "dropped": [],
+  "fixes": [
+   "interface lint: get_jewish_festival: returns none of the related facts the library computes directly from the same input (holiday, fast_day); add the ones an agent would need for follow-up questions as named return fields, computed by calling the library, so the agent never derives them itself",
+   "interface lint: get_fast_day: returns none of the related facts the library computes directly from the same input (holiday, festival); add the ones an agent would need for follow-up questions as named return fields, computed by calling the library, so the agent never derives them itself",
+   "interface lint: revised: 2 -> 0 interface warnings",
+   "skipped test tests/test_hebrewcal.py: needs bs4 (not available in the sandbox)"
+  ],
+  "lint_warnings": 0
+ },
+ {
+  "t": 92.23,
+  "event": "compiler.start",
+  "detail": "writing 4 tool bodies (OpenCode (opencode/beam-free) [coding agent])"
+ },
+ {
+  "t": 122.17,
+  "event": "compiler.done",
+  "detail": "all tools implemented"
+ },
+ {
+  "t": 122.17,
+  "event": "tester.start",
+  "detail": "writing differential tests from the spec and library (adapter code not shown; OpenCode (opencode/beam-free) [coding agent])"
+ },
+ {
+  "t": 227.5,
+  "event": "tester.done",
+  "detail": "41 cases for 4 tools; full coverage",
+  "coverage_gaps": {}
+ },
+ {
+  "t": 227.51,
+  "event": "verify.start",
+  "detail": "attempt 1"
+ },
+ {
+  "t": 227.56,
+  "event": "gate.policy",
+  "detail": "FAIL line 48: call to 'locals' is not allowed; line 49: call to 'locals' is not allowed; line 50: call to 'locals' is not allowed; line 51: call to 'locals' is not allowed; line 119: call to 'locals' is not allowed; line 120: call to 'locals' is not allowed; line 121: call to 'locals' is not allowed; lin",
+  "passed": false
+ },
+ {
+  "t": 227.56,
+  "event": "repair.start",
+  "detail": "4 failing tool(s): get_jewish_holiday, get_jewish_festival, get_fast_day, get_shabbat_for_date"
+ },
+ {
+  "t": 259.31,
+  "event": "repair.done",
+  "detail": "patched get_jewish_holiday, get_jewish_festival, get_fast_day, get_shabbat_for_date"
+ },
+ {
+  "t": 259.31,
+  "event": "verify.start",
+  "detail": "attempt 2"
+ },
+ {
+  "t": 277.92,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 277.92,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 277.92,
+  "event": "gate.upstream_tests",
+  "detail": "FAIL 1 tests ran, 0 failures, 1 errors (tests/test_dates.py, tests/test_hebrewcal.py)",
+  "passed": false
+ },
+ {
+  "t": 277.92,
+  "event": "gate.input_robustness",
+  "detail": "FAIL 0/4 equivalent-input probes gave identical results: get_jewish_holiday {\"date\": \"  2023-04-06 \", \"israel\": false, \"hebrew\": false, \"prefix_day\": true}; get_jewish_festival {\"date\": \"  2023-04-06 \", \"israel\": true, \"include_working_days\": false, \"prefix_day\": true}; get_fast_day {\"date\": \"  2023-12-2",
+  "passed": false
+ },
+ {
+  "t": 277.92,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 4 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 277.92,
+  "event": "gate.differential",
+  "detail": "PASS 41/41 Tester cases + 4/4 generated cases match the library (36 generated not scored: the library or the tool rejected the input)",
+  "passed": true
+ },
+ {
+  "t": 277.92,
+  "event": "repair.start",
+  "detail": "4 failing tool(s): get_jewish_holiday, get_jewish_festival, get_fast_day, get_shabbat_for_date"
+ },
+ {
+  "t": 296.3,
+  "event": "repair.done",
+  "detail": "patched get_jewish_holiday, get_jewish_festival, get_fast_day, get_shabbat_for_date"
+ },
+ {
+  "t": 296.31,
+  "event": "verify.start",
+  "detail": "attempt 3"
+ },
+ {
+  "t": 313.55,
+  "event": "gate.policy",
+  "detail": "PASS imports and builtins within policy",
+  "passed": true
+ },
+ {
+  "t": 313.55,
+  "event": "gate.import",
+  "detail": "PASS server module imports cleanly",
+  "passed": true
+ },
+ {
+  "t": 313.55,
+  "event": "gate.upstream_tests",
+  "detail": "FAIL 1 tests ran, 0 failures, 1 errors (tests/test_dates.py, tests/test_hebrewcal.py)",
+  "passed": false
+ },
+ {
+  "t": 313.55,
+  "event": "gate.input_robustness",
+  "detail": "PASS 4/4 equivalent-input probes gave identical results",
+  "passed": true
+ },
+ {
+  "t": 313.55,
+  "event": "gate.mcp_smoke",
+  "detail": "PASS 4 tools called with example args; invalid input rejected",
+  "passed": true
+ },
+ {
+  "t": 313.55,
+  "event": "gate.differential",
+  "detail": "PASS 41/41 Tester cases + 4/4 generated cases match the library (36 generated not scored: the library or the tool rejected the input)",
+  "passed": true
+ }
+]
