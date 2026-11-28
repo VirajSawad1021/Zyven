@@ -39,6 +39,10 @@ OPENCODE_CATALOGUE = "https://opencode.ai/zen/v1/models"
 _catalogue: dict[str, dict] | None = None
 
 
+class AgentStuck(ProviderError):
+    """The agent's own log says it cannot answer (for example an exhausted quota). Not worth retrying."""
+
+
 def open_weight_model(agent: str, model: str | None) -> str | None:
     """The open-weight model behind an agent run, when the agent's own catalogue says so: OpenCode lists each model it
     serves with `open_weights` and the model it is (`canonical_id`). Returns that canonical name, or None when the
@@ -197,6 +201,9 @@ class AgentProvider(ModelProvider):
             for attempt in range(1, self.max_retries + 1):
                 try:
                     text, totals, latency = self._run_once(prompt)
+                except AgentStuck as e:  # an exhausted quota stays exhausted: retrying only waits again
+                    last = str(e)
+                    break
                 except ProviderError as e:
                     last = str(e)
                     self.stats.retries += 1
@@ -214,7 +221,6 @@ class AgentProvider(ModelProvider):
         raise ProviderError(f"{self.adapter.label} failed: {last}")
 
     def _run_once(self, prompt: str) -> tuple[str, dict[str, float], float]:
-        from zyven.orchestrator.adapters import kill_tree
         cwd = Path(tempfile.mkdtemp(prefix=f"zyven-{self.agent}-"))
         try:
             self._prepare(cwd)
@@ -230,12 +236,7 @@ class AgentProvider(ModelProvider):
             started = time.monotonic()
             p = subprocess.Popen(cmd, cwd=cwd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace")
-            try:
-                out, err = p.communicate(stdin_text, timeout=self.timeout_s)
-            except subprocess.TimeoutExpired:
-                kill_tree(p)
-                p.communicate()
-                raise ProviderError(f"no answer within {int(self.timeout_s)}s") from None
+            out, err = self._wait(p, stdin_text, cwd, started)
             latency = time.monotonic() - started
             replies: list[str] = []
             errors: list[str] = []
@@ -250,13 +251,38 @@ class AgentProvider(ModelProvider):
             for line in out.splitlines():
                 self.adapter.parse(line, emit, totals)
             if not replies:
+                stuck = self.adapter.stuck_reason(cwd)
+                if stuck:
+                    raise AgentStuck(stuck)
                 why = "; ".join(errors) or " ".join(err.split())[-300:] or f"exit code {p.returncode}"
                 raise ProviderError(f"no reply ({why[:400]})")
             if is_limit_reply(replies[-1]):  # an account message, not an answer: say so instead of "invalid JSON"
                 raise ProviderError(f"{self.adapter.label} reports a usage limit: {' '.join(replies[-1].split())[:200]}")
             return replies[-1], totals, latency
         finally:
+            self.adapter.cleanup(cwd)
             shutil.rmtree(cwd, ignore_errors=True)
+
+    def _wait(self, p: subprocess.Popen, stdin_text: str, cwd: Path, started: float) -> tuple[str, str]:
+        """The program's (stdout, stderr). Stops it at the time limit, or as soon as its own log says why it cannot
+        answer (agy on an exhausted quota retries silently until the time limit)."""
+        from zyven.orchestrator.adapters import kill_tree
+        from zyven.orchestrator.cli_agent import STUCK_CHECK_S
+        first = True
+        while True:
+            left = self.timeout_s - (time.monotonic() - started)
+            try:
+                # input only on the first call: a retried communicate() keeps reading and loses no output
+                return p.communicate(stdin_text if first else None, timeout=max(0.1, min(STUCK_CHECK_S, left)))
+            except subprocess.TimeoutExpired:
+                first = False
+            stuck = self.adapter.stuck_reason(cwd)
+            if stuck or time.monotonic() - started >= self.timeout_s:
+                kill_tree(p)
+                p.communicate()
+                if stuck:
+                    raise AgentStuck(stuck) from None
+                raise ProviderError(f"no answer within {int(self.timeout_s)}s") from None
 
 
 def provider_for(choice: str, env_path: str | Path = ".env") -> ModelProvider:

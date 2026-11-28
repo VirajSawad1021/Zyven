@@ -342,3 +342,65 @@ def test_codex_gets_its_windows_sandbox_explicitly_because_the_user_config_is_ig
     a = _make(CodexAdapter, tmp_path, monkeypatch, "ZYVEN_ENABLE_CODEX")
     cmd = a.command(tmp_path)
     assert "windows.sandbox=unelevated" in cmd and "--ignore-user-config" in cmd
+
+
+# --- Antigravity: an exhausted quota is reported, not waited out ----------------------------------------------------
+
+# Plays agy on an exhausted account: writes the line agy 1.5.11 logged to its --log-file, then either hangs (agy
+# retries silently) or gives up on its own, as agy's --print-timeout does.
+QUOTA_AGY = textwrap.dedent(r'''
+    import os, sys, time
+    log = sys.argv[sys.argv.index("--log-file") + 1]
+    with open(log, "a", encoding="utf-8") as f:
+        f.write("I1121 10:02:11 model call failed: Resource has been exhausted (e.g. check quota).\n")
+    if os.environ.get("FAKE_AGY_EXIT") == "1":
+        print('AGY_ERROR: {"reason":"print_timeout"}', file=sys.stderr, flush=True)
+        sys.exit(1)
+    time.sleep(60)
+''')
+
+
+def _quota_agy(tmp_path, monkeypatch) -> AgyAdapter:
+    script = tmp_path / "quota_agy.py"
+    script.write_text(QUOTA_AGY, encoding="utf-8")
+    monkeypatch.setenv("ZYVEN_ENABLE_AGY", "1")
+    monkeypatch.setattr("zyven.orchestrator.cli_agent.STUCK_CHECK_S", 1)
+    return AgyAdapter(executable=[sys.executable, str(script)])
+
+
+def test_agy_writes_its_log_outside_the_task_folder(tmp_path):
+    cmd = AgyAdapter(executable=["agy"]).command(tmp_path)
+    log = Path(cmd[cmd.index("--log-file") + 1])
+    assert log == agy_adapter.log_path(tmp_path) and tmp_path not in log.parents
+    assert cmd[-1] == "--print"  # still last, directly before the prompt
+
+
+def test_agy_quota_message_is_found_in_the_log_and_a_stale_log_does_not_count(tmp_path):
+    log = agy_adapter.log_path(tmp_path)
+    log.write_text("starting\nResource has been exhausted (e.g. check quota)\n", encoding="utf-8")
+    a = AgyAdapter(executable=["agy"])
+    assert "quota is exhausted" in a.stuck_reason(tmp_path) and "Resource has been exhausted" in a.stuck_reason(tmp_path)
+    a.command(tmp_path)  # a new run in the same folder starts from an empty log
+    assert a.stuck_reason(tmp_path) == "" and not log.exists()
+    log.write_text("model call ok\n", encoding="utf-8")
+    assert a.stuck_reason(tmp_path) == ""
+    a.cleanup(tmp_path)
+    assert not log.exists()
+
+
+def test_agy_on_an_exhausted_quota_is_stopped_at_once_with_the_reason(tmp_path, monkeypatch):
+    import time
+    a = _quota_agy(tmp_path, monkeypatch)
+    started = time.monotonic()
+    c, rid, run = _run(tmp_path, a)
+    assert time.monotonic() - started < 30  # not the 120 s idle timeout, nor the stand-in's 60 s sleep
+    errors = [e["text"] for e in run["log"] if e["kind"] == "error"]
+    assert run["status"] != "COMPLETED" and any("quota is exhausted" in t for t in errors), errors
+    assert not agy_adapter.log_path(c.workdir(rid)).exists()  # the log does not pile up in the temp folder
+
+
+def test_agy_that_gives_up_on_its_own_still_says_why(tmp_path, monkeypatch):
+    a = _quota_agy(tmp_path, monkeypatch)
+    monkeypatch.setenv("FAKE_AGY_EXIT", "1")
+    _, _, run = _run(tmp_path, a)
+    assert any("quota is exhausted" in e["text"] for e in run["log"] if e["kind"] == "error")

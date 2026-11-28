@@ -33,6 +33,7 @@ from zyven.orchestrator.adapters import RUN_TIMEOUT_S, RunContext, RuntimeAdapte
 
 STATUS_TTL_S = 60
 DEFAULT_IDLE_S = 300  # a program that prints nothing for this long is stuck (for example waiting on a permission)
+STUCK_CHECK_S = 5     # how often a running program's own log is read for a reason it cannot go on
 
 
 def run_quiet(cmd: list[str], timeout: float = 15) -> str:
@@ -75,6 +76,14 @@ class CLIAgentAdapter(RuntimeAdapter):
     def sign_in_state(self) -> tuple[bool | None, str]:
         """(signed in?, detail). None means the program cannot say."""
         return None, ""
+
+    def stuck_reason(self, cwd: Path) -> str:
+        """Why the program started in `cwd` cannot make progress, read from its own log ('' when no reason is seen).
+        For programs that retry silently instead of reporting, for example on an exhausted quota."""
+        return ""
+
+    def cleanup(self, cwd: Path) -> None:
+        """Remove anything the run in `cwd` left outside its folder (such as a log file)."""
 
     # --- shared behaviour -------------------------------------------------------------------------------
     def model(self) -> str:
@@ -174,8 +183,17 @@ class CLIAgentAdapter(RuntimeAdapter):
         stalled = threading.Event()
 
         def watchdog() -> None:
+            ticks = 0
             while p.poll() is None:
                 time.sleep(1)
+                ticks += 1
+                if ticks % STUCK_CHECK_S == 0:
+                    reason = self.stuck_reason(ctx.cwd)
+                    if reason and p.poll() is None:
+                        stalled.set()
+                        ctx.emit("error", reason)
+                        kill_tree(p)
+                        return
                 if ctx.pending_approval():  # waiting for the user to click Approve is not being stuck
                     last_output[0] = time.monotonic()
                 if self.idle_timeout_s and time.monotonic() - last_output[0] > self.idle_timeout_s:
@@ -207,12 +225,17 @@ class CLIAgentAdapter(RuntimeAdapter):
                 failed = self.parse(line, ctx.emit, totals) or failed
             code = p.wait()
             err_thread.join(2)
+            if (code or failed) and not stalled.is_set():
+                reason = self.stuck_reason(ctx.cwd)  # it gave up on its own (a timeout of its own): say why
+                if reason:
+                    ctx.emit("error", reason)
             ctx.emit("info", f"done: {int(totals['in'])} in / {int(totals['out'])} out tokens"
                              + (f", ${totals['cost']:.4f}" if totals["cost"] else ""))
             return code or (1 if failed or stalled.is_set() else 0)
         finally:
             killer.cancel()
             self._procs.pop(rid, None)
+            self.cleanup(ctx.cwd)
 
     def cancel(self, run_id: str) -> None:
         p = self._procs.get(run_id)

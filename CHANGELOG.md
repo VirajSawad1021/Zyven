@@ -185,6 +185,11 @@ build, and installs without a clone.
 - Every sandbox container gets the host name `zyven-sandbox`.
 
 ### Fixed
+- **Antigravity on an exhausted quota now stops with that reason instead of hanging** (#107). agy retries silently,
+  so a run used to wait out the 2-minute idle timeout (Control center) or the whole time limit again on every retry
+  (compile role). Each run now writes agy's log (`--log-file`) to a temp file outside the task folder. Zyven reads it
+  every few seconds and stops the run as soon as it shows "Resource has been exhausted". A compile role does not
+  retry that error.
 - **Signing in to Gmail or Google Docs now keeps a token.** Google's hosted servers list their tools without a sign-in
   and refuse only tool calls, so Sign in used to finish at once: the tools were listed, no token was kept, the card
   said "Not signed in", and every call failed. Sign in now runs the OAuth step whenever there is no valid token, even

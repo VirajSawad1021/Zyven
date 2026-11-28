@@ -109,3 +109,18 @@ def test_a_usage_limit_message_is_reported_as_such(fake_codex, monkeypatch):
     p = AgentProvider("codex", executable=fake_codex, max_retries=1)
     with pytest.raises(ProviderError, match="usage limit"):
         p.chat([{"role": "user", "content": "go"}])
+
+
+def test_agy_with_an_exhausted_quota_fails_at_once_and_is_not_retried(tmp_path, monkeypatch):
+    import time
+
+    from tests.test_cli_agents import QUOTA_AGY
+    script = tmp_path / "quota_agy.py"
+    script.write_text(QUOTA_AGY, encoding="utf-8")
+    monkeypatch.setattr("zyven.orchestrator.cli_agent.STUCK_CHECK_S", 1)
+    p = AgentProvider("agy", executable=[sys.executable, str(script)], max_retries=3, timeout_s=50)
+    started = time.monotonic()
+    with pytest.raises(ProviderError, match="quota is exhausted"):
+        p.chat([{"role": "user", "content": "reply ok"}])
+    assert time.monotonic() - started < 30
+    assert p.stats.retries == 0 and p.stats.failures == 1
