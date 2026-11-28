@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 import { AlertTriangle, Bot, Check, ChevronDown, Clock, LayoutGrid, Loader2, Plus, Send, Shield, Sparkles, Terminal, X, Zap } from "lucide-react";
-import { Badge, Button, Card, Empty, Hero, LiveDot, Skeleton, ToolChip, ArtFrame } from "../components/ui";
-import { CountUp, DriftingOrb, Reveal, Star, Stars } from "../components/motion";
+import { Badge, Button, Card, Empty, Hero, LiveDot, Skeleton, ToolChip } from "../components/ui";
+import { CountUp, Reveal, Star } from "../components/motion";
 import { Markdown } from "../components/Markdown";
 import { EXAMPLES, LIVE_STATES, STATUS, eventDetail, eventLabel, eventTone, relTime } from "../lib/labels";
 import { post } from "../lib/api";
@@ -12,10 +12,10 @@ import type { CatalogRepo, Card as TaskCard, Skill } from "../lib/types";
 const fmtDur = (s: number) => (s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`);
 
 /* ── live agent panel: painted art with frosted rows ──────────────────────── */
-function AgentPanel({ cards, skills }: { cards: TaskCard[]; skills: Skill[] }) {
+function AgentPanel({ cards }: { cards: TaskCard[]; skills: Skill[] }) {
   const active = cards.find((c) => LIVE_STATES.has(c.status));
   const pending = cards.find((c) => c.status === "NEEDS_APPROVAL");
-  const row = "frost flex items-center justify-between gap-3 rounded-[14px] px-3.5 py-2.5 text-[13px] text-ink shadow-[0_1px_2px_rgba(20,20,19,0.08)]";
+  const row = "flex items-center justify-between gap-3 rounded-md px-2.5 py-2 text-[13px] text-ink transition-colors hover:bg-panel";
 
   let pill: React.ReactNode;
   let rows: React.ReactNode;
@@ -49,14 +49,13 @@ function AgentPanel({ cards, skills }: { cards: TaskCard[]; skills: Skill[] }) {
   }
   const working = Boolean(active || pending);
   return (
-    <ArtFrame seed={active ? active.id : `idle${skills.length}`} className="grain min-h-[170px] rounded-[24px] p-4">
-      {working && <DriftingOrb className="opacity-60 mix-blend-soft-light" />}
-      <Stars seed={active ? active.id : "idle"} count={working ? 10 : 7} from={50} to={96} />
-      <div className="relative z-10 flex flex-col gap-2">
-        <span className="frost inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-ink">{pill}</span>
-        {rows}
+    <Card className="overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-line bg-panel px-3.5 py-2.5 text-[12.5px] font-medium text-ink">
+        <span className={`h-1.5 w-1.5 rounded-full ${working ? "bg-ink" : "bg-line-strong"}`} />
+        {pill}
       </div>
-    </ArtFrame>
+      <div className="flex flex-col gap-1.5 p-2.5">{rows}</div>
+    </Card>
   );
 }
 
@@ -94,7 +93,7 @@ function Composer({ text, setText, inputRef }: { text: string; setText: (t: stri
         <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
           {EXAMPLES.map((ex) => (
             <button key={ex.label} type="button" onClick={() => setText(ex.text)}
-              className="rounded-full border border-line bg-panel px-2.5 py-1 text-[11.5px] text-body transition-colors hover:border-line-strong hover:bg-white hover:text-ink">
+              className="rounded-full border border-line bg-panel px-2.5 py-1 text-[11.5px] text-body transition-colors hover:border-line-strong hover:bg-canvas hover:text-ink">
               {ex.label}
             </button>
           ))}
@@ -166,11 +165,11 @@ function ApprovalPanel({ card }: { card: TaskCard }) {
   const dt = "whitespace-nowrap font-medium text-muted";
   if (r.kind === "tool_call") {
     return (
-      <div className="mt-4 overflow-hidden rounded-2xl border border-warn/30 bg-warn-bg">
+      <div className="mt-4 overflow-hidden rounded-[10px] border border-warn/30 bg-warn-bg">
         <p className="flex items-center gap-2 border-b border-warn/15 px-4 py-2.5 text-[13px] font-semibold text-warn"><Shield className="h-4 w-4" /> Approval needed: the agent wants to act through {r.connection}</p>
         <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 px-4 py-3 text-[13px]">
           <dt className={dt}>Action</dt><dd className="break-words font-mono text-[12px]">{r.tool}</dd>
-          <dt className={dt}>With</dt><dd><pre className="m-0 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-white/70 px-2.5 py-2 font-mono text-[11.5px]">{JSON.stringify(r.arguments, null, 2)}</pre></dd>
+          <dt className={dt}>With</dt><dd><pre className="m-0 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-canvas/70 px-2.5 py-2 font-mono text-[11.5px]">{JSON.stringify(r.arguments, null, 2)}</pre></dd>
           <dt className={dt}>Note</dt><dd>This tool is not marked read-only by its server. Nothing happens unless you approve.</dd>
         </dl>
         <div className="flex flex-wrap gap-2 px-4 pb-4">
@@ -181,7 +180,7 @@ function ApprovalPanel({ card }: { card: TaskCard }) {
     );
   }
   return (
-    <div className="mt-4 overflow-hidden rounded-2xl border border-warn/30 bg-warn-bg">
+    <div className="mt-4 overflow-hidden rounded-[10px] border border-warn/30 bg-warn-bg">
       <p className="flex items-center gap-2 border-b border-warn/15 px-4 py-2.5 text-[13px] font-semibold text-warn"><Shield className="h-4 w-4" /> Approval needed: nothing compiles until you decide</p>
       <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 px-4 py-3 text-[13px]">
         <dt className={dt}>Missing</dt><dd className="break-words">{need.description}</dd>
@@ -222,7 +221,7 @@ function TaskItem({ card }: { card: TaskCard }) {
   const answerIsError = !!card.answer && /^error:/i.test(card.answer);
 
   return (
-    <article className={`rounded-[20px] border bg-white p-5 transition-shadow hover:shadow-[0_10px_30px_-24px_rgba(20,20,19,0.5)] ${pending ? "border-warn/40 shadow-[0_0_0_3px_rgba(138,90,18,0.07)]" : "border-line"}`}>
+    <article className={`rounded-xl border bg-canvas p-5 transition-shadow hover:shadow-[0_10px_30px_-24px_rgba(20,20,19,0.5)] ${pending ? "border-warn/40 " : "border-line"}`}>
       <div className="flex items-start justify-between gap-3">
         <p className="min-w-0 flex-1 text-[15px] font-medium leading-snug tracking-[-0.01em] [overflow-wrap:anywhere]">{card.task}</p>
         <Badge tone={st.tone}>{live && <LiveDot />}{st.label}</Badge>
@@ -236,7 +235,7 @@ function TaskItem({ card }: { card: TaskCard }) {
       </div>
 
       {live && (
-        <div className="mt-4 flex animate-fade-in items-center gap-3 rounded-2xl border border-line bg-panel px-4 py-3">
+        <div className="mt-4 flex animate-fade-in items-center gap-3 rounded-[10px] border border-line bg-panel px-4 py-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-white"><Loader2 className="h-4 w-4 animate-spin" /></span>
           <div className="min-w-0">
             <p className="text-[13px] font-semibold">{st.label}</p>
@@ -249,9 +248,9 @@ function TaskItem({ card }: { card: TaskCard }) {
 
       {card.answer && (card.status === "DONE" || card.status === "UNVERIFIED" || answerIsError) && (
         answerIsError ? (
-          <p className="mt-4 rounded-2xl border border-bad/20 bg-bad-bg px-4 py-3 font-mono text-[12px] text-bad [overflow-wrap:anywhere]">{card.answer}</p>
+          <p className="mt-4 rounded-[10px] border border-bad/20 bg-bad-bg px-4 py-3 font-mono text-[12px] text-bad [overflow-wrap:anywhere]">{card.answer}</p>
         ) : card.status === "UNVERIFIED" ? (
-          <div className="mt-4 rounded-2xl border border-warn/30 bg-warn-bg/70 px-4 py-3.5">
+          <div className="mt-4 rounded-[10px] border border-warn/30 bg-warn-bg/70 px-4 py-3.5">
             <p className="mb-1.5 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-warn">
               <AlertTriangle className="h-3.5 w-3.5" /> Unverified Answer (Compile Not Verified)
             </p>
@@ -263,7 +262,7 @@ function TaskItem({ card }: { card: TaskCard }) {
             )}
           </div>
         ) : (
-          <div className="mt-4 rounded-2xl border border-good/25 bg-good-bg/70 px-4 py-3.5">
+          <div className="mt-4 rounded-[10px] border border-good/25 bg-good-bg/70 px-4 py-3.5">
             <p className="mb-1.5 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.06em] text-good"><Check className="h-3.5 w-3.5" /> Answer</p>
             <Markdown text={card.answer} className="text-ink" />
             {toolCalls.length > 0 && (
@@ -288,7 +287,7 @@ function TaskItem({ card }: { card: TaskCard }) {
           <div className={`grid transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${showSteps ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
             <div className="overflow-hidden">
               {plan.length > 0 && (
-                <div className="mt-3 rounded-[14px] border border-line bg-panel px-3.5 py-3">
+                <div className="mt-3 rounded-[10px] border border-line bg-panel px-3.5 py-3">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">Agent&apos;s plan</p>
                   <ol className="mb-0 mt-1.5 list-decimal pl-5 text-[13px] leading-relaxed text-body">{plan.map((p, i) => <li key={i}>{p}</li>)}</ol>
                 </div>
@@ -370,9 +369,9 @@ export function Tasks({ cards, skills, catalog = [], loaded }: { cards: TaskCard
   return (
     <>
       <Hero
-        eyebrow="Task board"
-        title={<>Give the agent work. <span className="text-muted">It grows the tools it needs.</span></>}
-        sub="When the agent lacks a capability, Zyven finds it in pinned open-source code. You approve, a verified MCP tool is compiled in a sandbox and hot-loaded mid-task, and the skill is kept for next time."
+        icon={<LayoutGrid />}
+        title="Tasks"
+        sub="Give the agent work; it grows the tools it needs. When it lacks a capability, Zyven finds it in pinned open-source code. You approve, a verified MCP tool is compiled in a sandbox and hot-loaded mid-task, and the skill is kept for next time."
       />
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-4">

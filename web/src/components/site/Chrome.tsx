@@ -10,7 +10,7 @@ export const GITHUB = "https://github.com/VirajSawad1021/Zyven";
 const links = [
   { href: "/#product", label: "Product" },
   { href: "/#how", label: "How it works" },
-  { href: "/#gates", label: "Sandbox gates" },
+  { href: "/#gates", label: "Gates" },
   { href: "/#results", label: "Results" },
   { href: "/#faq", label: "FAQ" },
 ];
@@ -27,21 +27,21 @@ export function SiteNav() {
   }, []);
 
   return (
-    <header className={`sticky top-0 z-40 transition-colors duration-300 ${scrolled || open ? "border-b border-line bg-cream/90 backdrop-blur-md" : "border-b border-transparent"}`}>
-      <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between px-5 sm:px-8">
+    <header className={`sticky top-0 z-40 transition-colors duration-300 ${scrolled || open ? "border-b border-line bg-canvas/95" : "border-b border-transparent"}`}>
+      <div className="mx-auto flex h-14 max-w-[1160px] items-center justify-between px-5 sm:px-8">
         <div className="flex items-center gap-10">
           <Logo />
-          <nav className="hidden items-center gap-7 lg:flex">
+          <nav className="hidden items-center gap-1 lg:flex">
             {links.map((l) => (
-              <Link key={l.href} href={l.href} className="text-[14px] text-body transition-colors hover:text-ink">{l.label}</Link>
+              <Link key={l.href} href={l.href} className="rounded-md px-2.5 py-1.5 text-[13.5px] text-body transition-colors hover:bg-panel-2 hover:text-ink">{l.label}</Link>
             ))}
           </nav>
         </div>
         <div className="flex items-center gap-2">
-          <a href={GITHUB} target="_blank" rel="noreferrer" className="hidden h-10 items-center gap-1.5 rounded-full bg-cream-2 px-5 text-[14px] font-medium text-ink hover:bg-line-strong/60 sm:inline-flex">
+          <a href={GITHUB} target="_blank" rel="noreferrer" className="hidden h-9 items-center gap-1 rounded-full px-4 text-[13.5px] font-medium text-body transition-colors hover:bg-panel-2 hover:text-ink sm:inline-flex">
             GitHub <ArrowUpRight className="h-3.5 w-3.5" />
           </a>
-          <Link href="/app/" className="inline-flex h-10 items-center gap-1.5 rounded-full bg-ink px-5 text-[14px] font-medium text-white hover:bg-ink-soft">
+          <Link href="/app/" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-ink px-4 text-[13.5px] font-medium text-white transition-colors hover:bg-accent-ink">
             Open the board <ArrowRight className="h-4 w-4" />
           </Link>
           <button onClick={() => setOpen(!open)} className="rounded-full p-2 text-ink lg:hidden" aria-label={open ? "Close menu" : "Open menu"}>
@@ -63,18 +63,18 @@ export function SiteNav() {
 
 export function SiteFooter() {
   const cols: { title: string; items: [string, string][] }[] = [
-    { title: "Product", items: [["How it works", "/#how"], ["Sandbox gates", "/#gates"], ["Results", "/#results"], ["FAQ", "/#faq"]] },
+    { title: "Product", items: [["How it works", "/#how"], ["Gates", "/#gates"], ["Results", "/#results"], ["FAQ", "/#faq"]] },
     { title: "The board", items: [["Tasks", "/app/"], ["Skills", "/app/skills/"], ["Insights", "/app/insights/"], ["Repo explorer", "/app/explore/"]] },
     { title: "Project", items: [["Source code", GITHUB], ["Issues", `${GITHUB}/issues`], ["Architecture", `${GITHUB}#how-it-works`], ["Frogtoberfest 2026", "https://frogtoberfest.lftechnology.com/"]] },
   ];
   return (
     <footer className="border-t border-line bg-cream">
-      <div className="mx-auto max-w-[1240px] px-5 pb-10 pt-16 sm:px-8">
+      <div className="mx-auto max-w-[1160px] px-5 pb-10 pt-16 sm:px-8">
         <div className="grid gap-12 lg:grid-cols-[1.3fr_2fr]">
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-[14px] leading-relaxed text-body">
-              An agent that compiles open-source code into verified tools when it needs them, and keeps only the ones that pass every gate.
+              Compiles open-source code into verified MCP tools when an agent needs them, and checks the MCP servers you did not build.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
@@ -95,8 +95,8 @@ export function SiteFooter() {
           </div>
         </div>
         <div className="mt-16 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6 text-[12px] text-muted">
-          <span>Zyven · open source · Frogtoberfest 2026 by Leapfrog</span>
-          <span>Open-weight models only · MCP · Docker sandbox</span>
+          <span>Zyven · open source, MIT · winner, Frogtoberfest 2026</span>
+          <span>MCP · sandboxed · runs on your machine</span>
         </div>
       </div>
     </footer>
@@ -105,7 +105,7 @@ export function SiteFooter() {
 
 export function SiteShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-cream text-ink">
+    <div className="min-h-screen bg-canvas text-ink">
       <SiteNav />
       <main>{children}</main>
       <SiteFooter />

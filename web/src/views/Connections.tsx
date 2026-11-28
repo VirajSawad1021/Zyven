@@ -51,7 +51,7 @@ function VerifyPanel({ v, override }: { v: Verify; override?: boolean }) {
 interface Template { id: string; label: string; kind: "http" | "stdio"; oauth?: boolean; hint: string; url: string; command: string; args: string[]; secrets: string[] }
 interface Data { connections: Conn[]; templates: Template[]; stdio_allowed: boolean }
 
-const input = "w-full rounded-xl border border-line-strong/80 bg-white px-3 py-2 text-[13px] text-ink placeholder:text-[#aaa79f] focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink";
+const input = "w-full rounded-xl border border-line-strong/80 bg-canvas px-3 py-2 text-[13px] text-ink placeholder:text-[#aaa79f] focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink";
 
 function AddConnection({ data, onAdded }: { data: Data; onAdded: () => void }) {
   const [tpl, setTpl] = useState<Template | null>(null);
@@ -89,7 +89,7 @@ function AddConnection({ data, onAdded }: { data: Data; onAdded: () => void }) {
           const off = !t.oauth && t.kind === "stdio" && !data.stdio_allowed;
           return (
             <button key={t.id} onClick={() => pick(t)} title={off ? "Local commands are off. Set ZYVEN_ALLOW_STDIO_CONNECTORS=1 to allow them." : t.hint}
-              className={`rounded-xl border px-3 py-2 text-left text-[13px] ${tpl?.id === t.id ? "border-ink bg-ink text-white" : "border-line-strong bg-white hover:border-ink/40"} ${off ? "opacity-50" : ""}`}>
+              className={`rounded-xl border px-3 py-2 text-left text-[13px] ${tpl?.id === t.id ? "border-ink bg-ink text-white" : "border-line-strong bg-canvas hover:border-ink/40"} ${off ? "opacity-50" : ""}`}>
               {t.label}{t.oauth && <span className="ml-1.5 text-[10px]">sign in</span>}{off && <span className="ml-1.5 text-[10px]">off</span>}
             </button>
           );
@@ -193,11 +193,11 @@ export function Connections() {
     const t = setInterval(load, 2500); // a sign-in finishes in another tab; pick it up without a reload
     return () => clearInterval(t);
   }, [load]);
-  if (!data) return <Hero eyebrow="Connections" title="Loading…" />;
+  if (!data) return <Hero icon={<Plug />} title="Connections" sub="Loading your connections…" />;
   return (
     <>
-      <Hero eyebrow="Connections" title={<>Connect your tools. <span className="text-muted">Approve what they do.</span></>}
-        sub="Connect any MCP server, then test it to see exactly which tools it offers. Tools that only read run freely; anything that writes, sends or deletes asks you first. Keys stay on this machine." />
+      <Hero icon={<Plug />} title="Connections"
+        sub="Connect your tools and approve what they do. Connect any MCP server, then test it to see exactly which tools it offers. Tools that only read run freely; anything that writes, sends or deletes asks you first. Keys stay on this machine." />
       <AddConnection data={data} onAdded={load} />
       {data.connections.length === 0 ? (
         <Empty seed="connections" title="Nothing connected yet" body="Pick a template above, add your key, then press Test to see what the connection can do." />

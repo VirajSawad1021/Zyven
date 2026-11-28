@@ -1,8 +1,8 @@
 "use client";
 
-import { Check, Clock, LayoutGrid, Sparkles, X } from "lucide-react";
+import { ChartColumn, Check, Clock, LayoutGrid, Sparkles, X } from "lucide-react";
 import { Donut, Growth, KIND, Timeline, fmtDur, kindOf, type Kind } from "../components/Charts";
-import { CountUp, Reveal, Stars } from "../components/motion";
+import { CountUp, Reveal } from "../components/motion";
 import { Card, Hero, Legend, Skeleton } from "../components/ui";
 import type { Stats, StatsCard } from "../lib/types";
 
@@ -49,11 +49,10 @@ function Panel({ title, sub, right, children, className = "" }: { title: string;
 function SpeedUp({ compile, reuse }: { compile: number | null; reuse: number | null }) {
   const ratio = compile && reuse ? compile / reuse : null;
   return (
-    <div className="art art-warm grain relative h-full overflow-hidden rounded-[24px] p-3">
-      <Stars seed="speedup" count={7} from={60} to={96} />
-      <div className="frost relative z-10 flex h-full flex-col rounded-[18px] p-5">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">The learning curve</p>
-        <p className="mt-3 text-[56px] font-medium leading-none tracking-[-0.04em]">
+    <div className="h-full rounded-[10px] border border-line bg-canvas">
+      <div className="flex h-full flex-col p-5">
+        <p className="text-[12px] font-medium text-muted">The learning curve</p>
+        <p className="mt-3 text-[52px] font-semibold leading-none tracking-[-0.04em] tabular-nums">
           {ratio ? <><CountUp to={Math.round(ratio)} /><span className="text-[30px] text-muted">×</span></> : "—"}
         </p>
         <p className="mt-2 text-[14px] leading-relaxed text-body">
@@ -61,8 +60,8 @@ function SpeedUp({ compile, reuse }: { compile: number | null; reuse: number | n
         </p>
         <div className="mt-auto space-y-3 pt-6">
           {[
-            { l: "Average task that compiled", v: compile, c: "bg-clay" },
-            { l: "Average task that reused", v: reuse, c: "bg-olive" },
+            { l: "Average task that compiled", v: compile, c: "bg-line-strong" },
+            { l: "Average task that reused", v: reuse, c: "bg-ink" },
           ].map((r) => (
             <div key={r.l}>
               <div className="flex justify-between text-[12px]">
@@ -149,9 +148,9 @@ function GateRates({ gates }: { gates: Stats["gates"] }) {
 export function Insights({ stats }: { stats: Stats | null }) {
   const header = (
     <Hero
-      eyebrow="Insights"
-      title={<>Learning, <span className="text-muted">measured.</span></>}
-      sub="The first task that needs a capability pays the compile cost. Every similar task after that reuses the verified skill. Everything here is live from the board."
+      icon={<ChartColumn />}
+      title="Insights"
+      sub="Learning, measured. The first task that needs a capability pays the compile cost. Every similar task after that reuses the verified skill. Everything here is live from the board."
     />
   );
   if (!stats) {
