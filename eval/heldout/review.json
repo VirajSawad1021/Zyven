@@ -1,0 +1,576 @@
+{
+ "reviewed": "2026-11-16, before any compile, by the protocol's reviewed rule (PROTOCOL.md section 2)",
+ "reasons": {
+  "R1": "not a library of functions that compute an answer from plain values (framework, SDK or client for a service, ML or data infrastructure, concurrency, serialisation of Python objects, configuration, plotting)",
+  "R1b": "its interface is building objects in Python code (a grammar, a query, a data structure), not calling a function with values, so a tool would have to accept code",
+  "R2": "its main inputs or outputs are files or binary data (documents, images, bytes of unknown encoding)",
+  "R3": "needs an external program, a network service or downloaded data when used",
+  "R4": "a duplicate, fork, old name or plugin of a higher-ranked candidate",
+  "R5": "its answer depends on the current time or environment, or is a model's prediction rather than a rule"
+ },
+ "stopped_at_rank": 1470,
+ "note": "review stopped at the 40th accepted candidate (rank 1470); lower-ranked candidates were not reviewed",
+ "study_set": [
+  "pygments",
+  "markdown-it-py",
+  "beautifulsoup4",
+  "wcwidth",
+  "docstring-parser",
+  "defusedxml",
+  "ruamel-yaml",
+  "docutils",
+  "babel",
+  "tinycss2",
+  "xmltodict",
+  "lark",
+  "text-unidecode",
+  "mistune",
+  "humanize",
+  "boolean-py",
+  "prettytable",
+  "pyphen",
+  "langchain-text-splitters",
+  "pycountry"
+ ],
+ "reserve_set": [
+  "tinyhtml5",
+  "rfc3987-syntax",
+  "holidays",
+  "strictyaml",
+  "html5lib",
+  "inflect",
+  "pytimeparse",
+  "texttable",
+  "natsort",
+  "feedparser",
+  "chevron",
+  "jsonpath-python",
+  "geographiclib",
+  "colorclass",
+  "num2words",
+  "ebcdic",
+  "parsimonious",
+  "markdown2",
+  "pylatexenc",
+  "elementpath"
+ ],
+ "decisions": [
+  {
+   "rank": 7,
+   "project": "charset-normalizer",
+   "decision": "R2"
+  },
+  {
+   "rank": 14,
+   "project": "pygments",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 56,
+   "project": "markdown-it-py",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 91,
+   "project": "pyparsing",
+   "decision": "R1b"
+  },
+  {
+   "rank": 110,
+   "project": "beautifulsoup4",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 119,
+   "project": "wcwidth",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 121,
+   "project": "huggingface-hub",
+   "decision": "R1"
+  },
+  {
+   "rank": 129,
+   "project": "docstring-parser",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 135,
+   "project": "defusedxml",
+   "decision": "accepted",
+   "set": "study",
+   "note": "kept: parses XML strings safely; values in, a tree out"
+  },
+  {
+   "rank": 169,
+   "project": "joblib",
+   "decision": "R1"
+  },
+  {
+   "rank": 188,
+   "project": "ruamel-yaml",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 193,
+   "project": "chardet",
+   "decision": "R2"
+  },
+  {
+   "rank": 198,
+   "project": "langchain",
+   "decision": "R1"
+  },
+  {
+   "rank": 200,
+   "project": "dill",
+   "decision": "R1"
+  },
+  {
+   "rank": 207,
+   "project": "langchain-core",
+   "decision": "R1"
+  },
+  {
+   "rank": 226,
+   "project": "docutils",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 258,
+   "project": "python-docx",
+   "decision": "R2"
+  },
+  {
+   "rank": 259,
+   "project": "babel",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 268,
+   "project": "python-pptx",
+   "decision": "R2"
+  },
+  {
+   "rank": 270,
+   "project": "tinycss2",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 279,
+   "project": "xmltodict",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 315,
+   "project": "multiprocess",
+   "decision": "R1"
+  },
+  {
+   "rank": 321,
+   "project": "lark",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 335,
+   "project": "reportlab",
+   "decision": "R2"
+  },
+  {
+   "rank": 342,
+   "project": "text-unidecode",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 348,
+   "project": "mdit-py-plugins",
+   "decision": "R4"
+  },
+  {
+   "rank": 358,
+   "project": "mistune",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 385,
+   "project": "pdfminer-six",
+   "decision": "R2"
+  },
+  {
+   "rank": 396,
+   "project": "polars",
+   "decision": "R1"
+  },
+  {
+   "rank": 403,
+   "project": "langchain-protocol",
+   "decision": "R1"
+  },
+  {
+   "rank": 408,
+   "project": "fastmcp",
+   "decision": "R1"
+  },
+  {
+   "rank": 413,
+   "project": "plotly",
+   "decision": "R1"
+  },
+  {
+   "rank": 418,
+   "project": "pandocfilters",
+   "decision": "R3"
+  },
+  {
+   "rank": 423,
+   "project": "fastmcp-slim",
+   "decision": "R1"
+  },
+  {
+   "rank": 445,
+   "project": "humanize",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 487,
+   "project": "boolean-py",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 490,
+   "project": "prettytable",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 497,
+   "project": "nltk",
+   "decision": "R3"
+  },
+  {
+   "rank": 511,
+   "project": "langchain-openai",
+   "decision": "R1"
+  },
+  {
+   "rank": 537,
+   "project": "pyphen",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 539,
+   "project": "langchain-text-splitters",
+   "decision": "accepted",
+   "set": "study",
+   "note": "kept: splitting text by size is a deterministic function of the text"
+  },
+  {
+   "rank": 548,
+   "project": "strands-agents",
+   "decision": "R1"
+  },
+  {
+   "rank": 571,
+   "project": "graphviz",
+   "decision": "R3"
+  },
+  {
+   "rank": 586,
+   "project": "pycountry",
+   "decision": "accepted",
+   "set": "study"
+  },
+  {
+   "rank": 587,
+   "project": "tinyhtml5",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 596,
+   "project": "rfc3987-syntax",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 600,
+   "project": "gspread",
+   "decision": "R3"
+  },
+  {
+   "rank": 638,
+   "project": "holidays",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 670,
+   "project": "strictyaml",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 671,
+   "project": "html5lib",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 672,
+   "project": "unidecode",
+   "decision": "R4",
+   "note": "text-unidecode (rank 342) is the same Text::Unidecode port and ranks higher"
+  },
+  {
+   "rank": 686,
+   "project": "inflect",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 696,
+   "project": "mlflow-skinny",
+   "decision": "R1"
+  },
+  {
+   "rank": 710,
+   "project": "pytimeparse",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 725,
+   "project": "parsedatetime",
+   "decision": "R5",
+   "note": "its main use, 'tomorrow at 5pm', depends on the current date"
+  },
+  {
+   "rank": 745,
+   "project": "catalogue",
+   "decision": "R1"
+  },
+  {
+   "rank": 774,
+   "project": "srsly",
+   "decision": "R1"
+  },
+  {
+   "rank": 778,
+   "project": "agate",
+   "decision": "R1"
+  },
+  {
+   "rank": 785,
+   "project": "langchain-anthropic",
+   "decision": "R1"
+  },
+  {
+   "rank": 806,
+   "project": "confection",
+   "decision": "R1"
+  },
+  {
+   "rank": 812,
+   "project": "spacy-legacy",
+   "decision": "R1"
+  },
+  {
+   "rank": 821,
+   "project": "weasel",
+   "decision": "R1"
+  },
+  {
+   "rank": 824,
+   "project": "texttable",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 854,
+   "project": "pydot",
+   "decision": "R3",
+   "note": "rendering needs the Graphviz program"
+  },
+  {
+   "rank": 891,
+   "project": "pydata-google-auth",
+   "decision": "R3"
+  },
+  {
+   "rank": 902,
+   "project": "pooch",
+   "decision": "R3"
+  },
+  {
+   "rank": 936,
+   "project": "pyyaml-env-tag",
+   "decision": "R4"
+  },
+  {
+   "rank": 938,
+   "project": "natsort",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 941,
+   "project": "langchain-classic",
+   "decision": "R1"
+  },
+  {
+   "rank": 963,
+   "project": "faster-whisper",
+   "decision": "R2"
+  },
+  {
+   "rank": 964,
+   "project": "mlflow-tracing",
+   "decision": "R1"
+  },
+  {
+   "rank": 968,
+   "project": "feedparser",
+   "decision": "accepted",
+   "set": "reserve",
+   "note": "kept: parses a feed given as a string; fetching a URL is optional"
+  },
+  {
+   "rank": 1064,
+   "project": "tensorboard-data-server",
+   "decision": "R1"
+  },
+  {
+   "rank": 1100,
+   "project": "chevron",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 1106,
+   "project": "jsonpath-python",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 1108,
+   "project": "geographiclib",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 1112,
+   "project": "geopy",
+   "decision": "R3",
+   "note": "its main use is geocoding through web services; only the distance module is offline"
+  },
+  {
+   "rank": 1134,
+   "project": "pathos",
+   "decision": "R1"
+  },
+  {
+   "rank": 1136,
+   "project": "pox",
+   "decision": "R1"
+  },
+  {
+   "rank": 1141,
+   "project": "ppft",
+   "decision": "R1"
+  },
+  {
+   "rank": 1150,
+   "project": "kfp",
+   "decision": "R1"
+  },
+  {
+   "rank": 1155,
+   "project": "junitparser",
+   "decision": "R2"
+  },
+  {
+   "rank": 1169,
+   "project": "colorclass",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 1217,
+   "project": "altgraph",
+   "decision": "R1b"
+  },
+  {
+   "rank": 1258,
+   "project": "num2words",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 1281,
+   "project": "pandera",
+   "decision": "R1"
+  },
+  {
+   "rank": 1282,
+   "project": "ebcdic",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 1308,
+   "project": "pypika",
+   "decision": "R1b"
+  },
+  {
+   "rank": 1372,
+   "project": "parsimonious",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 1388,
+   "project": "typesafe-sdk",
+   "decision": "R1"
+  },
+  {
+   "rank": 1413,
+   "project": "markdown2",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 1440,
+   "project": "pylatexenc",
+   "decision": "accepted",
+   "set": "reserve"
+  },
+  {
+   "rank": 1445,
+   "project": "deepagents",
+   "decision": "R1"
+  },
+  {
+   "rank": 1470,
+   "project": "elementpath",
+   "decision": "accepted",
+   "set": "reserve"
+  }
+ ]
+}
